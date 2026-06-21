@@ -14,7 +14,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un repo Git separat,
 ### Varianta rapidă — tot dintr-o dată
 
 ```bash
-git clone --recurse-submodules git@github.com:paul2Dev/teach.git
+git clone --recurse-submodules git@github.com:paul2Dev/learn-hub.git
 ```
 
 Această comandă clonează repo-ul principal **și** trage automat toate cursurile.
@@ -22,7 +22,7 @@ Această comandă clonează repo-ul principal **și** trage automat toate cursur
 ### Dacă ai clonat deja fără `--recurse-submodules`
 
 ```bash
-git clone git@github.com:paul2Dev/teach.git
+git clone git@github.com:paul2Dev/learn-hub.git
 cd teach
 git submodule update --init --recursive
 ```
