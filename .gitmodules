@@ -1,0 +1,7 @@
+[submodule "git-tutorial"]
+	path = git-tutorial
+	url = git@github.com:paul2Dev/learn-git.git
+
+[submodule "opensearch-tutorial"]
+	path = opensearch-tutorial
+	url = git@github.com:paul2Dev/learn-opensearch-laravel-integration.git

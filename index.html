@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cursuri — paul2dev</title>
+  <style>
+    :root {
+      --bg:      #fafaf8;
+      --text:    #1a1a1a;
+      --muted:   #6b7280;
+      --border:  #e8e5e0;
+      --accent:  #2563eb;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.78;
+      color: var(--text);
+      background: var(--bg);
+      padding: 2.5rem 1.25rem 5rem;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      max-width: 660px;
+      margin: 0 auto 2.5rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .site-meta {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .site-header h1 {
+      font-size: 2.1rem;
+      line-height: 1.18;
+      font-weight: 700;
+      margin-bottom: 0.45rem;
+    }
+    .site-subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── Body ── */
+    .site-body {
+      max-width: 660px;
+      margin: 0 auto;
+    }
+    .site-body h2 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── Course grid ── */
+    .course-grid {
+      display: grid;
+      gap: 16px;
+      margin: 1.25em 0 2.5em;
+    }
+    .course-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 18px 22px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+    .course-card:hover {
+      border-color: var(--accent);
+      background: #eff6ff;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    /* ── Icon ── */
+    .course-icon {
+      font-size: 2rem;
+      line-height: 1;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* ── Info ── */
+    .course-info h3 {
+      margin: 0 0 4px;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 700;
+    }
+    .course-info p {
+      margin: 0 0 8px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-style: normal;
+      line-height: 1.5;
+    }
+    .course-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-weight: 600;
+      background: #eff6ff;
+      color: var(--accent);
+      border: 1px solid #bfdbfe;
+    }
+    .tag-orange {
+      background: #fff7ed;
+      color: #c2410c;
+      border-color: #fed7aa;
+    }
+    .tag-green {
+      background: #f0fdf4;
+      color: #15803d;
+      border-color: #86efac;
+    }
+
+    /* ── Footer note ── */
+    .site-footer {
+      margin-top: 2.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .site-footer strong { color: var(--text); }
+
+    /* ── Mobile ── */
+    @media (max-width: 520px) {
+      body { font-size: 16px; padding: 1.5rem 1rem 4rem; }
+      .site-header h1 { font-size: 1.65rem; }
+      .course-icon { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="site-header">
+  <p class="site-meta">paul2dev · Cursuri tehnice</p>
+  <h1>Catalog cursuri</h1>
+  <p class="site-subtitle">Lecții practice, cod concret, quiz-uri interactive — fiecare curs rezolvă un subiect de la zero la producție</p>
+</div>
+
+<div class="site-body">
+
+  <h2>Cursuri disponibile</h2>
+
+  <div class="course-grid">
+
+    <a class="course-card" href="git-tutorial/index.html">
+      <span class="course-icon">⎇</span>
+      <div class="course-info">
+        <h3>Git &amp; GitHub Fluency</h3>
+        <p>De la mental model la CI/CD complet. Înțelegi cum gândește Git intern, cum lucrezi cu branch-uri, pull requests, GitHub Actions și webhook-uri. 9 lecții cu quiz-uri interactive.</p>
+        <div class="course-tags">
+          <span class="tag">git</span>
+          <span class="tag">github</span>
+          <span class="tag tag-orange">CI/CD</span>
+          <span class="tag tag-green">9 lecții</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="course-card" href="opensearch-tutorial/index.html">
+      <span class="course-icon">⌕</span>
+      <div class="course-info">
+        <h3>OpenSearch cu Laravel</h3>
+        <p>Integrare completă OpenSearch într-o aplicație Laravel — de la instalare și conectare, până la căutare full-text, filtre, agregări și Eloquent via pdphilip/opensearch. 9 lecții cu cod concret.</p>
+        <div class="course-tags">
+          <span class="tag">opensearch</span>
+          <span class="tag tag-orange">laravel</span>
+          <span class="tag tag-orange">PHP</span>
+          <span class="tag tag-green">9 lecții</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="site-footer">
+    <strong>Vrei un curs nou?</strong> Fiecare curs este un repo separat. Deschide o sesiune nouă și spune ce subiect vrei să înveți.
+  </div>
+
+</div>
+
+</body>
+</html>
