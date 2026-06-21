@@ -8,6 +8,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un repo Git separat,
 |------|-----------|------|
 | [Git & GitHub Fluency](git-tutorial/) | Mental model, branches, PR-uri, GitHub Actions, CI/CD — 9 lecții | [paul2Dev/learn-git](https://github.com/paul2Dev/learn-git) |
 | [OpenSearch cu Laravel](opensearch-tutorial/) | Căutare full-text, filtre, agregări, Eloquent — 9 lecții | [paul2Dev/learn-opensearch-laravel-integration](https://github.com/paul2Dev/learn-opensearch-laravel-integration) |
+| [Claude Code](claude-tutorial/) | Instalare, mental model, explorare cod, debugging, git workflow, VS Code — 8 lecții | [paul2Dev/learn-claude](https://github.com/paul2Dev/learn-claude) |
 
 ## Cum clonezi
 
@@ -23,7 +24,7 @@ Această comandă clonează repo-ul principal **și** trage automat toate cursur
 
 ```bash
 git clone git@github.com:paul2Dev/learn-hub.git
-cd teach
+cd learn-hub
 git submodule update --init --recursive
 ```
 
@@ -37,14 +38,17 @@ git submodule update --remote --merge
 ## Structura repo-ului
 
 ```
-teach/                          ← repo-ul principal (acesta)
+learn-hub/                      ← repo-ul principal (acesta)
 ├── index.html                  ← pagina de catalog (deschide în browser)
 ├── README.md
 ├── .gitmodules                 ← lista de submodule
 ├── git-tutorial/               ← submodul: curs Git & GitHub
 │   ├── index.html
 │   └── lessons/
-└── opensearch-tutorial/        ← submodul: curs OpenSearch + Laravel
+├── opensearch-tutorial/        ← submodul: curs OpenSearch + Laravel
+│   ├── index.html
+│   └── lessons/
+└── claude-tutorial/            ← submodul: curs Claude Code
     ├── index.html
     └── lessons/
 ```
