@@ -10,6 +10,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un repo Git separat,
 | [OpenSearch cu Laravel](opensearch-tutorial/) | Căutare full-text, filtre, agregări, Eloquent — 9 lecții | [paul2Dev/learn-opensearch-laravel-integration](https://github.com/paul2Dev/learn-opensearch-laravel-integration) |
 | [Claude Code](claude-tutorial/) | Instalare, mental model, explorare cod, debugging, git workflow, VS Code — 8 lecții | [paul2Dev/learn-claude](https://github.com/paul2Dev/learn-claude) |
 | [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții | [paul2Dev/learn-ai-harness](https://github.com/paul2Dev/learn-ai-harness) |
+| [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lessons | [paul2Dev/engineering-principles](https://github.com/paul2Dev/engineering-principles) |
 
 ## Cum clonezi
 
@@ -52,7 +53,10 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── claude-tutorial/            ← submodul: curs Claude Code
 │   ├── index.html
 │   └── lessons/
-└── ai-harness/                 ← submodul: curs AI Harness
+├── ai-harness/                 ← submodul: curs AI Harness
+│   ├── index.html
+│   └── lessons/
+└── engineering-principles/     ← submodul: curs Engineering Principles
     ├── index.html
     └── lessons/
 ```
