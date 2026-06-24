@@ -11,3 +11,6 @@
 [submodule "ai-harness"]
 	path = ai-harness
 	url = https://github.com/paul2Dev/learn-ai-harness
+[submodule "engineering-principles"]
+	path = engineering-principles
+	url = https://github.com/paul2Dev/engineering-principles
