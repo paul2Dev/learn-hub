@@ -9,6 +9,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un repo Git separat,
 | [Git & GitHub Fluency](git-tutorial/) | Mental model, branches, PR-uri, GitHub Actions, CI/CD — 9 lecții | [paul2Dev/learn-git](https://github.com/paul2Dev/learn-git) |
 | [OpenSearch cu Laravel](opensearch-tutorial/) | Căutare full-text, filtre, agregări, Eloquent — 9 lecții | [paul2Dev/learn-opensearch-laravel-integration](https://github.com/paul2Dev/learn-opensearch-laravel-integration) |
 | [Claude Code](claude-tutorial/) | Instalare, mental model, explorare cod, debugging, git workflow, VS Code — 8 lecții | [paul2Dev/learn-claude](https://github.com/paul2Dev/learn-claude) |
+| [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții | [paul2Dev/learn-ai-harness](https://github.com/paul2Dev/learn-ai-harness) |
 
 ## Cum clonezi
 
@@ -48,7 +49,10 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── opensearch-tutorial/        ← submodul: curs OpenSearch + Laravel
 │   ├── index.html
 │   └── lessons/
-└── claude-tutorial/            ← submodul: curs Claude Code
+├── claude-tutorial/            ← submodul: curs Claude Code
+│   ├── index.html
+│   └── lessons/
+└── ai-harness/                 ← submodul: curs AI Harness
     ├── index.html
     └── lessons/
 ```
