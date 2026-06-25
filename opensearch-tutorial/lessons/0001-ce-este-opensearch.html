@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 1 — Ce este OpenSearch?</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<!-- ══════════════════════════════════════════════════ HEADER ══ -->
+<div class="lesson-header">
+  <span class="meta">Lecția 01 · OpenSearch + Laravel</span>
+  <h1>Ce este OpenSearch?</h1>
+  <p class="subtitle">Arhitectura și conceptele fundamentale — de la zero</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════ INTRO ══ -->
+<h2>De ce OpenSearch în proiectul tău?</h2>
+
+<p>
+  Proiectul tău are <strong>două baze de date</strong> cu roluri diferite:
+</p>
+
+<table>
+  <tr>
+    <th>Baza de date</th>
+    <th>Rol</th>
+    <th>Exemple de date</th>
+  </tr>
+  <tr>
+    <td><strong>MongoDB</strong></td>
+    <td>Date operaționale — sursa de adevăr</td>
+    <td>Utilizatori, comenzi, produse, tranzacții</td>
+  </tr>
+  <tr>
+    <td><strong>OpenSearch</strong></td>
+    <td>Motor de căutare — date indexate pentru search</td>
+    <td>Articole, produse (copie pentru search), logs</td>
+  </tr>
+</table>
+
+<div class="box box-tip">
+  <span class="box-title">Regulă de bază</span>
+  Scrii întotdeauna în <strong>MongoDB</strong>. OpenSearch primește o copie a datelor pe care vrei să le poți <em>căuta rapid și flexibil</em>. Nu este sursa de adevăr — este un index de căutare.
+</div>
+
+<!-- ══════════════════════════════════════════════════ CE ESTE ══ -->
+<h2>Ce este OpenSearch?</h2>
+
+<p>
+  OpenSearch este un <strong>motor de căutare distribuit</strong>, open-source, construit peste
+  <a href="https://lucene.apache.org/" target="_blank">Apache Lucene</a>.
+  A pornit ca un fork din Elasticsearch (2021) și este menținut de Amazon și comunitate.
+</p>
+
+<p>Poate fi folosit pentru:</p>
+<ul>
+  <li>Căutare full-text (ca Google, dar în datele tale)</li>
+  <li>Autocomplete și sugestii</li>
+  <li>Filtrare și faceting (filtre de tip e-commerce)</li>
+  <li>Analiză de loguri și metrici</li>
+  <li>Geo-search (căutare după locație)</li>
+</ul>
+
+<div class="box box-info">
+  <span class="box-title">OpenSearch vs. o bază de date relațională</span>
+  O bază de date SQL face <code>LIKE '%termen%'</code> — lent și inexact.
+  OpenSearch face căutare <strong>full-text analizată</strong>: înțelege sinonime, variante morfologice,
+  relevanță, typo-uri — și returnează rezultate ordonate după scor.
+</div>
+
+<!-- ══════════════════════════════════════════════════ ARHITECTURA ══ -->
+<h2>Arhitectura: Cluster → Node → Index → Shard → Document</h2>
+
+<p>Gândește arhitectura OpenSearch ca pe o succesiune de containere imbricate:</p>
+
+<div class="tree">
+  <div class="tree-root">
+    <span class="tree-label">CLUSTER</span>
+    <ul class="tree-children">
+      <li class="tree-item">
+        <span class="tree-label">NODE 1</span> <span class="tree-note">server / mașină virtuală</span>
+        <ul class="tree-children">
+          <li class="tree-item">
+            <span class="tree-label">INDEX "articles"</span>
+            <ul class="tree-children">
+              <li class="tree-item"><span class="tree-label">Shard 0</span> <span class="tree-badge">primar</span></li>
+              <li class="tree-item"><span class="tree-label">Shard 1</span> <span class="tree-badge">primar</span></li>
+            </ul>
+          </li>
+          <li class="tree-item">
+            <span class="tree-label">INDEX "products"</span>
+            <ul class="tree-children">
+              <li class="tree-item"><span class="tree-label">Shard 0</span> <span class="tree-badge">primar</span></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li class="tree-item">
+        <span class="tree-label">NODE 2</span> <span class="tree-note">server secundar — stochează replici</span>
+        <ul class="tree-children">
+          <li class="tree-item"><span class="tree-label">Replica Shard 0</span> <span class="tree-badge green">replică</span></li>
+          <li class="tree-item"><span class="tree-label">Replica Shard 1</span> <span class="tree-badge green">replică</span></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ CONCEPTE ══ -->
+<h2>Conceptele fundamentale</h2>
+
+<h3>Document</h3>
+<p>
+  Un <strong>document</strong> este unitatea de bază de stocare — echivalentul unui <em>rând</em> din SQL
+  sau al unui <em>document</em> din MongoDB. Datele sunt stocate în format JSON.
+</p>
+<pre><code><span class="cm">// Un document OpenSearch</span>
+{
+  <span class="str">"id"</span>: <span class="str">"123"</span>,
+  <span class="str">"titlu"</span>: <span class="str">"Introducere în Laravel"</span>,
+  <span class="str">"continut"</span>: <span class="str">"Laravel este un framework PHP..."</span>,
+  <span class="str">"autor"</span>: <span class="str">"Paul"</span>,
+  <span class="str">"publicat_la"</span>: <span class="str">"2024-03-15"</span>,
+  <span class="str">"taguri"</span>: [<span class="str">"php"</span>, <span class="str">"laravel"</span>, <span class="str">"backend"</span>]
+}</code></pre>
+
+<h3>Index</h3>
+<p>
+  Un <strong>index</strong> este colecția de documente de același tip — echivalentul unui <em>tabel</em> din SQL
+  sau al unei <em>colecții</em> din MongoDB. Exemplu: <code>articles</code>, <code>products</code>, <code>logs</code>.
+</p>
+
+<div class="box box-warn">
+  <span class="box-title">Atenție la terminologie</span>
+  În OpenSearch, <em>„a indexa un document"</em> înseamnă a-l <strong>salva</strong> (nu a crea un index de bază de date).
+  Contextul face diferența.
+</div>
+
+<h3>Mapping</h3>
+<p>
+  Un <strong>mapping</strong> definește structura unui index — tipurile de date ale fiecărui câmp.
+  Echivalentul unui <em>schema</em>/<em>migrare</em> din Laravel.
+</p>
+<pre><code><span class="cm">// Mapping pentru indexul "articles"</span>
+{
+  <span class="str">"mappings"</span>: {
+    <span class="str">"properties"</span>: {
+      <span class="str">"titlu"</span>:       { <span class="str">"type"</span>: <span class="str">"text"</span> },        <span class="cm">// câmp searchable, analizat</span>
+      <span class="str">"autor"</span>:       { <span class="str">"type"</span>: <span class="str">"keyword"</span> },     <span class="cm">// câmp exact (filtru, sort)</span>
+      <span class="str">"publicat_la"</span>: { <span class="str">"type"</span>: <span class="str">"date"</span> },        <span class="cm">// dată</span>
+      <span class="str">"vizualizari"</span>: { <span class="str">"type"</span>: <span class="str">"integer"</span> }     <span class="cm">// număr întreg</span>
+    }
+  }
+}</code></pre>
+
+<table>
+  <tr>
+    <th>Tip câmp</th>
+    <th>Când îl folosești</th>
+    <th>Exemplu</th>
+  </tr>
+  <tr>
+    <td><code>text</code></td>
+    <td>Căutare full-text (analizat, tokenizat)</td>
+    <td>titlu, descriere, conținut</td>
+  </tr>
+  <tr>
+    <td><code>keyword</code></td>
+    <td>Filtre exacte, sortare, agregări</td>
+    <td>status, autor, categorie, tag</td>
+  </tr>
+  <tr>
+    <td><code>date</code></td>
+    <td>Date calendaristice, range queries</td>
+    <td>created_at, published_at</td>
+  </tr>
+  <tr>
+    <td><code>integer</code> / <code>float</code></td>
+    <td>Numere, prețuri, scoruri</td>
+    <td>price, rating, views</td>
+  </tr>
+  <tr>
+    <td><code>boolean</code></td>
+    <td>Câmpuri true/false</td>
+    <td>is_published, is_active</td>
+  </tr>
+</table>
+
+<h3>Shard</h3>
+<p>
+  Un <strong>shard</strong> este o subdiviziune a unui index. OpenSearch distribuie shardurile pe mai multe
+  noduri pentru a putea procesa căutări <strong>în paralel</strong>.
+  Ca developer Laravel, nu ai nevoie să gestionezi sharduri manual în stadiul inițial —
+  configurarea implicită (1 shard primar + 1 replică) este suficientă.
+</p>
+
+<h3>Node și Cluster</h3>
+<p>
+  Un <strong>node</strong> este o instanță OpenSearch (un proces pe un server).
+  Un <strong>cluster</strong> este mai multe noduri care lucrează împreună.
+  În dezvoltare locală, lucrezi cu <strong>un singur node</strong> (cluster de 1).
+</p>
+
+<!-- ══════════════════════════════════════════════════ FLOW DATE ══ -->
+<h2>Fluxul datelor în proiectul tău</h2>
+
+<div class="tree">
+  <div class="tree-root">
+    <span class="tree-label">POST /articles — scriere articol nou</span>
+    <ul class="tree-children">
+      <li class="tree-item">
+        <span class="tree-label">ArticleController::store()</span>
+        <ul class="tree-children">
+          <li class="tree-item">
+            <span class="tree-label">MongoDB</span>
+            <span class="tree-badge green">save()</span>
+            <span class="tree-note">sursa de adevăr — toate câmpurile</span>
+          </li>
+          <li class="tree-item">
+            <span class="tree-label">OpenSearch</span>
+            <span class="tree-badge">indexDocument()</span>
+            <span class="tree-note">câmpurile searchable — titlu, conținut, taguri</span>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+  <hr class="tree-sep">
+  <div class="tree-root">
+    <span class="tree-label">GET /search?q=laravel — căutare</span>
+    <ul class="tree-children">
+      <li class="tree-item">
+        <span class="tree-label">SearchController::index()</span>
+        <ul class="tree-children">
+          <li class="tree-item">
+            <span class="tree-label">OpenSearch</span>
+            <span class="tree-badge">search()</span>
+            <span class="tree-note">returnează ID-uri ordonate după relevanță</span>
+            <ul class="tree-children">
+              <li class="tree-item">
+                <span class="tree-label">Răspuns JSON</span>
+                <span class="tree-note">[ { _id, titlu, _score }, ... ]</span>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="box box-tip">
+  <span class="box-title">Pattern recomandat</span>
+  Când salvezi un articol, salvezi simultan în <strong>MongoDB</strong> (complet) și în <strong>OpenSearch</strong>
+  (doar câmpurile relevante pentru search). Când utilizatorul caută, interoghezi <em>doar</em> OpenSearch.
+  Când afișezi detaliile unui articol, poți lua datele din MongoDB (sau din OpenSearch dacă ai indexat complet).
+</div>
+
+<!-- ══════════════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="B">
+    <p>1. Care este echivalentul unui „index" OpenSearch în termeni de baze de date relaționale?</p>
+    <button class="quiz-opt" data-val="A">Un rând dintr-un tabel</button>
+    <button class="quiz-opt" data-val="B">Un tabel (sau colecție MongoDB)</button>
+    <button class="quiz-opt" data-val="C">O coloană din tabel</button>
+    <button class="quiz-opt" data-val="D">O bază de date întreagă</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="C">
+    <p>2. Ce tip de câmp folosești pentru câmpul <code>status</code> (valori exacte: „draft", „published") pe care vrei să filtrezi?</p>
+    <button class="quiz-opt" data-val="A">text — pentru că e șir de caractere</button>
+    <button class="quiz-opt" data-val="B">string — tipul generic</button>
+    <button class="quiz-opt" data-val="C">keyword — pentru filtre exacte și sortare</button>
+    <button class="quiz-opt" data-val="D">varchar — ca în SQL</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>3. Un utilizator caută „laravel tutorial". Pe care bază de date trimiți cererea de search?</p>
+    <button class="quiz-opt" data-val="A">OpenSearch — motorul de căutare</button>
+    <button class="quiz-opt" data-val="B">MongoDB — sursa de adevăr</button>
+    <button class="quiz-opt" data-val="C">Ambele — interog în paralel</button>
+    <button class="quiz-opt" data-val="D">MySQL — pentru că e mai rapid</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>4. Ce înseamnă „a indexa un document" în OpenSearch?</p>
+    <button class="quiz-opt" data-val="A">A crea un index nou în baza de date</button>
+    <button class="quiz-opt" data-val="B">A construi un index B-tree ca în SQL</button>
+    <button class="quiz-opt" data-val="C">A șterge un document din colecție</button>
+    <button class="quiz-opt" data-val="D">A salva un document într-un index</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ SURSE ══ -->
+<div class="sources">
+  <h3>Surse pentru această lecție</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/getting-started/intro/" target="_blank">Intro to OpenSearch — Documentație oficială</a> — sursa principală recomandată</li>
+    <li><a href="https://docs.opensearch.org/latest/field-types/" target="_blank">Field types (Mappings) — Documentație oficială</a></li>
+    <li><a href="https://docs.opensearch.org/latest/" target="_blank">OpenSearch Documentation — pagina principală</a></li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════ URMĂTOAREA ══ -->
+<div class="lesson-nav">
+  <span class="disabled">← Lecția anterioară</span>
+  <a href="0002-instalare-si-conectare.html">Lecția 2: Instalare și conectare din Laravel →</a>
+</div>
+
+<!-- ══════════════════════════════════════════════════ PROFESOR ══ -->
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Întreabă-mă orice — sunt profesorul tău și pot clarifica orice concept
+  din această lecție sau pot aprofunda orice aspect care nu este suficient de clar.
+  Scrie pur și simplu întrebarea ta.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

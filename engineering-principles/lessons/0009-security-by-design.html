@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 9 — Securitate prin Design | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 9 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Securitate prin Design</h1>
+  <p>Cum să construiești securitatea de la început mai degrabă decât să o adaugi la final — și de ce codul generat de AI necesită prompting explicit de securitate.</p>
+
+  <h2>Securitatea nu este o funcționalitate</h2>
+  <p>Cea mai costisitoare greșeală de securitate este tratarea securității ca o funcționalitate de adăugat la final: „vom face sprintul de întărire a securității înainte de lansare." Până atunci design-ul este fixat, suprafețele de atac sunt inglobate și „întărirea" înseamnă acoperirea găurilor dintr-un design care nu ar fi trebuit să le aibă.</p>
+
+  <p>Securitatea prin design înseamnă că la fiecare punct de decizie — modelul de date, contractul API, fluxul de autentificare, validarea input-ului — întrebi: <em>cine ar putea abuza de asta și ce s-ar întâmpla dacă ar face-o?</em></p>
+
+  <div class="callout warn">
+    <div class="callout-label">AI și securitatea</div>
+    AI generează cod care funcționează pentru cazul fericit. Nu modelează utilizatori adversariali. Dacă nu soliciti explicit constrângeri de securitate, AI va omite în tăcere validarea input-ului, verificările de autorizare și limitarea ratei.
+  </div>
+
+  <h2>OWASP Top 10: linia de bază a modelului de amenințare</h2>
+  <p>OWASP Top 10 este cea mai autoritativă listă de riscuri critice de securitate a aplicațiilor web. Ca dezvoltator web, acestea sunt categoriile împotriva cărora trebuie să proiectezi — nu pentru că sunt rare, ci pentru că sunt tipare de atac comune și bine înțelese:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Control de Acces Defect</h4>
+        <p>Un utilizator accesează date sau acțiuni la care nu ar trebui să aibă permisiunea. Riscul #1. Verifică ownership-ul la fiecare request de resursă.</p>
+      </div>
+      <div class="arch-tag">cel mai frecvent</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Injecție (SQL, XSS, comandă)</h4>
+        <p>Input-ul neîncrezut este interpretat ca cod. Prevenit prin query-uri parametrizate și codificarea output-ului — niciodată concatenare de șiruri în query-uri.</p>
+      </div>
+      <div class="arch-tag">încă răspândit</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Eșecuri Criptografice</h4>
+        <p>Date sensibile expuse sau slab protejate. Folosește bcrypt/Argon2 pentru parole; HTTPS peste tot; nu crea niciodată propria criptografie.</p>
+      </div>
+      <div class="arch-tag">expunere date</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>Configurare Greșită de Securitate</h4>
+        <p>Credențiale implicite, mesaje de eroare verbioase, bucket-uri S3 deschise, mod debug în producție. Cel mai ușor de prevenit cu liste de verificare pentru deployment.</p>
+      </div>
+      <div class="arch-tag">ușor de prevenit</div>
+    </div>
+  </div>
+
+  <h2>Control de Acces Defect: cel mai critic</h2>
+  <p>Controlul de Acces Defect este riscul #1 OWASP și cea mai frecventă omisiune de securitate din codul generat de AI. Când AI generează un controller, autorizează adesea pe baza autentificării („este utilizatorul logat?") dar nu a ownership-ului („deține acest utilizator această resursă?").</p>
+
+  <pre><code>// Control de Acces Defect — verifică autentificarea dar nu ownership-ul
+class OrderController {
+    public function show(Request $request, int $id): JsonResponse {
+        $order = Order::findOrFail($id);  // orice utilizator autentificat poate vedea orice comandă!
+        return response()->json($order);
+    }
+}
+
+// Corect — verifică ownership-ul
+class OrderController {
+    public function show(Request $request, int $id): JsonResponse {
+        $order = Order::where('id', $id)
+                      ->where('user_id', $request->user()->id)  // verificare ownership
+                      ->firstOrFail();
+        return response()->json($order);
+    }
+}
+
+// Și mai bine — folosește o policy
+class OrderController {
+    public function show(Request $request, Order $order): JsonResponse {
+        $this->authorize('view', $order);  // policy impune ownership-ul
+        return response()->json($order);
+    }
+}</code></pre>
+
+  <h2>Validarea input-ului: nu ai încredere în nimic din exterior</h2>
+  <p>Limita sistemului este locul unde se termină încrederea. Tot ce este în afara aplicației tale — request-uri HTTP, upload-uri de fișiere, payload-uri webhook, răspunsuri API externe — este input neîncrezut. Validează la limită, nu adânc în logica de business.</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Tip de input</th><th>Ce să validezi</th><th>Greșeală frecventă</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Câmpuri de text</td>
+        <td>Tip, lungime, caractere permise, format</td>
+        <td>Bazarea pe validarea frontend în loc de server-side</td>
+      </tr>
+      <tr>
+        <td>ID-uri numerice</td>
+        <td>Numeric, pozitiv, există în DB, deținut de apelant</td>
+        <td>Necontrolarea ownership-ului (IDOR — referință directă nesigură la obiecte)</td>
+      </tr>
+      <tr>
+        <td>Upload-uri de fișiere</td>
+        <td>Tip MIME (prin conținut, nu extensie), dimensiune, scanare malware</td>
+        <td>Bazarea pe headerul <code>Content-Type</code> de la client</td>
+      </tr>
+      <tr>
+        <td>Payload-uri JSON</td>
+        <td>Câmpuri obligatorii, tipuri, intervale de valori, fără chei extra</td>
+        <td>Atribuire în masă (acceptarea tuturor câmpurilor de input orbește)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Apărare în profunzime</h2>
+  <p>Niciun singur strat de securitate nu este suficient. Apărarea în profunzime înseamnă mai multe straturi independente, astfel încât un eșec într-unul să nu compromită sistemul:</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body"><p><strong>Stratul de rețea</strong> — HTTPS, firewall, protecție DDoS (Cloudflare etc.)</p></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body"><p><strong>Stratul de aplicație</strong> — autentificare, autorizare, validare input, limitare rată</p></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body"><p><strong>Stratul de date</strong> — query-uri parametrizate, criptare la repaus, utilizator de baze de date cu privilegii minime</p></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body"><p><strong>Stratul de infrastructură</strong> — gestionarea secretelor, fără credențiale în cod, principiul privilegiului minim</p></div>
+    </div>
+  </div>
+
+  <h2>Checklist de securitate pentru codul generat de AI</h2>
+  <p>Înainte de a accepta orice funcționalitate generată de AI în codebase-ul tău:</p>
+  <ul>
+    <li>Verifică fiecare endpoint care accesează o resursă atât autentificarea <em>cât și</em> ownership-ul?</li>
+    <li>Este tot input-ul utilizatorului validat server-side (nu doar client-side)?</li>
+    <li>Sunt toate query-urile de baze de date parametrizate (fără concatenare de șiruri)?</li>
+    <li>Este output-ul sensibil (parole, token-uri, numere complete de card) exclus din response-urile API și log-uri?</li>
+    <li>Există limitare de rată pe endpoint-urile de autentificare și pe orice endpoint care trimite e-mail?</li>
+    <li>Sunt upload-urile de fișiere validate prin conținut, nu prin extensie?</li>
+  </ul>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Audit IDOR</div>
+    <p>IDOR (Insecure Direct Object Reference) este cel mai frecvent bug de control al accesului.</p>
+    <ol>
+      <li>Listează fiecare endpoint din API-ul tău care ia un ID de resursă ca parametru de cale sau interogare.</li>
+      <li>Pentru fiecare: codul verifică că utilizatorul autentificat deține sau are permisiunea de a accesa acea resursă?</li>
+      <li>Testează cele pe care nu ești sigur: autentifică-te ca utilizatorul A, apoi încearcă să accesezi ID-ul resursei utilizatorului B.</li>
+      <li>Corectează orice lacune adăugând o verificare de ownership sau o policy Laravel.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://owasp.org/www-project-top-ten/" target="_blank">OWASP Top 10 — owasp.org</a>. Lista autoritativă a celor mai critice riscuri de securitate a aplicațiilor web, actualizată la câțiva ani. Fiecare categorie include descriere, exemple, cum să verifici și cum să previi. Marcheaz-o ca favorit.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este diferența dintre autentificare și autorizare?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Autentificarea controlează ce poți face; autorizarea confirmă cine ești</button></li>
+        <li><button data-correct="false">Autentificarea este server-side; autorizarea este verificată de browser-ul client</button></li>
+        <li><button data-correct="true">Autentificarea confirmă cine ești; autorizarea controlează ce ai voie să faci</button></li>
+        <li><button data-correct="false">Autentificarea folosește token-uri; autorizarea folosește nume de utilizator și parolă</button></li>
+      </ul>
+      <div class="quiz-feedback">Autentificare = identitate („ești cine spui că ești?"). Autorizare = permisiune („ai voie să faci asta?"). Ambele sunt necesare. Un utilizator logat (autentificat) nu ar trebui să poată citi comenzile altui utilizator dacă nu este și autorizat să facă asta.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce este o vulnerabilitate IDOR?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Folosirea ID-urilor secvențiale previzibile care permit atacatorilor să enumere resursele</button></li>
+        <li><button data-correct="false">Stocarea ID-urilor de baze de date în plaintext în payload-ul unui token JWT</button></li>
+        <li><button data-correct="true">Accesarea resursei altui utilizator furnizând ID-ul acestuia fără o verificare de ownership</button></li>
+        <li><button data-correct="false">Injectarea SQL printr-un parametru de ID numeric într-un șir de interogare URL</button></li>
+      </ul>
+      <div class="quiz-feedback">IDOR (Insecure Direct Object Reference) apare când un endpoint folosește un ID furnizat de utilizator pentru a prelua o resursă fără a verifica că utilizatorul curent deține sau are permisiunea de a accesa acea resursă. Utilizatorul autentificat A poate accesa datele utilizatorului B doar schimbând ID-ul.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce nu ar trebui niciodată să validezi upload-urile de fișiere verificând extensia fișierului?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece extensiile de fișiere nu sunt standardizate pe toate sistemele de operare</button></li>
+        <li><button data-correct="false">Deoarece PHP nu oferă o modalitate fiabilă de a citi extensiile de fișiere</button></li>
+        <li><button data-correct="true">Deoarece un atacator poate redenumi un fișier malițios să aibă orice extensie dorește</button></li>
+        <li><button data-correct="false">Deoarece extensiile sunt eliminate de unele proxy-uri HTTP înainte de a ajunge la server</button></li>
+      </ul>
+      <div class="quiz-feedback">Extensiile sunt metadate pe care le controlează cel care face upload-ul. Un atacator poate numi un shell PHP <code>shell.jpg</code>. Validează prin citirea conținutului real al fișierului (magic bytes / MIME sniffing) — nu numele furnizat de atacator.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce categorie OWASP Top 10 este clasată #1 ca cel mai critic risc de securitate web?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Injecție — atacuri SQL, XSS și injecție de comenzi</button></li>
+        <li><button data-correct="false">Eșecuri Criptografice — criptare slabă și date sensibile expuse</button></li>
+        <li><button data-correct="true">Control de Acces Defect — utilizatori care accesează date sau acțiuni la care nu le este permis</button></li>
+        <li><button data-correct="false">Configurare Greșită de Securitate — credențiale implicite și mod debug în producție</button></li>
+      </ul>
+      <div class="quiz-feedback">Controlul de Acces Defect a urcat la #1 în OWASP Top 10 din 2021. Este cel mai răspândit deoarece autentificarea este de obicei gestionată de framework-uri, dar verificările de ownership/permisiune sunt logică de business personalizată care trebuie scrisă — și este ușor de uitat în codul generat de AI.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce înseamnă „apărare în profunzime" în practică?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Rularea a trei audituri de securitate separate înainte de fiecare lansare în producție</button></li>
+        <li><button data-correct="false">Scrierea documentației detaliate de securitate pentru a educa membrii echipei</button></li>
+        <li><button data-correct="true">Existența mai multor straturi de securitate independente astfel încât un eșec într-unul să nu compromită sistemul</button></li>
+        <li><button data-correct="false">Criptarea tuturor datelor de trei ori folosind algoritmi diferiți pentru redundanță</button></li>
+      </ul>
+      <div class="quiz-feedback">Apărarea în profunzime înseamnă controale suprapuse: rețea (HTTPS, firewall), aplicație (autentificare, validare input, limitare rată), date (query-uri parametrizate, criptare), infrastructură (gestionarea secretelor, privilegiu minim). Ocolirea unui strat nu dă unui atacator acces la tot.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Cum implementez limitarea ratei în Laravel?"</em> sau <em>„Ce este atribuirea în masă și cum o previne <code>$fillable</code> din Laravel?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0008-testing-strategy.html">← Lecția 8: Strategia de Testare</a>
+    <a href="0010-code-review-ai-era.html">Lecția 10: Code Review în Era AI →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

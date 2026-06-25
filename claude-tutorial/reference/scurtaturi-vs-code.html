@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scurtături VS Code Extension — Referință</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    th { font-family: system-ui, -apple-system, sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border); text-align: left; }
+    td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+    tr:last-child td { border-bottom: none; }
+    .section-label { font-family: system-ui, -apple-system, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 2rem 0 0.6rem; }
+    kbd {
+      display: inline-block;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: 0.78rem;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      box-shadow: 0 1px 0 var(--border);
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .platform { font-family: system-ui, sans-serif; font-size: 0.75rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Referință</p>
+  <h1>Scurtături VS Code Extension</h1>
+  <p class="tagline">Toate scurtăturile extensiei Claude Code pentru VS Code — modificabile din File → Preferences → Keyboard Shortcuts.</p>
+
+  <section>
+    <p class="section-label">Panou și navigare</p>
+    <table>
+      <thead><tr><th>Acțiune</th><th>Windows / Linux</th><th>Mac</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Deschide / închide panoul Claude Code</td>
+          <td><kbd>Ctrl+Shift+C</kbd></td>
+          <td><kbd>Cmd+Shift+C</kbd></td>
+        </tr>
+        <tr>
+          <td>Focusează câmpul de input</td>
+          <td><kbd>Ctrl+Shift+C</kbd> (dacă panoul e deja deschis)</td>
+          <td><kbd>Cmd+Shift+C</kbd></td>
+        </tr>
+        <tr>
+          <td>Deschide Command Palette → Claude</td>
+          <td><kbd>Ctrl+Shift+P</kbd> → tastează "Claude"</td>
+          <td><kbd>Cmd+Shift+P</kbd> → tastează "Claude"</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">În câmpul de input</p>
+    <table>
+      <thead><tr><th>Acțiune</th><th>Windows / Linux</th><th>Mac</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Trimite mesajul</td>
+          <td><kbd>Ctrl+Enter</kbd> sau <kbd>Enter</kbd></td>
+          <td><kbd>Cmd+Enter</kbd> sau <kbd>Enter</kbd></td>
+        </tr>
+        <tr>
+          <td>Linie nouă în mesaj (fără trimitere)</td>
+          <td><kbd>Shift+Enter</kbd></td>
+          <td><kbd>Shift+Enter</kbd></td>
+        </tr>
+        <tr>
+          <td>Oprește generarea curentă</td>
+          <td><kbd>Esc</kbd></td>
+          <td><kbd>Esc</kbd></td>
+        </tr>
+        <tr>
+          <td>Mesaj anterior din istoric</td>
+          <td><kbd>↑</kbd> (în câmp gol)</td>
+          <td><kbd>↑</kbd> (în câmp gol)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Selecție și context</p>
+    <table>
+      <thead><tr><th>Acțiune</th><th>Windows / Linux</th><th>Mac</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Trimite selecția curentă ca context</td>
+          <td>Selectează cod → <kbd>Ctrl+Shift+C</kbd></td>
+          <td>Selectează cod → <kbd>Cmd+Shift+C</kbd></td>
+        </tr>
+        <tr>
+          <td>Explică selecția (Command Palette)</td>
+          <td><kbd>Ctrl+Shift+P</kbd> → "Claude: Explain Selection"</td>
+          <td><kbd>Cmd+Shift+P</kbd> → "Claude: Explain Selection"</td>
+        </tr>
+        <tr>
+          <td>Repară selecția (Command Palette)</td>
+          <td><kbd>Ctrl+Shift+P</kbd> → "Claude: Fix Selection"</td>
+          <td><kbd>Cmd+Shift+P</kbd> → "Claude: Fix Selection"</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Sesiune</p>
+    <table>
+      <thead><tr><th>Acțiune</th><th>Unde</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Sesiune nouă (resetează conversația)</td>
+          <td>Buton "New Session" din panoul lateral sau Command Palette → "Claude Code: New Session"</td>
+        </tr>
+        <tr>
+          <td>Inserează codul sugerat în editor</td>
+          <td><kbd>Alt+L</kbd> sau buton "Insert" de lângă blocul de cod din răspuns</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Tips de utilizare</p>
+    <table>
+      <thead><tr><th>Situație</th><th>Abordare recomandată</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Ai o eroare în consolă și vrei să o rezolvi rapid</td>
+          <td>Selectează eroarea din terminal integrat → <kbd>Ctrl+Shift+C</kbd> → "Ce cauzează această eroare?"</td>
+        </tr>
+        <tr>
+          <td>Vrei să înțelegi o funcție complexă</td>
+          <td>Selectează întreaga funcție → <kbd>Ctrl+Shift+C</kbd> → "Explică pas cu pas ce face această funcție"</td>
+        </tr>
+        <tr>
+          <td>Vrei să refactorizezi un bloc de cod</td>
+          <td>Selectează blocul → <kbd>Ctrl+Shift+C</kbd> → "Refactorizează pentru claritate, păstrând același comportament"</td>
+        </tr>
+        <tr>
+          <td>Vrei să adaugi tipuri TypeScript la cod JS</td>
+          <td>Selectează fișierul/funcția → <kbd>Ctrl+Shift+C</kbd> → "Adaugă type annotations TypeScript"</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <nav class="lesson-nav">
+    <a href="comenzi-esentiale.html">← Comenzi Esențiale CLI</a>
+    <a class="nav-next" href="../index.html">Catalog →</a>
+  </nav>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 6 — Filtre, sortare, paginație</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 06 · OpenSearch + Laravel</span>
+  <h1>Filtre, sortare și paginație</h1>
+  <p class="subtitle">bool query, term, range, sort, from/size — construiești query-uri complexe</p>
+</div>
+
+<p>
+  În practică, nu faci niciodată doar un simplu <code>match</code>.
+  Utilizatorul caută „laravel" <em>și</em> vrea doar articolele publicate,
+  <em>și</em> sortate după dată. Aceasta este lecția în care piesele se leagă.
+</p>
+
+<!-- ══════════════════════════════════════════ BOOL QUERY ══ -->
+<h2>1. bool query — inima oricărui query complex</h2>
+
+<p>
+  <code>bool</code> combină mai multe condiții cu logică AND/OR/NOT.
+  Are 4 clauze, fiecare cu un rol diferit:
+</p>
+
+<table>
+  <tr>
+    <th>Clauza</th>
+    <th>Logică</th>
+    <th>Afectează scorul?</th>
+    <th>Când o folosești</th>
+  </tr>
+  <tr>
+    <td><code>must</code></td>
+    <td>AND — trebuie să fie adevărat</td>
+    <td>Da</td>
+    <td>Termeni de căutare principali</td>
+  </tr>
+  <tr>
+    <td><code>filter</code></td>
+    <td>AND — trebuie să fie adevărat</td>
+    <td>Nu (mai rapid!)</td>
+    <td>Filtre: status, dată, categorie</td>
+  </tr>
+  <tr>
+    <td><code>should</code></td>
+    <td>OR — îmbunătățește scorul dacă e adevărat</td>
+    <td>Da</td>
+    <td>Criterii opționale de relevanță</td>
+  </tr>
+  <tr>
+    <td><code>must_not</code></td>
+    <td>NOT — trebuie să fie fals</td>
+    <td>Nu</td>
+    <td>Excludere: nu vreau status=draft</td>
+  </tr>
+</table>
+
+<div class="box box-tip">
+  <span class="box-title">filter vs must — diferența practică</span>
+  <strong>must</strong> calculează un scor de relevanță — util pentru câmpuri de căutare.<br/>
+  <strong>filter</strong> nu calculează scor și e cached de OpenSearch — mai rapid pentru filtre fixe (status, categorie, dată).
+  Folosește <code>filter</code> pentru orice condiție care nu influențează relevanța.
+</div>
+
+<!-- ══════════════════════════════════════════ EXEMPLE ══ -->
+<h2>2. Exemple practice de bool query</h2>
+
+<h3>Scenariu A: căutare + filtru simplu</h3>
+<p>Caută „laravel", dar returnează <em>doar</em> articolele publicate:</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchPublished</span>(string $query): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'query'</span> => [
+                <span class="str">'bool'</span> => [
+                    <span class="str">'must'</span> => [
+                        [<span class="str">'multi_match'</span> => [
+                            <span class="str">'query'</span>  => $query,
+                            <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>],
+                        ]],
+                    ],
+                    <span class="str">'filter'</span> => [
+                        [<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}</code></pre>
+
+<h3>Scenariu B: filtre multiple + range pe dată</h3>
+<p>Articole publicate, dintr-o anumită categorie, din ultimul an:</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchWithFilters</span>(string $query, string $tag, string $autor = <span class="kw">null</span>): array
+{
+    $filters = [
+        [<span class="str">'term'</span>  => [<span class="str">'status'</span> => <span class="str">'published'</span>]],
+        [<span class="str">'term'</span>  => [<span class="str">'taguri'</span> => $tag]],          <span class="cm">// filtru exact pe keyword</span>
+        [<span class="str">'range'</span> => [<span class="str">'publicat_la'</span> => [
+            <span class="str">'gte'</span> => <span class="str">'now-1y/d'</span>,   <span class="cm">// de acum 1 an</span>
+            <span class="str">'lte'</span> => <span class="str">'now/d'</span>,      <span class="cm">// până azi</span>
+        ]]],
+    ];
+
+    <span class="cm">// Adaugă filtru opțional pe autor</span>
+    <span class="kw">if</span> ($autor) {
+        $filters[] = [<span class="str">'term'</span> => [<span class="str">'autor.keyword'</span> => $autor]];
+    }
+
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'query'</span> => [
+                <span class="str">'bool'</span> => [
+                    <span class="str">'must'</span>   => [[<span class="str">'multi_match'</span> => [
+                        <span class="str">'query'</span>  => $query,
+                        <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>],
+                    ]]],
+                    <span class="str">'filter'</span> => $filters,
+                ],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ FILTRE ATOMICE ══ -->
+<h2>3. Filtre atomice: term, terms, range, exists</h2>
+
+<pre><code><span class="cm">// term — egalitate exactă (pentru keyword, boolean, integer)</span>
+[<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]]
+[<span class="str">'term'</span> => [<span class="str">'este_publicat'</span> => <span class="kw">true</span>]]
+[<span class="str">'term'</span> => [<span class="str">'autor.keyword'</span> => <span class="str">'Paul Maxineanu'</span>]]
+
+<span class="cm">// terms — oricare din valorile din array (echivalent IN() din SQL)</span>
+[<span class="str">'terms'</span> => [<span class="str">'status'</span> => [<span class="str">'published'</span>, <span class="str">'featured'</span>]]]
+[<span class="str">'terms'</span> => [<span class="str">'taguri'</span>  => [<span class="str">'php'</span>, <span class="str">'laravel'</span>]]]
+
+<span class="cm">// range — interval numeric sau de date</span>
+[<span class="str">'range'</span> => [<span class="str">'vizualizari'</span> => [<span class="str">'gte'</span> => <span class="num">100</span>]]]                   <span class="cm">// &gt;= 100</span>
+[<span class="str">'range'</span> => [<span class="str">'pret'</span>         => [<span class="str">'gte'</span> => <span class="num">10</span>, <span class="str">'lte'</span> => <span class="num">50</span>]]]      <span class="cm">// intre 10 si 50</span>
+[<span class="str">'range'</span> => [<span class="str">'publicat_la'</span>  => [<span class="str">'gte'</span> => <span class="str">'2024-01-01'</span>]]]        <span class="cm">// de la 2024</span>
+[<span class="str">'range'</span> => [<span class="str">'publicat_la'</span>  => [<span class="str">'gte'</span> => <span class="str">'now-30d/d'</span>]]]        <span class="cm">// ultimele 30 zile</span>
+
+<span class="cm">// exists — câmpul are valoare (nu e null / lipsă)</span>
+[<span class="str">'exists'</span> => [<span class="str">'field'</span> => <span class="str">'publicat_la'</span>]]</code></pre>
+
+<!-- ══════════════════════════════════════════ SORT ══ -->
+<h2>4. Sortare</h2>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchSorted</span>(string $query, string $sortField = <span class="str">'_score'</span>, string $order = <span class="str">'desc'</span>): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'query'</span> => [<span class="str">'bool'</span> => [
+                <span class="str">'must'</span>   => [[<span class="str">'multi_match'</span> => [
+                    <span class="str">'query'</span>  => $query,
+                    <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>],
+                ]]],
+                <span class="str">'filter'</span> => [[<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]]],
+            ]],
+
+            <span class="str">'sort'</span> => [
+                <span class="cm">// Sortare primară după câmpul ales</span>
+                [$sortField => [<span class="str">'order'</span> => $order]],
+                <span class="cm">// Sortare secundară după scor (dacă sortField este dată)</span>
+                [<span class="str">'_score'</span>  => [<span class="str">'order'</span> => <span class="str">'desc'</span>]],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}
+
+<span class="cm">// Utilizare:
+// $search->searchSorted('laravel', '_score', 'desc')         — după relevanță
+// $search->searchSorted('laravel', 'publicat_la', 'desc')    — cele mai recente
+// $search->searchSorted('laravel', 'vizualizari', 'desc')    — cele mai citite</span></code></pre>
+
+<div class="box box-warn">
+  <span class="box-title">Atenție la sortare pe câmpuri text</span>
+  Nu poți sorta după un câmp de tip <code>text</code>. Dacă vrei să sortezi după <code>autor</code>,
+  folosești sub-câmpul <code>autor.keyword</code> (definit în mapping în Lecția 5).
+</div>
+
+<!-- ══════════════════════════════════════════ PAGINARE ══ -->
+<h2>5. Paginație</h2>
+
+<p>
+  OpenSearch folosește <code>from</code> și <code>size</code> — exact ca <code>LIMIT</code> și <code>OFFSET</code> în SQL.
+</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchPaginated</span>(string $query, int $page = <span class="num">1</span>, int $perPage = <span class="num">15</span>): array
+{
+    $from = ($page - <span class="num">1</span>) * $perPage;
+
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => $perPage,
+            <span class="str">'from'</span>  => $from,
+            <span class="str">'query'</span> => [<span class="str">'bool'</span> => [
+                <span class="str">'must'</span>   => [[<span class="str">'multi_match'</span> => [
+                    <span class="str">'query'</span>  => $query,
+                    <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>],
+                ]]],
+                <span class="str">'filter'</span> => [[<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]]],
+            ]],
+            <span class="str">'sort'</span>  => [[<span class="str">'_score'</span> => [<span class="str">'order'</span> => <span class="str">'desc'</span>]]],
+        ],
+    ]);
+
+    $total = $response[<span class="str">'hits'</span>][<span class="str">'total'</span>][<span class="str">'value'</span>];
+
+    <span class="kw">return</span> [
+        <span class="str">'total'</span>        => $total,
+        <span class="str">'per_page'</span>     => $perPage,
+        <span class="str">'current_page'</span> => $page,
+        <span class="str">'last_page'</span>    => (int) <span class="fn">ceil</span>($total / $perPage),
+        <span class="str">'results'</span>      => <span class="fn">collect</span>($response[<span class="str">'hits'</span>][<span class="str">'hits'</span>])
+            -><span class="fn">map</span>(<span class="kw">fn</span>($h) => <span class="fn">array_merge</span>(
+                [<span class="str">'_id'</span> => $h[<span class="str">'_id'</span>], <span class="str">'_score'</span> => $h[<span class="str">'_score'</span>]],
+                $h[<span class="str">'_source'</span>]
+            ))-><span class="fn">toArray</span>(),
+    ];
+}
+
+<span class="cm">// Utilizare în controller:</span>
+$results = $search-><span class="fn">searchPaginated</span>(<span class="str">'laravel'</span>, page: <span class="num">2</span>, perPage: <span class="num">10</span>);
+<span class="cm">// $results['total']        = 42
+// $results['last_page']    = 5
+// $results['current_page'] = 2
+// $results['results']      = [...]</span></code></pre>
+
+<div class="box box-warn">
+  <span class="box-title">Limita de paginație deep</span>
+  <code>from + size</code> nu poate depăși <strong>10.000</strong> (implicit).
+  Pentru paginație adâncă (pagina 500+), folosești <code>search_after</code> — subiect avansat.
+  Pentru cazuri normale (e-commerce, blog), <code>from/size</code> este perfect.
+</div>
+
+<!-- ══════════════════════════════════════════ COMPLET ══ -->
+<h2>6. Query complet — căutare reală din proiectul tău</h2>
+
+<pre><code><span class="cm">// Metodă completă, parametrizabilă — acoperă 90% din cazuri</span>
+<span class="kw">public function</span> <span class="fn">searchArticles</span>(array $params): array
+{
+    $query   = $params[<span class="str">'q'</span>]       ?? <span class="str">''</span>;
+    $tag     = $params[<span class="str">'tag'</span>]     ?? <span class="kw">null</span>;
+    $autor   = $params[<span class="str">'autor'</span>]   ?? <span class="kw">null</span>;
+    $sortBy  = $params[<span class="str">'sort'</span>]    ?? <span class="str">'_score'</span>;
+    $page    = $params[<span class="str">'page'</span>]    ?? <span class="num">1</span>;
+    $perPage = $params[<span class="str">'per_page'</span>] ?? <span class="num">15</span>;
+
+    <span class="cm">// Filtre fixe — întotdeauna aplicate</span>
+    $filters = [
+        [<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]],
+    ];
+
+    <span class="kw">if</span> ($tag)   $filters[] = [<span class="str">'term'</span> => [<span class="str">'taguri'</span>       => $tag]];
+    <span class="kw">if</span> ($autor) $filters[] = [<span class="str">'term'</span> => [<span class="str">'autor.keyword'</span> => $autor]];
+
+    <span class="cm">// Query principal</span>
+    $must = $query
+        ? [[<span class="str">'multi_match'</span> => [
+            <span class="str">'query'</span>     => $query,
+            <span class="str">'fields'</span>    => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>, <span class="str">'taguri^2'</span>],
+            <span class="str">'fuzziness'</span> => <span class="str">'AUTO'</span>,
+          ]]]
+        : [[<span class="str">'match_all'</span> => (object)[]]];   <span class="cm">// dacă nu e query, returnează toate</span>
+
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => $perPage,
+            <span class="str">'from'</span>  => ($page - <span class="num">1</span>) * $perPage,
+            <span class="str">'query'</span> => [<span class="str">'bool'</span> => [<span class="str">'must'</span> => $must, <span class="str">'filter'</span> => $filters]],
+            <span class="str">'sort'</span>  => [[$sortBy => [<span class="str">'order'</span> => <span class="str">'desc'</span>]]],
+        ],
+    ]);
+
+    $total = $response[<span class="str">'hits'</span>][<span class="str">'total'</span>][<span class="str">'value'</span>];
+    <span class="kw">return</span> [
+        <span class="str">'total'</span>        => $total,
+        <span class="str">'current_page'</span> => $page,
+        <span class="str">'last_page'</span>    => (int) <span class="fn">ceil</span>($total / $perPage),
+        <span class="str">'results'</span>      => <span class="fn">collect</span>($response[<span class="str">'hits'</span>][<span class="str">'hits'</span>])
+            -><span class="fn">map</span>(<span class="kw">fn</span>($h) => <span class="fn">array_merge</span>([<span class="str">'_id'</span> => $h[<span class="str">'_id'</span>]], $h[<span class="str">'_source'</span>]))-><span class="fn">toArray</span>(),
+    ];
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="B">
+    <p>1. Care clauza din <code>bool</code> query este mai rapidă și mai eficientă pentru filtre fixe (status, categorie)?</p>
+    <button class="quiz-opt" data-val="A">must — pentru că e obligatorie</button>
+    <button class="quiz-opt" data-val="B">filter — nu calculează scor și e cached de OpenSearch</button>
+    <button class="quiz-opt" data-val="C">should — că e mai flexibilă</button>
+    <button class="quiz-opt" data-val="D">must_not — că neagă restul condițiilor</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="C">
+    <p>2. Vrei articolele publicate în ultimele 30 de zile. Ce filtru folosești?</p>
+    <button class="quiz-opt" data-val="A">term cu valoarea 'now-30d'</button>
+    <button class="quiz-opt" data-val="B">match cu data de acum 30 zile</button>
+    <button class="quiz-opt" data-val="C">range cu 'gte' => 'now-30d/d'</button>
+    <button class="quiz-opt" data-val="D">exists cu câmpul publicat_la</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. Vrei pagina 3 cu 10 articole per pagină. Ce valori dai la <code>from</code> și <code>size</code>?</p>
+    <button class="quiz-opt" data-val="A">from=3, size=10</button>
+    <button class="quiz-opt" data-val="B">from=30, size=3</button>
+    <button class="quiz-opt" data-val="C">from=10, size=10</button>
+    <button class="quiz-opt" data-val="D">from=20, size=10</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>4. Vrei să excluzi articolele cu <code>status = 'spam'</code> din rezultate. Ce clauza folosești?</p>
+    <button class="quiz-opt" data-val="A">must_not cu un filtru term pe status</button>
+    <button class="quiz-opt" data-val="B">filter cu NOT în valoarea câmpului</button>
+    <button class="quiz-opt" data-val="C">should cu status diferit de spam</button>
+    <button class="quiz-opt" data-val="D">must cu status != spam</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/query-dsl/compound/bool/" target="_blank">Bool query — OpenSearch Documentation</a> — sursa principală recomandată</li>
+    <li><a href="https://docs.opensearch.org/latest/query-dsl/term/term/" target="_blank">Term query — OpenSearch Documentation</a></li>
+    <li><a href="https://docs.opensearch.org/latest/query-dsl/term/range/" target="_blank">Range query — OpenSearch Documentation</a></li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0005-mapping.html">← Lecția 5: Mapping</a>
+  <a href="0007-eloquent-pdphilip.html">Lecția 7: Integrare Eloquent →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă ai un scenariu de filtrare specific din proiectul tău și nu știi cum să construiești query-ul, descrie-mi ce vrei și îl construim împreună.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

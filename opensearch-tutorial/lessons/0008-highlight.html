@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 8 — Highlight</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    /* Simulare highlight în exemple vizuale */
+    .demo-result {
+      border: 1px solid var(--gray-2);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 8px 0;
+      background: #fff;
+    }
+    .demo-result h4 { margin: 0 0 6px; font-size: 1rem; color: var(--blue); }
+    .demo-result p  { margin: 0; font-size: .9rem; color: var(--muted); line-height: 1.6; }
+    .demo-result em { font-style: normal; background: #fff3cd; padding: 1px 3px; border-radius: 2px; font-weight: 700; color: #856404; }
+    .demo-result em.blue { background: var(--blue-lt); color: var(--blue); }
+    .demo-result em.red  { background: var(--red-lt);  color: var(--red);  }
+    .demo-results-label {
+      font-size: .8rem;
+      font-family: monospace;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 08 · OpenSearch + Laravel</span>
+  <h1>Highlight — evidențierea termenilor căutați</h1>
+  <p class="subtitle">Marchezi în rezultate exact unde a găsit OpenSearch ce a căutat utilizatorul</p>
+</div>
+
+<!-- ══════════════════════════════════════════ CE ESTE ══ -->
+<h2>1. Ce este highlight și de ce îl vrei</h2>
+
+<p>
+  Fără highlight, utilizatorul vede o listă de titluri și fragmente de text
+  și nu înțelege <em>de ce</em> a apărut acel rezultat. Cu highlight, OpenSearch
+  îți returnează fragmentele relevante cu <strong>termenii marcați</strong>.
+</p>
+
+<p class="demo-results-label">Fără highlight:</p>
+<div class="demo-result">
+  <h4>Introducere în Laravel — instalare și configurare</h4>
+  <p>Laravel este un framework PHP modern care urmează arhitectura MVC. În acest articol vom vedea cum se instalează și configurează un proiect nou...</p>
+</div>
+
+<p class="demo-results-label">Cu highlight (căutare: „laravel instalare"):</p>
+<div class="demo-result">
+  <h4>Introducere în <em>Laravel</em> — <em>instalare</em> și configurare</h4>
+  <p>...vom vedea cum se <em>instalează</em> și configurează un proiect <em>Laravel</em> nou. Primul pas este să rulezi <em>composer create-project</em>...</p>
+</div>
+
+<div class="box box-tip">
+  <span class="box-title">Ce face OpenSearch de fapt</span>
+  OpenSearch caută fragmentele din document care conțin termenii căutați, le extrage
+  și le întoarce cu tag-urile HTML pe care le specifici tu (<code>&lt;em&gt;</code>, <code>&lt;mark&gt;</code>, sau orice altceva).
+  Tu controlezi complet cum arată marcajul.
+</div>
+
+<!-- ══════════════════════════════════════════ ADAUGARE IN QUERY ══ -->
+<h2>2. Adaugi highlight la orice query de search</h2>
+
+<p>
+  Highlight se adaugă ca o cheie paralelă cu <code>query</code> în body-ul cererii.
+  Funcționează pe orice tip de query — <code>match</code>, <code>multi_match</code>, <code>bool</code>.
+</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchWithHighlight</span>(string $query): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => <span class="num">10</span>,
+
+            <span class="str">'query'</span> => [
+                <span class="str">'bool'</span> => [
+                    <span class="str">'must'</span>   => [[<span class="str">'multi_match'</span> => [
+                        <span class="str">'query'</span>  => $query,
+                        <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>],
+                    ]]],
+                    <span class="str">'filter'</span> => [[<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]]],
+                ],
+            ],
+
+            <span class="cm">// Highlight — adăugat lângă query, nu înăuntrul lui</span>
+            <span class="str">'highlight'</span> => [
+                <span class="str">'pre_tags'</span>  => [<span class="str">'&lt;em class="highlight"&gt;'</span>],  <span class="cm">// tag de deschidere</span>
+                <span class="str">'post_tags'</span> => [<span class="str">'&lt;/em&gt;'</span>],                   <span class="cm">// tag de închidere</span>
+                <span class="str">'fields'</span>    => [
+                    <span class="str">'titlu'</span>    => (object)[],   <span class="cm">// highlight în titlu</span>
+                    <span class="str">'continut'</span> => [
+                        <span class="str">'fragment_size'</span>       => <span class="num">150</span>,  <span class="cm">// lungimea fragmentului (caractere)</span>
+                        <span class="str">'number_of_fragments'</span> => <span class="num">3</span>,    <span class="cm">// max fragmente returnate</span>
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHighlightedHits</span>($response);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ RASPUNS ══ -->
+<h2>3. Structura răspunsului cu highlight</h2>
+
+<p>
+  Fiecare document din <code>hits.hits</code> primește o cheie suplimentară <code>highlight</code>
+  cu fragmentele marcate.
+</p>
+
+<pre><code><span class="cm">// Răspuns de la OpenSearch pentru un hit:</span>
+[
+    <span class="str">'_index'</span>  => <span class="str">'articles'</span>,
+    <span class="str">'_id'</span>     => <span class="str">'64f1a2b3...'</span>,
+    <span class="str">'_score'</span>  => <span class="num">2.14</span>,
+    <span class="str">'_source'</span> => [
+        <span class="str">'titlu'</span>    => <span class="str">'Introducere în Laravel'</span>,
+        <span class="str">'continut'</span> => <span class="str">'Laravel este un framework PHP modern...'</span>,
+        <span class="str">'autor'</span>    => <span class="str">'Paul'</span>,
+    ],
+    <span class="str">'highlight'</span> => [               <span class="cm">// cheie nouă cu fragmentele marcate</span>
+        <span class="str">'titlu'</span>    => [
+            <span class="str">'Introducere în &lt;em class="highlight"&gt;Laravel&lt;/em&gt;'</span>,
+        ],
+        <span class="str">'continut'</span> => [
+            <span class="str">'...&lt;em class="highlight"&gt;Laravel&lt;/em&gt; este un framework PHP modern...'</span>,
+            <span class="str">'...primul pas este &lt;em class="highlight"&gt;instalarea&lt;/em&gt; Composer...'</span>,
+        ],
+    ],
+]</code></pre>
+
+<div class="box box-info">
+  <span class="box-title">highlight vs _source</span>
+  <code>_source.titlu</code> conține titlul original, nemodificat.<br/>
+  <code>highlight.titlu</code> conține titlul cu tag-uri HTML injectate — folosit pentru afișare.<br/>
+  Dacă nu există highlight pentru un câmp (termenul nu a fost găsit acolo), cheia lipsește din <code>highlight</code>.
+</div>
+
+<!-- ══════════════════════════════════════════ HELPER ══ -->
+<h2>4. Helper pentru extragerea rezultatelor cu highlight</h2>
+
+<pre><code><span class="kw">protected function</span> <span class="fn">extractHighlightedHits</span>(array $response): array
+{
+    <span class="kw">return</span> [
+        <span class="str">'total'</span>   => $response[<span class="str">'hits'</span>][<span class="str">'total'</span>][<span class="str">'value'</span>],
+        <span class="str">'results'</span> => <span class="fn">collect</span>($response[<span class="str">'hits'</span>][<span class="str">'hits'</span>])
+            -><span class="fn">map</span>(<span class="kw">fn</span>($hit) => [
+                <span class="str">'_id'</span>    => $hit[<span class="str">'_id'</span>],
+                <span class="str">'_score'</span> => $hit[<span class="str">'_score'</span>],
+
+                <span class="cm">// Date originale din _source</span>
+                ...$hit[<span class="str">'_source'</span>],
+
+                <span class="cm">// Titlu: cu highlight dacă există, altfel original</span>
+                <span class="str">'titlu_display'</span> => $hit[<span class="str">'highlight'</span>][<span class="str">'titlu'</span>][<span class="num">0</span>]
+                    ?? $hit[<span class="str">'_source'</span>][<span class="str">'titlu'</span>],
+
+                <span class="cm">// Fragmente din conținut: array de fragmente marcate</span>
+                <span class="str">'fragmente'</span> => $hit[<span class="str">'highlight'</span>][<span class="str">'continut'</span>]
+                    ?? [<span class="fn">substr</span>($hit[<span class="str">'_source'</span>][<span class="str">'continut'</span>] ?? <span class="str">''</span>, <span class="num">0</span>, <span class="num">150</span>) . <span class="str">'...'</span>],
+            ])
+            -><span class="fn">toArray</span>(),
+    ];
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ BLADE ══ -->
+<h2>5. Afișare în Blade — HTML safe</h2>
+
+<p>
+  Fragmentele de highlight conțin HTML (<code>&lt;em&gt;</code>). Trebuie să folosești
+  <code>{!! !!}</code> în Blade (nu <code>{{ }}</code>) pentru a nu escapa tag-urile.
+</p>
+
+<pre><code><span class="cm">{{-- resources/views/search/results.blade.php --}}</span>
+@foreach ($results[<span class="str">'results'</span>] as $item)
+&lt;article class=<span class="str">"search-result"</span>&gt;
+
+    &lt;h3&gt;
+        &lt;a href=<span class="str">"/articles/{{ $item['slug'] }}"</span>&gt;
+            {!! $item[<span class="str">'titlu_display'</span>] !!}   {{-- HTML marcat, safe din OpenSearch --}}
+        &lt;/a&gt;
+    &lt;/h3&gt;
+
+    @foreach ($item[<span class="str">'fragmente'</span>] as $fragment)
+        &lt;p class=<span class="str">"fragment"</span>&gt;...{!! $fragment !!}...&lt;/p&gt;
+    @endforeach
+
+    &lt;small&gt;{{ $item[<span class="str">'autor'</span>] }} · {{ $item[<span class="str">'publicat_la'</span>] }}&lt;/small&gt;
+
+&lt;/article&gt;
+@endforeach</code></pre>
+
+<pre><code><span class="cm">/* CSS pentru tag-ul de highlight */</span>
+em.highlight {
+    font-style: normal;
+    background: #fff3cd;
+    color: #856404;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-weight: 700;
+}</code></pre>
+
+<div class="box box-warn">
+  <span class="box-title">Securitate — XSS</span>
+  Fragmentele cu highlight vin de la OpenSearch, nu direct de la utilizator,
+  deci conținutul este din documentele tale indexate — safe pentru <code>{!! !!}</code>.
+  Nu concatena niciodată input-ul utilizatorului direct în HTML fără escape.
+</div>
+
+<!-- ══════════════════════════════════════════ OPTIUNI ══ -->
+<h2>6. Parametri utili de highlight</h2>
+
+<pre><code><span class="str">'highlight'</span> => [
+    <span class="cm">// Tag-uri personalizate (poți folosi orice HTML)</span>
+    <span class="str">'pre_tags'</span>  => [<span class="str">'&lt;mark&gt;'</span>],
+    <span class="str">'post_tags'</span> => [<span class="str">'&lt;/mark&gt;'</span>],
+
+    <span class="cm">// Setări globale (aplicate tuturor câmpurilor dacă nu specifici per câmp)</span>
+    <span class="str">'fragment_size'</span>       => <span class="num">200</span>,  <span class="cm">// lungime fragment în caractere</span>
+    <span class="str">'number_of_fragments'</span> => <span class="num">2</span>,    <span class="cm">// max fragmente per câmp</span>
+
+    <span class="str">'fields'</span> => [
+        <span class="str">'titlu'</span> => [
+            <span class="str">'number_of_fragments'</span> => <span class="num">0</span>,   <span class="cm">// 0 = returnează titlul complet, nu fragment</span>
+        ],
+        <span class="str">'continut'</span> => [
+            <span class="str">'fragment_size'</span>       => <span class="num">150</span>,
+            <span class="str">'number_of_fragments'</span> => <span class="num">3</span>,
+            <span class="str">'no_match_size'</span>       => <span class="num">100</span>,  <span class="cm">// dacă nu e match, returnează primele N chars</span>
+        ],
+    ],
+],</code></pre>
+
+<table>
+  <tr>
+    <th>Parametru</th>
+    <th>Valoare implicită</th>
+    <th>Ce face</th>
+  </tr>
+  <tr>
+    <td><code>pre_tags</code></td>
+    <td><code>&lt;em&gt;</code></td>
+    <td>Tag HTML înainte de termenul găsit</td>
+  </tr>
+  <tr>
+    <td><code>post_tags</code></td>
+    <td><code>&lt;/em&gt;</code></td>
+    <td>Tag HTML după termenul găsit</td>
+  </tr>
+  <tr>
+    <td><code>fragment_size</code></td>
+    <td>100</td>
+    <td>Lungimea unui fragment în caractere</td>
+  </tr>
+  <tr>
+    <td><code>number_of_fragments</code></td>
+    <td>5</td>
+    <td>Câte fragmente per câmp. <code>0</code> = câmpul complet</td>
+  </tr>
+  <tr>
+    <td><code>no_match_size</code></td>
+    <td>0 (nimic)</td>
+    <td>Dacă nu e match, returnează primele N caractere ca fallback</td>
+  </tr>
+</table>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="C">
+    <p>1. Unde apare highlight-ul în răspunsul de la OpenSearch?</p>
+    <button class="quiz-opt" data-val="A">Înlocuiește conținutul din <code>_source</code></button>
+    <button class="quiz-opt" data-val="B">În câmpul <code>_score</code> al fiecărui hit</button>
+    <button class="quiz-opt" data-val="C">În cheia <code>highlight</code> alăturată lui <code>_source</code></button>
+    <button class="quiz-opt" data-val="D">La rădăcina răspunsului, nu per document</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="B">
+    <p>2. Ce valoare dai la <code>number_of_fragments</code> dacă vrei titlul complet marcat, nu un fragment?</p>
+    <button class="quiz-opt" data-val="A">1 — un singur fragment complet</button>
+    <button class="quiz-opt" data-val="B">0 — returnează câmpul întreg fără fragmentare</button>
+    <button class="quiz-opt" data-val="C">-1 — dezactivează limita de fragmente</button>
+    <button class="quiz-opt" data-val="D">999 — număr suficient de mare</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. De ce folosești <code>{!! !!}</code> în Blade pentru fragmente de highlight, nu <code>{{ }}</code>?</p>
+    <button class="quiz-opt" data-val="A">Este mai rapid la randare</button>
+    <button class="quiz-opt" data-val="B">{{ }} nu funcționează cu array-uri</button>
+    <button class="quiz-opt" data-val="C">OpenSearch cere un tip special de output</button>
+    <button class="quiz-opt" data-val="D">Fragmentele conțin HTML (&lt;em&gt;) care trebuie randat, nu escapate</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>4. Ce face <code>no_match_size: 100</code> la configurarea de highlight?</p>
+    <button class="quiz-opt" data-val="A">Dacă termenul nu apare în câmp, returnează primele 100 de caractere ca preview</button>
+    <button class="quiz-opt" data-val="B">Limitează highlight-ul la maxim 100 de caractere marcate</button>
+    <button class="quiz-opt" data-val="C">Ignoră documentele unde câmpul are sub 100 de caractere</button>
+    <button class="quiz-opt" data-val="D">Returnează un mesaj de eroare dacă nu există match</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/search-plugins/searching-data/highlight/" target="_blank">Highlighting — OpenSearch Documentation</a> — sursa principală recomandată</li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0007-eloquent-pdphilip.html">← Lecția 7: Integrare Eloquent</a>
+  <a href="0009-agregari.html">Lecția 9: Agregări →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă vrei să marchezi cu o culoare diferită sau să folosești alt tag HTML decât <code>&lt;em&gt;</code>, sau dacă fragmentele nu apar cum te aștepți, descrie-mi cazul concret.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

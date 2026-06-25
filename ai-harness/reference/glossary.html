@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar — AI Harness</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-term { margin-bottom: 1.6rem; }
+    .glossary-term dt {
+      font-family: var(--mono); font-size: 0.92rem; font-weight: bold;
+      color: var(--accent); margin-bottom: 0.2rem;
+    }
+    .glossary-term dd { margin-left: 0; font-size: 0.93rem; }
+    .glossary-term dd .also {
+      font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; display: block;
+    }
+    .letter-group h2 { margin-top: 2.5rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">referință</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Glosar</h1>
+  <p style="color:var(--muted);font-size:0.9rem;margin-bottom:2.5rem;">
+    Vocabularul de bază pentru harness-ul AI Claude Code. Termenii sunt folosiți în mod consecvent în toate lecțiile.
+  </p>
+
+  <div class="letter-group">
+    <h2>A</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Agent</dt>
+        <dd>O instanță LLM care operează în cadrul unui harness — primește o fereastră de context, poate apela tool-uri și produce răspunsuri sau apeluri de tool ulterioare. În Claude Code, tu ești agentul când rulezi <code>claude</code>; sub-agenții sunt agenți pe care îi lansezi prin tool-ul <code>Agent</code>.
+          <span class="also">Vezi și: <em>Subagent</em>, <em>Harness</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="letter-group">
+    <h2>C</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Context Window (Fereastră de context)</dt>
+        <dd>Totalul inputului pe care modelul îl vede la momentul inferenței: system prompt, istoricul conversației, rezultatele tool-urilor și documentele injectate. Harness-ul gestionează ce intră în fereastra de context și o comprimă când devine prea mare.
+          <span class="also">Vezi și: <em>Session</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="letter-group">
+    <h2>H</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Harness</dt>
+        <dd>Un strat runtime care mediază între un om (sau sistem) și un LLM. Oferă tool-uri pe care modelul le poate apela, context pe care îl poate citi, permisiuni care controlează acțiunile și hooks care se declanșează la evenimente. Fără un harness, ai un apel brut de API. Cu unul, ai un agent.
+          <span class="also">Vezi și: <em>Tool</em>, <em>Hook</em>, <em>Permission Layer</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>Hook</dt>
+        <dd>O comandă shell înregistrată în <code>settings.json</code> pe care harness-ul o execută când se declanșează un eveniment specific. Evenimentele includ <code>PreToolUse</code>, <code>PostToolUse</code>, <code>Stop</code> și <code>Notification</code>. Hooks-urile rulează în afara modelului — sunt shell pur, nu AI.
+          <span class="also">Vezi și: <em>settings.json</em>, <em>PreToolUse</em>, <em>PostToolUse</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="letter-group">
+    <h2>M</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>MCP (Model Context Protocol)</dt>
+        <dd>Un standard deschis (creat de Anthropic) pentru conectarea serverelor de tool-uri externe la agenți AI. Un server MCP expune unul sau mai multe tool-uri printr-o schemă JSON; harness-ul le înregistrează alături de tool-urile built-in astfel încât modelul să le poată apela în mod transparent.
+          <span class="also">Vezi și: <em>Tool</em>, <em>MCP Server</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>MCP Server</dt>
+        <dd>Un proces (Node.js, Python etc.) care implementează protocolul MCP și expune tool-uri personalizate harness-ului. Înregistrat în <code>settings.json</code> sub <code>mcpServers</code>.
+          <span class="also">Vezi și: <em>MCP</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="letter-group">
+    <h2>P</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Permission Layer</dt>
+        <dd>Configurarea din <code>settings.json</code> (și <code>settings.local.json</code>) care controlează ce tool-uri și comenzi shell agentul are voie să execute. Constă dintr-o listă <code>allow</code> și o listă <code>deny</code>. Verificată înainte de fiecare apel de tool.
+          <span class="also">Vezi și: <em>settings.json</em>, <em>Hook</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>PostToolUse</dt>
+        <dd>Un eveniment de hook care se declanșează <em>după</em> finalizarea execuției unui tool. Hook-ul primește numele tool-ului și outputul său. Folosit pentru: logging, trimitere de notificări, declanșarea de efecte secundare bazate pe rezultate.
+          <span class="also">Vezi și: <em>PreToolUse</em>, <em>Hook</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>PreToolUse</dt>
+        <dd>Un eveniment de hook care se declanșează <em>înainte</em> de execuția unui tool. Hook-ul primește numele tool-ului și argumentele de input. Folosit pentru: validare, logging, limitare a ratei sau blocarea unor comenzi specifice.
+          <span class="also">Vezi și: <em>PostToolUse</em>, <em>Hook</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="letter-group">
+    <h2>S</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Session (Sesiune)</dt>
+        <dd>Un singur ciclu de viață al harness-ului Claude Code, de la pornire (<code>claude</code>) până la ieșire. Fiecare sesiune are propria fereastră de context, stare de permisiuni și înregistrări de hooks.
+          <span class="also">Vezi și: <em>Context Window</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>settings.json</dt>
+        <dd>Fișierul de configurare principal pentru harness-ul Claude Code. Poate fi la nivel de proiect (<code>.claude/settings.json</code>) sau la nivel de utilizator (<code>~/.claude/settings.json</code>). Definește tool-urile permise/blocate, hooks-urile, serverele MCP și variabilele de mediu.
+          <span class="also">Vezi și: <em>Permission Layer</em>, <em>Hook</em>, <em>MCP Server</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>Skill</dt>
+        <dd>Un set de instrucțiuni cu nume, reutilizabil, invocat prin un slash command (ex. <code>/teach</code>). Skills-urile pot împacheta resurse, fișiere de format și prompturi cu mai mulți pași într-o singură comandă. Definite ca fișiere în <code>~/.claude/skills/</code>.
+          <span class="also">Vezi și: <em>Agent</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>Subagent</dt>
+        <dd>Un agent lansat de un alt agent prin tool-ul <code>Agent</code>. Sub-agenții pornesc cu un context proaspăt, fără memorie a sesiunii părintelui. Pot rula în foreground (blochează până la finalizare) sau background (paralel). Rezultatele sunt returnate ca un singur mesaj.
+          <span class="also">Vezi și: <em>Agent</em>, <em>Tool</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="letter-group">
+    <h2>T</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Tool</dt>
+        <dd>O funcție pe care agentul o poate apela în timpul unei sesiuni. Tool-urile built-in includ <code>Read</code>, <code>Write</code>, <code>Edit</code>, <code>Bash</code>, <code>Grep</code>, <code>Glob</code>, <code>WebSearch</code>, <code>Agent</code> și altele. Tool-urile personalizate sunt adăugate prin servere MCP.
+          <span class="also">Vezi și: <em>MCP</em>, <em>Permission Layer</em></span>
+        </dd>
+      </div>
+      <div class="glossary-term">
+        <dt>Tool Dispatch</dt>
+        <dd>Procesul prin care harness-ul primește un apel de tool de la model, verifică permisiunile, declanșează hooks-urile PreToolUse, execută tool-ul, declanșează hooks-urile PostToolUse și returnează rezultatul în contextul modelului.
+          <span class="also">Vezi și: <em>Tool</em>, <em>Hook</em>, <em>Permission Layer</em></span>
+        </dd>
+      </div>
+    </dl>
+  </div>
+
+  <p style="margin-top:3rem;font-size:0.85rem;color:var(--muted);">
+    ← Înapoi la <a href="../lessons/0001-what-is-the-ai-harness.html">Lecția 1</a>
+  </p>
+
+</div>
+</body>
+</html>

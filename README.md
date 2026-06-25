@@ -1,40 +1,22 @@
 # Cursuri tehnice — paul2dev
 
-Colecție de cursuri tehnice interactive. Fiecare curs este un repo Git separat, integrat aici ca **submodul**.
+Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest repo — nu există submodule.
 
 ## Cursuri
 
-| Curs | Descriere | Repo |
-|------|-----------|------|
-| [Git & GitHub Fluency](git-tutorial/) | Mental model, branches, PR-uri, GitHub Actions, CI/CD — 9 lecții | [paul2Dev/learn-git](https://github.com/paul2Dev/learn-git) |
-| [OpenSearch cu Laravel](opensearch-tutorial/) | Căutare full-text, filtre, agregări, Eloquent — 9 lecții | [paul2Dev/learn-opensearch-laravel-integration](https://github.com/paul2Dev/learn-opensearch-laravel-integration) |
-| [Claude Code](claude-tutorial/) | Instalare, mental model, explorare cod, debugging, git workflow, VS Code — 8 lecții | [paul2Dev/learn-claude](https://github.com/paul2Dev/learn-claude) |
-| [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții | [paul2Dev/learn-ai-harness](https://github.com/paul2Dev/learn-ai-harness) |
-| [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lessons | [paul2Dev/engineering-principles](https://github.com/paul2Dev/engineering-principles) |
+| Curs | Descriere |
+|------|-----------|
+| [Git & GitHub Fluency](git-tutorial/) | Mental model, branches, PR-uri, GitHub Actions, CI/CD — 9 lecții |
+| [OpenSearch cu Laravel](opensearch-tutorial/) | Căutare full-text, filtre, agregări, Eloquent — 9 lecții |
+| [Claude Code](claude-tutorial/) | Instalare, mental model, explorare cod, debugging, git workflow, VS Code — 12 lecții |
+| [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții |
+| [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lecții |
 
 ## Cum clonezi
-
-### Varianta rapidă — tot dintr-o dată
-
-```bash
-git clone --recurse-submodules git@github.com:paul2Dev/learn-hub.git
-```
-
-Această comandă clonează repo-ul principal **și** trage automat toate cursurile.
-
-### Dacă ai clonat deja fără `--recurse-submodules`
 
 ```bash
 git clone git@github.com:paul2Dev/learn-hub.git
 cd learn-hub
-git submodule update --init --recursive
-```
-
-### Actualizare cursuri la ultima versiune
-
-```bash
-# Actualizează toate submodulele la ultimul commit din branch-ul lor principal
-git submodule update --remote --merge
 ```
 
 ## Structura repo-ului
@@ -43,37 +25,40 @@ git submodule update --remote --merge
 learn-hub/                      ← repo-ul principal (acesta)
 ├── index.html                  ← pagina de catalog (deschide în browser)
 ├── README.md
-├── .gitmodules                 ← lista de submodule
-├── git-tutorial/               ← submodul: curs Git & GitHub
+├── git-tutorial/               ← curs Git & GitHub
 │   ├── index.html
 │   └── lessons/
-├── opensearch-tutorial/        ← submodul: curs OpenSearch + Laravel
+├── opensearch-tutorial/        ← curs OpenSearch + Laravel
 │   ├── index.html
 │   └── lessons/
-├── claude-tutorial/            ← submodul: curs Claude Code
+├── claude-tutorial/            ← curs Claude Code
 │   ├── index.html
 │   └── lessons/
-├── ai-harness/                 ← submodul: curs AI Harness
+├── ai-harness/                 ← curs AI Harness
 │   ├── index.html
 │   └── lessons/
-└── engineering-principles/     ← submodul: curs Engineering Principles
+└── engineering-principles/     ← curs Engineering Principles
     ├── index.html
     └── lessons/
 ```
 
 ## Cum adaugi un curs nou
 
-1. Creează repo-ul cursului pe GitHub (ex: `paul2Dev/learn-docker`)
-2. Adaugă-l ca submodul în acest repo:
+1. Creează folderul cursului în repo:
 
 ```bash
-git submodule add git@github.com:paul2Dev/learn-docker.git docker-tutorial
-git add .gitmodules docker-tutorial
-git commit -m "feat: add docker tutorial submodule"
-git push
+mkdir <folder-name>
 ```
 
+2. Rulează `/teach` pentru a genera conținutul cursului.
 3. Adaugă un card nou în `index.html` și un rând nou în tabelul de mai sus.
+4. Commit și push:
+
+```bash
+git add <folder-name> README.md index.html
+git commit -m "feat: add <topic> course and update catalog"
+git push
+```
 
 ## Navigare locală
 

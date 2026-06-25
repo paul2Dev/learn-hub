@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>01 · Instalare și Autentificare — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 1 din 12</p>
+  <h1>Instalare și Autentificare</h1>
+  <p class="tagline">De la zero la prima comandă funcțională — în mai puțin de 5 minute.</p>
+
+  <section>
+    <h2>Ce este Claude Code?</h2>
+    <p>Claude Code este un <strong>agent AI în terminal</strong> care înțelege proiectul tău: citește fișiere, scrie cod, rulează comenzi și interacționează cu git — totul direct din linia de comandă sau din VS Code.</p>
+    <p>Diferența față de un chatbot obișnuit: Claude Code <em>acționează</em> în mediul tău de dezvoltare, nu doar vorbește despre el. Mai mult despre asta în <a href="0002-mental-model.html">Lecția 2</a>.</p>
+    <div class="callout">
+      <p><strong>Cerință:</strong> Node.js versiunea 18 sau mai nouă. Verifică cu <code>node --version</code>. Dacă nu ai Node.js, descarcă-l de la <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Instalare</h2>
+    <p>Un singur comandă, globală, din orice terminal:</p>
+    <pre><code>npm install -g @anthropic-ai/claude-code</code></pre>
+    <p>Verifică instalarea:</p>
+    <pre><code>claude --version</code></pre>
+    <p>Ar trebui să vezi ceva de genul <code>1.x.x</code>. Dacă primești <em>command not found</em>, înseamnă că directorul global npm nu e în <code>PATH</code> — consultă <a href="https://docs.npmjs.com/resolving-enoent-errors" target="_blank" rel="noopener">documentația npm</a>.</p>
+  </section>
+
+  <section>
+    <h2>Autentificare</h2>
+    <p>Rulează simplu:</p>
+    <pre><code>claude</code></pre>
+    <p>La prima pornire, Claude Code îți va cere autentificarea. Ai două variante:</p>
+    <ol>
+      <li><strong>Login cu claude.ai</strong> — recomandat dacă ai abonament Claude Pro sau Max. Apasă Enter și se deschide browserul automat.</li>
+      <li><strong>API Key</strong> — dacă ai o cheie Anthropic API. Setează variabila de mediu: <code>ANTHROPIC_API_KEY=sk-ant-...</code></li>
+    </ol>
+    <div class="callout callout--tip">
+      <p><strong>Recomandare:</strong> Dacă ești programator individual, abonamentul Claude Max (cu acces la Claude Code) oferă cel mai bun raport calitate/preț față de plata per token via API.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Prima comandă</h2>
+    <p>Navighează într-un proiect existent și rulează:</p>
+    <pre><code>cd /calea/spre/proiectul-tau
+claude</code></pre>
+    <p>Acum ești în modul interactiv. Încearcă:</p>
+    <pre><code>&gt; Ce fișiere are acest proiect și ce face el?</code></pre>
+    <p>Claude Code va citi structura proiectului și îți va răspunde în context. Pentru a ieși, tastează <code>/exit</code> sau apasă <kbd>Ctrl+C</kbd>.</p>
+    <div class="callout callout--warning">
+      <p><strong>Important:</strong> Rulează întotdeauna <code>claude</code> din <em>rădăcina proiectului tău</em> — acolo unde e <code>.git</code>. Asta îi dă contextul corect.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Modul one-shot (fără sesiune interactivă)</h2>
+    <p>Pentru sarcini rapide, poți trimite un prompt direct fără să intri în modul interactiv:</p>
+    <pre><code>claude "Câte fișiere JavaScript are acest proiect?"</code></pre>
+    <p>Claude va răspunde și va ieși automat. Util pentru scripturi sau comenzi rapide din CI.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-1"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/quickstart" target="_blank" rel="noopener">Claude Code Quickstart — documentație oficială Anthropic</a><br/>
+    Ghidul oficial de instalare cu toate variantele de autentificare și configurare avansată.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide o sesiune <code>claude</code> și întreabă direct: <em>"Explică-mi ce înseamnă X din această lecție."</em><br/>
+    Profesorul tău e deja instalat.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="../index.html">← Catalog</a>
+    <a class="nav-next" href="0002-mental-model.html">Lecția 2: Mental Model →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-1', [
+  {
+    q: 'Care este cerința minimă de sistem pentru Claude Code?',
+    options: [
+      'Python 3.8 sau mai nou',
+      'Node.js 18 sau mai nou',
+      'Deno 1.x sau mai nou',
+      'Bun 1.x sau mai nou'
+    ],
+    correct: 1,
+    explain: 'Claude Code se instalează prin npm și necesită Node.js 18+. Verifici versiunea cu <code>node --version</code>.'
+  },
+  {
+    q: 'Ce comandă instalează Claude Code global pe sistemul tău?',
+    options: [
+      'npm install claude-code',
+      'npx @anthropic-ai/claude-code',
+      'npm install -g @anthropic-ai/claude-code',
+      'brew install claude-code'
+    ],
+    correct: 2,
+    explain: 'Flag-ul <code>-g</code> instalează pachetul global, astfel comanda <code>claude</code> devine disponibilă din orice director.'
+  },
+  {
+    q: 'Din ce director ar trebui să rulezi comanda <code>claude</code>?',
+    options: [
+      'Din directorul home al utilizatorului (~)',
+      'Din orice director, nu contează',
+      'Din rădăcina proiectului, unde se află .git',
+      'Din directorul unde e instalat Node.js'
+    ],
+    correct: 2,
+    explain: 'Claude Code citește contextul proiectului pornind din directorul curent. Rădăcina cu <code>.git</code> îi oferă cel mai bun context.'
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Principii de Inginerie — Aplicate în Dezvoltarea Asistată de AI</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; max-width: 560px; }
+
+    .lesson-grid { display: grid; gap: 0.85rem; margin: 1.5rem 0 3rem; }
+    .lesson-card {
+      display: grid; grid-template-columns: 2.8rem 1fr;
+      gap: 0.9rem; align-items: start;
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 0.9rem 1.1rem; text-decoration: none; color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .lesson-card:hover { border-color: var(--accent); background: #f8faff; }
+    .lesson-num {
+      font-family: var(--mono); font-size: 1rem; font-weight: bold;
+      color: var(--accent); padding-top: 0.1rem;
+    }
+    .lesson-card h3 { font-size: 0.97rem; font-style: normal; color: var(--text); margin: 0 0 0.25rem; }
+    .lesson-card p  { font-size: 0.83rem; color: var(--muted); margin: 0; line-height: 1.45; }
+
+    .ref-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem; margin: 1.2rem 0 3rem;
+    }
+    .ref-card {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.75rem 1rem; text-decoration: none; color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .ref-card:hover { border-color: var(--accent); }
+    .ref-card strong { display: block; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .ref-card span   { font-size: 0.8rem; color: var(--muted); }
+
+    .quick-ref { width: 100%; border-collapse: collapse; margin: 1.2rem 0 2rem; font-size: 0.85rem; }
+    .quick-ref th { background: var(--code-bg); padding: 0.55rem 0.9rem; text-align: left; border: 1px solid var(--border); font-family: var(--mono); font-size: 0.78rem; }
+    .quick-ref td { padding: 0.55rem 0.9rem; border: 1px solid var(--border); vertical-align: top; }
+    .quick-ref tr:nth-child(even) td { background: #f8f7f4; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">10 lecții</span>
+    <span class="tag">Dezvoltare Web</span>
+    <span class="tag">Asistat de AI</span>
+  </div>
+
+  <div class="course-header">
+    <h1>Principii de Inginerie</h1>
+    <p>Aplicate în Dezvoltarea Asistată de AI — un curs practic pentru dezvoltatorii web care vor să-și ascută judecata inginerească pe măsură ce AI preia tot mai multă implementare.</p>
+  </div>
+
+  <h2>Lecții</h2>
+
+  <div class="lesson-grid">
+    <a class="lesson-card" href="lessons/0001-the-architects-mindset.html">
+      <div class="lesson-num">01</div>
+      <div>
+        <h3>Mentalitatea Arhitectului</h3>
+        <p>De ce principiile de inginerie contează mai mult în era AI și care este de fapt noul tău rol.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0002-solid-principles.html">
+      <div class="lesson-num">02</div>
+      <div>
+        <h3>Principiile SOLID</h3>
+        <p>Cinci euristici pentru design-ul componentelor: SRP, OCP, LSP, ISP, DIP — cu exemple web.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0003-yagni-kiss-dry.html">
+      <div class="lesson-num">03</div>
+      <div>
+        <h3>YAGNI, KISS, DRY</h3>
+        <p>Trei principii ale simplității care devin mai importante când AI generează complexitate fără costuri aparente.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0004-systems-thinking.html">
+      <div class="lesson-num">04</div>
+      <div>
+        <h3>Gândire Sistemică</h3>
+        <p>Descompunere, limite, cuplaj și coeziune — cum să raționezi despre întreg, nu doar despre o parte.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0005-api-design-principles.html">
+      <div class="lesson-num">05</div>
+      <div>
+        <h3>Principii de Design API</h3>
+        <p>Fundamente REST, compatibilitate inversă, versionare și design-ul răspunsurilor de eroare.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0006-requirements-engineering.html">
+      <div class="lesson-num">06</div>
+      <div>
+        <h3>Ingineria Cerințelor</h3>
+        <p>Scrierea specificațiilor suficient de precise pentru a construi din ele — și pentru a evalua output-ul AI.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0007-technical-debt.html">
+      <div class="lesson-num">07</div>
+      <div>
+        <h3>Managementul Datoriei Tehnice</h3>
+        <p>Cadranul Fowler, datoria invizibilă din AI, euristici pentru hotspot-uri și strategii de rambursare.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0008-testing-strategy.html">
+      <div class="lesson-num">08</div>
+      <div>
+        <h3>Strategia de Testare</h3>
+        <p>Piramida de testare, prioritizare bazată pe risc și ce nu poate testa AI pentru tine.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0009-security-by-design.html">
+      <div class="lesson-num">09</div>
+      <div>
+        <h3>Securitate prin Design</h3>
+        <p>Mentalitatea OWASP Top 10, controlul accesului, validarea input-ului și apărare în profunzime.</p>
+      </div>
+    </a>
+    <a class="lesson-card" href="lessons/0010-code-review-ai-era.html">
+      <div class="lesson-num">10</div>
+      <div>
+        <h3>Code Review în Era AI</h3>
+        <p>Procesul de revizuire stratificat — principala ta poartă de calitate între output-ul AI și producție.</p>
+      </div>
+    </a>
+  </div>
+
+  <h2>Referință</h2>
+
+  <div class="ref-grid">
+    <a class="ref-card" href="reference/glossary.html">
+      <strong>Glosar</strong>
+      <span>Toți termenii cheie definiți — SOLID, YAGNI, IDOR, REST și mai mult</span>
+    </a>
+    <a class="ref-card" href="README.md">
+      <strong>README</strong>
+      <span>Prezentare generală a cursului și tabelul lecțiilor</span>
+    </a>
+  </div>
+
+  <h2>Referință Rapidă — Principii</h2>
+
+  <table class="quick-ref">
+    <thead>
+      <tr><th>Principiu</th><th>Regula în o linie</th><th>Semnal de încălcare</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>SRP</strong></td>
+        <td>Un singur motiv de schimbare per clasă</td>
+        <td>Numele clasei conține „și" sau „plus"</td>
+      </tr>
+      <tr>
+        <td><strong>OCP</strong></td>
+        <td>Extinde fără a modifica codul funcțional</td>
+        <td>Lanț switch/if-elseif care crește pentru fiecare tip nou</td>
+      </tr>
+      <tr>
+        <td><strong>LSP</strong></td>
+        <td>Subtipurile pot înlocui părintele</td>
+        <td>Subclasa aruncă excepție acolo unde părintele returna</td>
+      </tr>
+      <tr>
+        <td><strong>ISP</strong></td>
+        <td>Nicio metodă de interfață nefolosită</td>
+        <td>Metode stub-uite ca „not implemented"</td>
+      </tr>
+      <tr>
+        <td><strong>DIP</strong></td>
+        <td>Depinde de abstracțiuni, nu de implementări concrete</td>
+        <td><code>new ConcreteClass()</code> în logica de business</td>
+      </tr>
+      <tr>
+        <td><strong>YAGNI</strong></td>
+        <td>Construiește doar ce este necesar acum</td>
+        <td>Abstracțiuni cu o singură implementare</td>
+      </tr>
+      <tr>
+        <td><strong>KISS</strong></td>
+        <td>Cea mai simplă soluție care funcționează</td>
+        <td>Nu poți explica în 5 min unui nou angajat</td>
+      </tr>
+      <tr>
+        <td><strong>DRY</strong></td>
+        <td>O singură locație autoritativă per regulă</td>
+        <td>Aceeași validare în două controllere</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Checklist Code Review AI</h2>
+  <table class="quick-ref">
+    <thead>
+      <tr><th>Strat</th><th>Verificare</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1. Specificație</td><td>Implementează exact criteriile de acceptanță?</td></tr>
+      <tr><td>2. Control acces</td><td>Fiecare acces la resursă verifică autentificarea ȘI ownership-ul?</td></tr>
+      <tr><td>3. Validare input</td><td>Tot input-ul extern validat la granița sistemului?</td></tr>
+      <tr><td>4. SRP / DIP</td><td>Un singur motiv de schimbare? Dependențele injectate, nu hard-codate?</td></tr>
+      <tr><td>5. YAGNI / KISS</td><td>Nicio abstracțiune speculativă? Cea mai simplă soluție folosită?</td></tr>
+      <tr><td>6. Gestionarea erorilor</td><td>Eșecurile gestionate elegant? Coduri de stare HTTP corecte?</td></tr>
+      <tr><td>7. Cazuri limită</td><td>Acoperite: gol, null, max, concurență, stare invalidă?</td></tr>
+      <tr><td>8. Teste</td><td>Testele derivate din cerințe, nu din implementare?</td></tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

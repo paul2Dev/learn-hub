@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1 — Mentalitatea Arhitectului | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 1 din 10</span>
+    <span>⏱ 15 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Mentalitatea Arhitectului</h1>
+  <p>De ce principiile de inginerie contează <em>mai mult</em> în era AI și care este de fapt noul tău rol.</p>
+
+  <h2>Schimbarea care a avut deja loc</h2>
+  <p>De-a lungul celei mai mari părți din istoria software-ului, resursa cea mai prețioasă a unui dezvoltator era capacitatea de a scrie cod corect rapid. Memorarea sintaxei, cunoașterea API-urilor de bibliotecă pe de rost, depanarea din memorie — acestea erau elementele diferențiatoare.</p>
+  <p>AI a transformat acest nivel într-o marfă. Un AI capabil poate scrie un endpoint CRUD funcțional, un algoritm de sortare sau o interogare SQL mai repede decât orice om. Aceasta nu este o amenințare — este o schimbare a locului unde se află pârghia ta.</p>
+
+  <div class="callout">
+    <div class="callout-label">Noua ecuație</div>
+    AI scrie implementarea. Tu decizi ce să construiești, cum să-l proiectezi și dacă output-ul este corect și sigur. Blocajul s-a mutat de la <em>tastare</em> la <em>judecată</em>.
+  </div>
+
+  <h2>Două roluri, un singur dezvoltator</h2>
+  <p>Înainte de AI, cei mai mulți dezvoltatori ocupau ambele roluri simultan. Acum se separă mai clar:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">A</div>
+      <div class="arch-info">
+        <h4>Arhitect / Designer</h4>
+        <p>Decide limitele sistemului, contractele de date, separarea straturilor, standardele de calitate. Scrie cerințele și specificațiile.</p>
+      </div>
+      <div class="arch-tag">domeniul tău</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">I</div>
+      <div class="arch-info">
+        <h4>Implementator</h4>
+        <p>Scrie codul care satisface specificația. Urmează design-ul. Se ocupă de sintaxă și boilerplate.</p>
+      </div>
+      <div class="arch-tag">domeniul AI</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">R</div>
+      <div class="arch-info">
+        <h4>Recenzor / Poartă de Calitate</h4>
+        <p>Verifică implementarea față de design. Identifică cazurile limită lipsă, breșele de securitate și cuplajele ascunse.</p>
+      </div>
+      <div class="arch-tag">domeniul tău</div>
+    </div>
+  </div>
+
+  <p>Rolurile pe care AI nu le poate îndeplini sunt cele care necesită înțelegerea <em>de ce</em>-ului din spatele codului — constrângerea de business, modelul de amenințare la securitate, limitele de performanță, vectorul de schimbare viitoare. Acestea necesită judecată inginerească, iar judecata inginerească necesită principii de inginerie.</p>
+
+  <h2>Ce sunt cu adevărat principiile de inginerie</h2>
+  <p>Principiile de inginerie sunt euristici — reguli generale derivate din decenii de experiență câștigată cu greu — care ghidează deciziile atunci când nu există un singur răspuns corect. Nu îți spun ce să construiești; îți spun ce calități să urmărești și ce capcane să eviți.</p>
+
+  <p>Principiile pe care le vom acoperi se grupează în trei clustere:</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>Principii de design</strong> — SOLID, YAGNI, KISS, DRY. Guvernează componentele individuale și relațiile dintre ele.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>Principii de sisteme</strong> — limite, cuplaj, coeziune, contracte. Guvernează modul în care componentele se combină într-un sistem funcțional.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Principii de calitate</strong> — strategia de testare, securitate prin design, managementul datoriei tehnice. Guvernează modul în care menții sistemul în timp.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>De ce AI le face mai importante, nu mai puțin</h2>
+  <p>Există o presupunere comună că asistența AI reduce necesitatea rigorii inginerești — că, deoarece codul este generat rapid, standardele de calitate sunt cumva mai puțin critice. Opusul este adevărat, din trei motive:</p>
+
+  <ul>
+    <li><strong>Viteza amplifică greșelile.</strong> AI generează zece fișiere în timpul în care tu scrii unul. O decizie arhitecturală proastă se propagă de zece ori mai repede.</li>
+    <li><strong>AI optimizează pentru plauzibilitate, nu pentru corectitudine.</strong> Codul generat arată bine. Trece de o privire rapidă. Dar poate încoda un cuplaj subtil, ignora cazuri limită sau omite complet cerințele de securitate. Doar tu poți depista asta.</li>
+    <li><strong>Datoria tehnică se acumulează invizibil.</strong> Dezvoltatorii care folosesc AI fără principii de inginerie produc sisteme care funcționează azi și sunt imposibil de întreținut în șase luni — deoarece AI nu a trebuit niciodată să trăiască cu consecințele.</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-label">Ideea esențială</div>
+    Rolul tău nu este să concurezi cu AI la scrierea codului. Rolul tău este să fii inteligența inginerească care face output-ul AI valoros și sigur.
+  </div>
+
+  <h2>Un model mental pentru acest curs</h2>
+  <p>Gândește-te la tine ca la un arhitect de clădiri, nu ca la un zidar. Arhitectul decide unde merg pereții, cum va fi folosită clădirea, ce sarcină trebuie să suporte și dacă îndeplinește normele. Zidarii (AI) fac munca fizică. Dar fără planul și verificările de calitate ale arhitectului, zidarii produc o clădire structural nesigură, indiferent cât de pricepuți sunt.</p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Auditează ultima funcționalitate construită cu AI</div>
+    <ol>
+      <li>Alege o funcționalitate pe care ai construit-o recent cu ajutorul AI.</li>
+      <li>Listează fiecare decizie pe care AI a luat-o fără să o specifici explicit: denumire, structura datelor, gestionarea erorilor, logica de validare.</li>
+      <li>Pentru fiecare decizie: a fost cea corectă? Ai fi decis la fel?</li>
+      <li>Identifică o decizie în care alegerea implicită a AI a fost bună și una în care a fost greșită sau riscantă.</li>
+    </ol>
+    <p style="margin-top:0.8rem; font-size:0.88rem; color:var(--muted);">Nu este vorba despre a judeca AI — ci despre a observa câte decizii arhitecturale delegi în prezent fără revizuire.</p>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://web.stanford.edu/~ouster/cgi-bin/book.php" target="_blank"><em>A Philosophy of Software Design</em> — John Ousterhout</a>. Capitolul 1, „It's All About Complexity," argumentează că gestionarea complexității este sarcina centrală a unui designer de software. Scrisă înainte de era AI, dar argumentul este mai puternic acum decât atunci când a fost scris.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce a transformat în principal AI într-o marfă în dezvoltarea software?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Luarea deciziilor arhitecturale și design-ul sistemelor</button></li>
+        <li><button data-correct="true">Scrierea codului de implementare sintactic corect</button></li>
+        <li><button data-correct="false">Revizuirea de securitate și activitățile de modelare a amenințărilor</button></li>
+        <li><button data-correct="false">Colectarea cerințelor și alinierea cu stakeholderii</button></li>
+      </ul>
+      <div class="quiz-feedback">AI excelează la producerea rapidă de cod de implementare plauzibil. Deciziile care preced implementarea — ce să construiești, cum să-l proiectezi, unde sunt limitele — necesită în continuare judecată inginerească.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce viteza AI amplifică impactul greșelilor inginerești?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece AI introduce mai probabil erori de sintaxă la viteză mare</button></li>
+        <li><button data-correct="false">Deoarece codul mai rapid durează mai mult să fie compilat și revizuit</button></li>
+        <li><button data-correct="true">Deoarece o decizie de design proastă se propagă în mai multe fișiere înainte de a fi depistată</button></li>
+        <li><button data-correct="false">Deoarece codul generat de AI este mai greu de citit decât cel scris de om</button></li>
+      </ul>
+      <div class="quiz-feedback">Când AI generează zece fișiere în timpul în care un om scrie unul, o decizie arhitecturală proastă (abstracțiune greșită, limită greșită, contract greșit) se multiplică în toate cele zece fișiere înainte ca cineva să le revizuiască. Viteza este un multiplicator de forță atât pentru deciziile bune, cât și pentru cele rele.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce rol de dezvoltator identifică lecția ca necesitând în continuare judecată umană?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Implementatorul care scrie codul funcțional pentru fiecare funcționalitate</button></li>
+        <li><button data-correct="false">Testerul care rulează suita de regresie automată</button></li>
+        <li><button data-correct="true">Arhitectul care stabilește limitele și Recenzorul care verifică calitatea</button></li>
+        <li><button data-correct="false">Cel care face deployment-ul build-ului final în producție</button></li>
+      </ul>
+      <div class="quiz-feedback">Arhitectura (deciziile despre cum ar trebui să arate sistemul) și revizuirea (verificarea dacă output-ul AI îndeplinește cu adevărat acel design) sunt cele două roluri care necesită înțelegerea <em>de ce</em>-ului din spatele codului — pe care AI nu îl are.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Codul generat de AI „arată bine" dar poate fi greșit. Care este motivul principal?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Modelele AI sunt antrenate pe repository-uri open-source de calitate scăzută</button></li>
+        <li><button data-correct="true">AI optimizează pentru plauzibilitate și potrivire de tipare, nu pentru corectitudine față de cerințele specifice</button></li>
+        <li><button data-correct="false">AI nu poate înțelege numele de variabile scrise în alte limbi decât engleza</button></li>
+        <li><button data-correct="false">AI folosește întotdeauna versiuni de biblioteci depășite din datele de antrenament</button></li>
+      </ul>
+      <div class="quiz-feedback">Modelele AI prezic ce cod pare probabil corect pe baza tiparelor, nu ce este corect dat fiind regulile tale specifice de business, cerințele de securitate și constrângerile arhitecturale. Output-ul este plauzibil, nu verificat.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce analogie surprinde cel mai bine noul rol al dezvoltatorului în dezvoltarea asistată de AI?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un pilot care monitorizează pilotul automat dar rareori atinge comenzile</button></li>
+        <li><button data-correct="false">Un bibliotecar care organizează codul scris de alții, dar nu îl evaluează</button></li>
+        <li><button data-correct="true">Un arhitect de clădiri care proiectează planul și aprobă munca muncitorilor</button></li>
+        <li><button data-correct="false">Un manager de proiect care urmărește termenele dar nu ia decizii tehnice</button></li>
+      </ul>
+      <div class="quiz-feedback">Arhitectul decide pentru ce este clădirea, unde merg pereții, ce sarcină suportă și dacă îndeplinește normele. Muncitorii (AI) fac munca fizică. Fără judecata arhitectului, obții o clădire care se prăbușește — indiferent cât de pricepuți sunt muncitorii.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Neclar la ceva? Pune o întrebare de follow-up în sesiunea ta Claude Code. Întrebări bune: <em>„Cum diferă rolul de arhitect față de tech lead?"</em> sau <em>„Dă-mi un exemplu concret de decizie pe care AI nu o poate lua."</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <span class="current">← Începutul cursului</span>
+    <a href="0002-solid-principles.html">Lecția 2: Principiile SOLID →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

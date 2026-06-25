@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 02 — Merge Conflicts</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── extras for this lesson ── */
+    .conflict-block {
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.84rem;
+      line-height: 1.65;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 1.5rem 0;
+      border: 1px solid #e8e5e0;
+    }
+    .conflict-block .cb-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      align-items: stretch;
+    }
+    .conflict-block .cb-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 0.45rem 0.75rem;
+      display: flex;
+      align-items: center;
+    }
+    .conflict-block .cb-code {
+      padding: 0.45rem 1rem;
+      white-space: pre;
+    }
+    .row-marker { background: #1e1e2e; color: #cdd6f4; }
+    .row-ours   { background: #0d2137; color: #89dceb; }
+    .row-divider{ background: #1e1e2e; color: #cdd6f4; }
+    .row-theirs { background: #13200f; color: #a6e3a1; }
+    .row-end    { background: #1e1e2e; color: #cdd6f4; }
+
+    .steps { counter-reset: steps; list-style: none; padding-left: 0; }
+    .steps li {
+      counter-increment: steps;
+      display: grid;
+      grid-template-columns: 2.2rem 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .steps li::before {
+      content: counter(steps);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: white;
+      background: #4338ca;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .steps li .step-body h3 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .steps li .step-body p { margin-bottom: 0.6rem; }
+    .steps li .step-body p:last-child { margin-bottom: 0; }
+
+    .resolved-block {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      padding: 0.75rem 1.1rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.84rem;
+      line-height: 1.65;
+      margin: 0.75rem 0;
+      color: #15803d;
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 02 &middot; Git &amp; GitHub Fluency</p>
+      <h1>Merge Conflicts</h1>
+      <p class="tagline">Why they happen, what they look like, and how to fix them in three steps</p>
+    </header>
+
+    <section>
+      <h2>Why this lesson matters</h2>
+      <p>
+        A merge conflict is not Git breaking. It is Git being honest — it found two versions
+        of the same lines and does not know which one you want. The conflict markers are its
+        way of asking you a question. Once you know the structure, you will never feel stuck
+        in front of one again.
+      </p>
+    </section>
+
+    <section>
+      <h2>What merging is</h2>
+      <p>
+        From <a href="0001-git-mental-model.html">Lesson 01</a> you know that branches are
+        pointers to commits. <strong>Merging</strong> is the act of combining the work from
+        two branch tips into a single new commit — a <em>merge commit</em> — that has
+        two parents.
+      </p>
+      <p>
+        When you run <code>git merge feature</code> while on <code>main</code>, Git looks
+        at exactly three commits:
+      </p>
+      <ul>
+        <li>The <strong>common ancestor</strong> — the last commit both branches share (B below)</li>
+        <li>The tip of <strong>main</strong> — what your branch currently looks like (C)</li>
+        <li>The tip of <strong>feature</strong> — what the incoming branch looks like (E)</li>
+      </ul>
+      <p>
+        It compares what each branch changed <em>relative to B</em>, then tries to combine them.
+      </p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 520 125" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Two branches diverging: main goes A-B-C, feature goes A-B-D-E">
+          <defs>
+            <marker id="arr-gray" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#9ca3af"/>
+            </marker>
+            <marker id="arr-green2" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#059669"/>
+            </marker>
+            <marker id="arr-violet" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#7c3aed"/>
+            </marker>
+          </defs>
+
+          <!-- A → B (shared history, horizontal) -->
+          <line x1="80" y1="62" x2="155" y2="62"
+                stroke="#9ca3af" stroke-width="2" marker-end="url(#arr-gray)"/>
+
+          <!-- B → C (diagonal up-right, main branch) -->
+          <line x1="193" y1="57" x2="285" y2="33"
+                stroke="#059669" stroke-width="2" marker-end="url(#arr-green2)"/>
+
+          <!-- B → D (diagonal down-right, feature branch) -->
+          <line x1="193" y1="68" x2="285" y2="91"
+                stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-violet)"/>
+
+          <!-- D → E (horizontal, feature branch) -->
+          <line x1="325" y1="97" x2="400" y2="97"
+                stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-violet)"/>
+
+          <!-- main badge line: C → badge -->
+          <line x1="325" y1="28" x2="330" y2="28"
+                stroke="#059669" stroke-width="2" marker-end="url(#arr-green2)"/>
+
+          <!-- feature badge line: E → badge -->
+          <line x1="440" y1="97" x2="445" y2="97"
+                stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-violet)"/>
+
+          <!-- Shared commits -->
+          <circle cx="60"  cy="62" r="20" fill="#4338ca"/>
+          <text x="60"  y="68" text-anchor="middle" fill="white"
+                font-size="15" font-weight="bold" font-family="'Courier New', monospace">A</text>
+
+          <circle cx="175" cy="62" r="20" fill="#4338ca"/>
+          <text x="175" y="68" text-anchor="middle" fill="white"
+                font-size="15" font-weight="bold" font-family="'Courier New', monospace">B</text>
+          <!-- common ancestor label -->
+          <text x="175" y="97" text-anchor="middle" fill="#9ca3af"
+                font-size="10" font-family="system-ui, sans-serif">common ancestor</text>
+
+          <!-- main branch commit C -->
+          <circle cx="305" cy="28" r="20" fill="#059669"/>
+          <text x="305" y="34" text-anchor="middle" fill="white"
+                font-size="15" font-weight="bold" font-family="'Courier New', monospace">C</text>
+
+          <!-- feature branch commits D, E -->
+          <circle cx="305" cy="97" r="20" fill="#7c3aed"/>
+          <text x="305" y="103" text-anchor="middle" fill="white"
+                font-size="15" font-weight="bold" font-family="'Courier New', monospace">D</text>
+
+          <circle cx="420" cy="97" r="20" fill="#7c3aed"/>
+          <text x="420" y="103" text-anchor="middle" fill="white"
+                font-size="15" font-weight="bold" font-family="'Courier New', monospace">E</text>
+
+          <!-- main badge -->
+          <rect x="332" y="16" width="54" height="24" rx="12" fill="#059669"/>
+          <text x="359" y="32" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="12" font-weight="600">main</text>
+
+          <!-- feature badge -->
+          <rect x="447" y="85" width="68" height="24" rx="12" fill="#7c3aed"/>
+          <text x="481" y="101" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="12" font-weight="600">feature</text>
+        </svg>
+        <p class="diagram-caption">
+          Commits A and B are shared history. After B, <code>main</code> went to C
+          and <code>feature</code> went to D then E.
+          Both branches edited <code>app.js</code> — starting from the same B.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>When Git merges automatically</h2>
+      <p>
+        If the two branches changed <em>different</em> files, or different parts of the same file,
+        Git merges silently and creates the merge commit on its own. No action needed. This is
+        the most common outcome — most merges just work.
+      </p>
+      <p>
+        A conflict only happens when <strong>both branches edited the same lines</strong> of the
+        same file. Git cannot decide which version wins, so it pauses and marks the collision
+        for you to resolve.
+      </p>
+    </section>
+
+    <section>
+      <h2>What a conflict looks like</h2>
+      <p>
+        When Git stops, run <code>git status</code>. It will list the conflicted files under
+        <em>"Unmerged paths"</em>:
+      </p>
+      <pre>On branch main
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+
+Unmerged paths:
+  both modified:   app.js</pre>
+      <p>
+        Open <code>app.js</code> in your editor. Inside it, Git has added conflict markers.
+        Here is what the section looks like — both branches changed the same line:
+      </p>
+
+      <div class="conflict-block">
+        <div class="cb-row row-marker">
+          <span class="cb-label">your branch</span>
+          <span class="cb-code">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span>
+        </div>
+        <div class="cb-row row-ours">
+          <span class="cb-label">your version</span>
+          <span class="cb-code">    &lt;title&gt;My App &mdash; Dashboard&lt;/title&gt;</span>
+        </div>
+        <div class="cb-row row-divider">
+          <span class="cb-label">divider</span>
+          <span class="cb-code">=======</span>
+        </div>
+        <div class="cb-row row-theirs">
+          <span class="cb-label">incoming</span>
+          <span class="cb-code">    &lt;title&gt;Dashboard &mdash; My App&lt;/title&gt;</span>
+        </div>
+        <div class="cb-row row-end">
+          <span class="cb-label">end</span>
+          <span class="cb-code">&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</span>
+        </div>
+      </div>
+
+      <ul>
+        <li><strong><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> → <code>=======</code></strong> — your version (what <code>main</code> currently has)</li>
+        <li><strong><code>=======</code> → <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</code></strong> — the incoming version (what <code>feature</code> brought in)</li>
+      </ul>
+      <p>
+        Everything <em>outside</em> the markers is already merged successfully. You only
+        need to resolve what is between them.
+      </p>
+    </section>
+
+    <section>
+      <h2>Resolving it: three steps</h2>
+      <ol class="steps">
+        <li>
+          <div class="step-body">
+            <h3>Edit the file</h3>
+            <p>
+              Decide what the final version should be. Delete all three marker lines
+              (<code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>,
+              <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>) and everything you do not want to keep.
+              You can keep your version, keep the incoming version, or write something new entirely.
+            </p>
+            <div class="resolved-block">    &lt;title&gt;My App &mdash; Dashboard&lt;/title&gt;</div>
+            <p>
+              Save the file. The conflict markers must be completely gone — Git rejects a commit
+              if any marker remains.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h3>Stage the resolved file</h3>
+            <p>
+              This is how you tell Git "I have resolved this file":
+            </p>
+            <pre>git add app.js</pre>
+            <p>
+              Repeat steps 1 and 2 for every file listed under "Unmerged paths" in
+              <code>git status</code>. Run <code>git status</code> again to confirm all
+              conflicts are resolved — it will say <em>"All conflicts fixed"</em>.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div class="step-body">
+            <h3>Complete the merge</h3>
+            <p>
+              Run <code>git commit</code>. Git will open your editor with a pre-filled
+              merge commit message like:
+            </p>
+            <pre>Merge branch 'feature' into main</pre>
+            <p>
+              Save and close. The merge commit is created. Your history now contains both
+              lines of work, joined at that commit.
+            </p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <p>
+          <strong>VS Code tip:</strong> When you open a conflicted file, VS Code highlights
+          the conflict markers and shows clickable buttons above each section:
+          <em>Accept Current Change</em>, <em>Accept Incoming Change</em>, and
+          <em>Accept Both Changes</em>. Click the one you want instead of editing manually.
+          It removes the markers for you.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>If you want to abort the merge</h2>
+      <p>
+        Changed your mind mid-conflict? Run:
+      </p>
+      <pre>git merge --abort</pre>
+      <p>
+        This puts everything back to how it was before you ran <code>git merge</code>.
+        No changes are lost. You can start over when you are ready.
+      </p>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary source ── -->
+    <section class="primary-source">
+      <h2>Primary source</h2>
+      <p>
+        Read
+        <a href="https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging"
+           target="_blank" rel="noopener noreferrer">
+          Pro Git, Chapter 3.2 — Basic Branching and Merging
+        </a>.
+        The "Basic Merge Conflicts" sub-section shows the exact markers and workflow you
+        just learned, with real command output. Ten minutes here will make it stick.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        Paste the exact conflict or error you are seeing into the chat and your teacher
+        will walk through it with you line by line.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0001-git-mental-model.html">← Lesson 01: The Commit Graph</a>
+        <a class="nav-next" href="0003-rebase-vs-merge.html">Lesson 03: Rebase vs. Merge →</a>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'A merge conflict occurs when…',
+        options: [
+          'Both branches changed the same lines',
+          'Your local branch is behind remote',
+          'Someone pushed before you could pull',
+          'The merge command had wrong syntax'
+        ],
+        correct: 0,
+        explain:
+          'Git merges silently when branches touched different lines. A conflict only ' +
+          'happens when both branches edited the same lines and Git cannot decide which ' +
+          'version is correct — so it stops and asks you.'
+      },
+      {
+        q: 'In a conflict file, the section between <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> and <code>=======</code> shows…',
+        options: [
+          'Changes from the incoming merged branch',
+          'Changes from your current HEAD branch',
+          'The original file before both edits',
+          'All changes merged and ready already'
+        ],
+        correct: 1,
+        explain:
+          'The <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> section is <em>your</em> version — what ' +
+          'your current branch (HEAD) has. The section after <code>=======</code> is the ' +
+          'incoming version from the branch you are merging in.'
+      },
+      {
+        q: 'To tell Git you finished resolving a file, you run…',
+        options: [
+          'git add on the resolved file',
+          'git push to the remote branch',
+          'git commit with a merge message',
+          'git merge abort to start over'
+        ],
+        correct: 0,
+        explain:
+          '<code>git add &lt;file&gt;</code> marks a file as resolved. Once all conflicted ' +
+          'files are staged, you then run <code>git commit</code> to create the merge commit. ' +
+          'Both steps are needed — <code>git add</code> comes first.'
+      }
+    ]);
+  </script>
+</body>
+</html>

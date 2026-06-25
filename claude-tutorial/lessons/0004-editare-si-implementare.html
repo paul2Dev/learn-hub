@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>04 · Editare și Implementare — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 4 din 12</p>
+  <h1>Editare și Implementare Features</h1>
+  <p class="tagline">Cum Claude Code modifică fișierele tale, ce poți controla și cum să revizuiești modificările înainte să le accepți.</p>
+
+  <section>
+    <h2>Cum funcționează editarea</h2>
+    <p>Când îi ceri lui Claude Code să modifice cod, el nu face asta orb. Procesul e:</p>
+    <ol class="steps">
+      <li>Citește fișierele relevante pentru a înțelege contextul existent</li>
+      <li>Planifică modificările necesare</li>
+      <li>Îți prezintă <strong>diff-ul propus</strong> și cere aprobare (implicit)</li>
+      <li>Aplică modificările în fișierele reale de pe disk</li>
+    </ol>
+    <div class="callout">
+      <p><strong>Nu e magic:</strong> Claude Code modifică fișierele reale ale proiectului tău. Git e salvatorul tău — lucrează mereu pe un branch curat și fă commit frecvent.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Implementarea unui feature — exemplu complet</h2>
+    <p>Să zicem că vrei să adaugi validare pentru un câmp de email:</p>
+    <pre><code>&gt; În fișierul src/validators/user.js, adaugă o funcție validateEmail
+  care să verifice formatul adresei de email folosind un regex standard.
+  Funcția să returneze { valid: true } sau { valid: false, error: "mesaj" }</code></pre>
+    <p>Claude Code va:</p>
+    <ul>
+      <li>Citi <code>src/validators/user.js</code> pentru a vedea stilul existent</li>
+      <li>Genera funcția în stilul fișierului (nu injecta un stil diferit)</li>
+      <li>Arăta diff-ul înainte să modifice</li>
+    </ul>
+    <p>Dacă nu ești mulțumit de implementare, spune:</p>
+    <pre><code>&gt; Folosește în schimb librăria validator.js în loc de regex manual</code></pre>
+  </section>
+
+  <section>
+    <h2>Implementare pe mai multe fișiere</h2>
+    <p>Cele mai utile features implică mai multe fișiere. Claude Code gestionează asta bine:</p>
+    <pre><code>&gt; Adaugă un endpoint POST /api/users/reset-password care să:
+  1. Accepte email-ul în body
+  2. Genereze un token temporar
+  3. Salveze token-ul în baza de date
+  4. Trimită un email cu link-ul de reset
+  Urmează structura existentă din /api/users/login</code></pre>
+    <p>Claude Code va citi endpoint-ul existent ca referință, va crea sau modifica controller-ul, route-ul, service-ul și testul corespunzător.</p>
+    <div class="callout callout--tip">
+      <p><strong>Tip esențial:</strong> Arată-i un exemplu existent ("urmează structura din X"). Claude Code reproduce stilul proiectului tău — nu inventează convenții noi.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Permission model — ce trebuie să aprobi</h2>
+    <p>Claude Code clasifică acțiunile în două categorii:</p>
+    <ul>
+      <li><strong>Citire</strong> (automată, fără aprobare) — citit fișiere, listare directoare, git log, git diff</li>
+      <li><strong>Scriere / Execuție</strong> (cu aprobare) — modificat fișiere, rulat comenzi, git push, ștergere</li>
+    </ul>
+    <p>Când Claude Code vrea să facă o acțiune ce necesită aprobare, îți va cere explicit. Vei vedea ce vrea să facă și poți aproba sau refuza.</p>
+    <div class="callout callout--warning">
+      <p><strong>Atenție:</strong> Dacă operezi în <em>auto-approve mode</em> (flag <code>--dangerously-skip-permissions</code>), Claude Code va executa totul fără să te întrebe. Folosește doar în medii izolate sau scripturi bine testate.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Iterarea pe implementare</h2>
+    <p>Implementarea rareori e perfectă din prima. Iată ciclul de lucru natural:</p>
+    <pre><code>&gt; Implementează funcția de paginare pentru lista de produse
+
+# Claude implementează
+
+&gt; Testele de integrare eșuează, uite eroarea: [paste error]
+
+# Claude analizează și corectează
+
+&gt; Acum adaugă și sortarea după preț
+
+# Claude extinde implementarea existentă</code></pre>
+    <p>Sesiunea interactivă păstrează contextul între mesaje — nu trebuie să re-explici ce ai implementat anterior în aceeași sesiune.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-4"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank" rel="noopener">Claude Code Settings & Permissions — documentație oficială Anthropic</a><br/>
+    Detalii complete despre modelul de permisiuni, ce acțiuni necesită aprobare și cum se configurează.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> și spune: <em>"Ajută-mă să implementez [feature-ul X] în proiectul meu."</em> — describe feature-ul cu cât mai mult context.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0003-explorarea-codului.html">← Lecția 3: Explorare Cod</a>
+    <a class="nav-next" href="0005-debugging.html">Lecția 5: Debugging →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-4', [
+  {
+    q: 'Ce face Claude Code înainte să modifice un fișier al proiectului tău?',
+    options: [
+      'Face automat un backup al fișierului original',
+      'Citește fișierul pentru context, propune diff-ul și cere aprobare',
+      'Modifică direct fișierul fără să îți arate ce schimbă',
+      'Creează un branch nou automat pentru orice modificare'
+    ],
+    correct: 1,
+    explain: 'Claude Code citește fișierul pentru context, generează modificările și îți prezintă diff-ul cerând aprobare. Tu controlezi ce se aplică.'
+  },
+  {
+    q: 'Cum îl ghidezi pe Claude Code să respecte stilul existent al proiectului tău?',
+    options: [
+      'Îi trimiți manual style guide-ul la fiecare sesiune',
+      'Instalezi un plugin separat de stilizare pentru Claude Code',
+      'Îi arăți un exemplu: "urmează structura din fișierul X"',
+      'Claude Code detectează automat stilul fără nicio indicație'
+    ],
+    correct: 2,
+    explain: 'Cel mai eficient ghidaj e să îi dai un exemplu existent din proiect. Claude Code va citi acel fișier și va reproduce stilul, convențiile și patterns-urile sale.'
+  },
+  {
+    q: 'Ce categorie de acțiuni necesită aprobare explicită din partea ta?',
+    options: [
+      'Citirea fișierelor și listarea directoarelor',
+      'Rularea comenzii git log pentru a vedea istoricul',
+      'Modificarea fișierelor și execuția comenzilor în terminal',
+      'Căutarea cu grep în codebase-ul proiectului'
+    ],
+    correct: 2,
+    explain: 'Acțiunile de citire sunt automate. Modificarea fișierelor, rularea comenzilor și git push necesită aprobare — Claude Code îți va prezenta ce vrea să facă și va aștepta confirmarea ta.'
+  }
+]);
+</script>
+</body>
+</html>

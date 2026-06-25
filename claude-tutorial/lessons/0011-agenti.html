@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>11 · Claude Agents — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 11 din 12</p>
+  <h1>Claude Agents — Instanțe Specializate în Paralel</h1>
+  <p class="tagline">Când o singură sesiune nu e suficientă — agenți care lucrează în paralel, cu contexte izolate, pentru task-uri complexe.</p>
+
+  <section>
+    <h2>Ce este un Agent?</h2>
+    <p>Un agent Claude Code este o <strong>instanță separată de Claude</strong>, cu propriul context și unelte, pornită din sesiunea principală pentru a rezolva o subsarcină. Agentul lucrează independent, returnează rezultatul, și sesiunea principală continuă cu aceste informații.</p>
+    <p>Gândește-te la o sesiune normală ca la un programator care lucrează singur. Un agent e ca și când ai delega un task unui coleg: îi dai instrucțiuni clare, el lucrează independent și îți aduce rezultatul, tu continui cu treaba ta în paralel.</p>
+    <div class="callout">
+      <p><strong>Principiu cheie:</strong> Fiecare agent pornește cu un context gol — nu "știe" ce s-a discutat în sesiunea principală dacă nu îi trimiți explicit informațiile relevante. Asta e o caracteristică, nu un bug: contextul izolat = mai puțin zgomot, mai multă precizie.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>De ce să folosești Agents?</h2>
+    <ul>
+      <li><strong>Paralelism</strong> — Poți porni mai mulți agenți simultan pentru task-uri independente. Un agent face research în codebase, altul scrie teste, altul generează documentație. Economisești timp real.</li>
+      <li><strong>Izolarea contextului</strong> — Un context prea lung devine imprecis. Un agent proaspăt, cu instrucțiuni clare și contextul exact necesar, produce rezultate mai bune decât o sesiune lungă "obosită".</li>
+      <li><strong>Specializare</strong> — Agenți diferiți pentru task-uri diferite: Explore pentru localizat cod, Plan pentru design, code-reviewer pentru review. Fiecare e optimizat pentru scopul lui.</li>
+      <li><strong>Protejarea sesiunii principale</strong> — Dacă task-ul ar "polua" sesiunea principală cu zeci de fișiere citite sau output-uri mari, delegarea la un agent ține sesiunea principală curată și rapidă.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Agenți built-in în Claude Code</h2>
+    <p>Claude Code vine cu mai mulți agenți specializați pe care îi poți cere explicit:</p>
+    <ul>
+      <li><strong>Explore</strong> — Agent de căutare read-only. Localizează fișiere, simboluri, pattern-uri în codebase fără să modifice nimic. Rapid și precis pentru întrebări de tipul "unde e definit X?"</li>
+      <li><strong>Plan</strong> — Arhitect de soluții. Primește un task, returnează un plan de implementare: fișiere afectate, ordine de modificare, riscuri. Nu scrie cod singur.</li>
+      <li><strong>general-purpose</strong> — Agent universal pentru task-uri complexe multi-step care nu se potrivesc unui agent specific.</li>
+      <li><strong>code-reviewer</strong> — Specializat în review de cod. Analizează diff-ul, găsește bug-uri, propune îmbunătățiri. Opinie independentă față de sesiunea principală — util ca "a doua pereche de ochi".</li>
+    </ul>
+    <div class="callout callout--tip">
+      <p><strong>Cum îi invoci:</strong> Claude pornește automat agenții potriviți pe baza task-ului. Poți cere și explicit: <em>"Folosește un agent Explore pentru a găsi toate endpoint-urile API din proiect."</em></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Agenți în fundal (Background Agents)</h2>
+    <p>Un agent poate rula <strong>în fundal</strong> în timp ce tu continui să lucrezi. Claude te notifică automat când agentul termină.</p>
+    <pre><code>&gt; Pornește un agent în fundal care să analizeze toate fișierele
+   din src/ și să listeze funcțiile fără teste unit. Continuă
+   când termină, nu te opri să aștepți.
+
+# Claude pornește agentul și tu poți continua cu alte task-uri.
+# Când agentul termină, primești notificare automată cu rezultatele.</code></pre>
+    <p>Util pentru:</p>
+    <ul>
+      <li>Analize de codebase care durează câteva minute</li>
+      <li>Generare de teste pentru module întregi</li>
+      <li>Refactorizări mari care nu blochează flow-ul tău curent</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Worktrees — Izolarea Modificărilor</h2>
+    <p>Când un agent trebuie să modifice fișiere, poate lucra într-un <strong>worktree izolat</strong> — o copie separată a repo-ului pe un branch dedicat. Modificările agentului nu ating branch-ul tău principal până când nu le accepți explicit.</p>
+    <pre><code>&gt; Pornește un agent cu worktree izolat care să refactorizeze
+   modulul de autentificare să folosească hooks în loc de HOCs.
+   Vreau să văd diff-ul complet înainte să accept ceva.</code></pre>
+    <p>Worktree-ul permite:</p>
+    <ul>
+      <li>Agenți care modifică fișiere fără niciun risc pentru branch-ul tău activ</li>
+      <li>Review complet al modificărilor agentului înainte de merge</li>
+      <li>Abandon complet dacă rezultatul nu e satisfăcător — șterg worktree-ul, zero urmări</li>
+    </ul>
+    <div class="callout callout--warning">
+      <p><strong>Notă:</strong> Worktree-ul e curățat automat dacă agentul nu face nicio modificare. Dacă agentul modifică fișiere, primești calea și branch-ul cu modificările pentru review.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Agenți în paralel</h2>
+    <p>Pentru task-uri independente, poți porni mai mulți agenți simultan și să economisești timp real:</p>
+    <pre><code>&gt; Am nevoie de două analize în paralel:
+   1. Un agent care să auditeze performanța query-urilor din src/db/
+   2. Un agent care să scrie documentație pentru endpoint-urile din src/api/
+   Pornește ambii agenți simultan și spune-mi când ambii termină.</code></pre>
+    <p>Claude pornește ambii agenți simultan, lucrează în paralel și te notifică când ambii termină. În loc de 2× timpul unui agent, obții rezultatele în aproximativ timpul unui singur agent.</p>
+    <div class="callout callout--tip">
+      <p><strong>Când nu folosi paralel:</strong> Dacă task-ul B depinde de output-ul task-ului A, trebuie să le faci secvențial. Paralelismul e util doar pentru task-uri cu adevărat independente.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Agenți personalizați prin Skills</h2>
+    <p>Poți crea propriii agenți specializați combinator skills cu instrucțiuni de agent. Un skill poate descrie comportamentul unui subagent specializat:</p>
+    <pre><code># .claude/commands/db-review.md
+
+Pornește un agent specializat pentru audit de bază de date.
+
+Agentul trebuie să:
+1. Caute toate fișierele de migrare din database/migrations/
+2. Analizeze fiecare migrare pentru:
+   - Migrări fără metodă rollback (down())
+   - Modificări de coloană care pot cauza pierdere de date
+   - Foreign keys fără index
+3. Returneze un raport structurat cu severitate (critical / warning / info)
+
+Abordare read-only — nu modifica niciun fișier.</code></pre>
+    <p>Invoci cu <code>/db-review</code> și obții un agent specializat care analizează baza de date cu criterii precise, fără să îi mai explici de fiecare dată ce să caute.</p>
+  </section>
+
+  <section>
+    <h2>Când să folosești Agent vs. Sesiune normală</h2>
+    <p>Regula simplă pentru a alege:</p>
+    <ul>
+      <li><strong>Sesiune normală</strong> — Task-uri iterative unde vrei să controlezi fiecare pas: implementare cu review continuu, debugging, refactorizare mică unde vrei să aprobi fiecare modificare.</li>
+      <li><strong>Agent simplu</strong> — Task-uri cu instrucțiuni clare și output definit care nu necesită intervenție în mijlocul execuției: research, analiză, generare boilerplate, scriere de teste.</li>
+      <li><strong>Agenți în paralel</strong> — Când ai 2+ task-uri independente și vrei să le faci simultan.</li>
+      <li><strong>Agent cu worktree</strong> — Când agentul trebuie să modifice fișiere, dar vrei să revizuiești complet înainte să accepți modificările.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Exemplu complet de flux cu agenți</h2>
+    <p>Un flux real pentru adăugarea unui feature nou:</p>
+    <pre><code># Pasul 1 — Research paralel (2 agenți simultan)
+&gt; Pornește doi agenți în paralel:
+  1. Explore: găsește toate locurile unde e gestionată autentificarea
+  2. Explore: găsește toate testele existente pentru auth
+
+# Pasul 2 — Plan (după ce primești rezultatele)
+&gt; Pe baza rezultatelor de mai sus, folosește un agent Plan
+  pentru a proiecta implementarea 2FA prin TOTP.
+
+# Pasul 3 — Implementare cu worktree (tu controlezi merge-ul)
+&gt; Pornește un agent cu worktree izolat care să implementeze
+  planul de mai sus. Vreau diff complet înainte să accept.
+
+# Pasul 4 — Review independent
+&gt; Pornește un agent code-reviewer care să analizeze
+  diff-ul din worktree și să identifice probleme.</code></pre>
+    <p>Rezultat: research, design, implementare și review — toate cu contexte proaspete, izolate, fără ca sesiunea principală să se încarce cu zeci de fișiere citite.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-11"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/sub-agents" target="_blank" rel="noopener">Claude Code Sub-agents — documentație oficială Anthropic</a><br/>
+    Referința completă pentru sub-agents, worktrees, agenți în paralel și crearea de agenți personalizați prin skills.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> și încearcă: <em>"Pornește un agent Explore care să găsească tot codul duplicat din proiectul meu."</em> Primul tău agent în acțiune.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0010-hooks.html">← Lecția 10: Hooks</a>
+    <a class="nav-next" href="0012-agentic-workflow.html">Lecția 12: Agentic Workflow →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-11', [
+  {
+    q: 'De ce un agent pornește cu context gol față de sesiunea principală?',
+    options: [
+      'E o limitare tehnică ce va fi rezolvată în versiuni viitoare',
+      'E intenționat — contextul izolat reduce zgomotul și crește precizia pentru task-ul specific',
+      'Agenții consumă mai puțini tokeni astfel',
+      'Agenții nu au acces la fișierele proiectului'
+    ],
+    correct: 1,
+    explain: 'Contextul izolat e o caracteristică, nu un bug. Un agent cu instrucțiuni clare și contextul exact relevant produce rezultate mai precise decât o sesiune lungă cu mult zgomot acumulat.'
+  },
+  {
+    q: 'Care este avantajul unui worktree izolat pentru un agent care modifică fișiere?',
+    options: [
+      'Agentul lucrează mai rapid în worktree',
+      'Modificările agentului nu ating branch-ul tău până când nu le accepți după review',
+      'Worktree-ul permite agentului să acceseze internet',
+      'Worktree-ul economisește spațiu pe disc'
+    ],
+    correct: 1,
+    explain: 'Worktree-ul e o copie izolată a repo-ului pe un branch separat. Agentul modifică acolo, tu faci review complet al diff-ului și decizi dacă mergi mai departe. Zero risc pentru branch-ul tău principal.'
+  },
+  {
+    q: 'Când este agenții în paralel cea mai bună opțiune?',
+    options: [
+      'Când task-urile sunt dependente și trebuie să se facă în ordine',
+      'Când ai un singur task complex cu mulți pași',
+      'Când ai 2+ task-uri independente și vrei să economisești timp rulându-le simultan',
+      'Întotdeauna — agenții în paralel sunt mai rapizi decât o sesiune normală'
+    ],
+    correct: 2,
+    explain: 'Paralelismul e util doar pentru task-uri independente. Dacă task-ul B depinde de output-ul task-ului A, trebuie să le faci secvențial. Pentru task-uri cu adevărat independente, agenții în paralel înjumătățesc timpul total.'
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7 — Managementul Datoriei Tehnice | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 7 din 10</span>
+    <span>⏱ 18 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Managementul Datoriei Tehnice</h1>
+  <p>Cum să recunoști, să clasifici și să gestionezi intenționat datoria inginerească care se acumulează în orice codebase — mai ales în cele rapide, asistate de AI.</p>
+
+  <h2>Ce este cu adevărat datoria tehnică</h2>
+  <p>Ward Cunningham a inventat termenul ca o analogie deliberată cu datoria financiară: a lua o scurtătură azi te ajută să obții ceva mai repede, dar datorezi „dobândă" — dezvoltare mai lentă, mai multe bug-uri, risc mai mare de schimbare — până când o rambursezi prin refactoring. Ca datoria financiară, o parte este prudentă; toată are un cost de menținere; prea multă devine neservicibilă.</p>
+
+  <div class="callout">
+    <div class="callout-label">Metafora datoriei</div>
+    Metafora se rupe într-un mod: spre deosebire de datoria financiară, datoria tehnică este adesea invizibilă. Nu primești un extras lunar. Dobânda se compune în tăcere până când o funcționalitate care ar trebui să dureze o zi durează cinci.
+  </div>
+
+  <h2>Cadranul Datoriei Tehnice al lui Fowler</h2>
+  <p>Nu toată datoria este creată egală. Cadranul lui Martin Fowler o împarte după <em>intenție</em> (deliberată vs. neintenționată) și <em>calitate</em> (imprudentă vs. prudentă):</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th></th><th>Imprudentă</th><th>Prudentă</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Deliberată</strong></td>
+        <td>„Nu avem timp de design"</td>
+        <td>„Trebuie să livrăm acum; o vom corecta mai târziu" (documentat)</td>
+      </tr>
+      <tr>
+        <td><strong>Neintenționată</strong></td>
+        <td>„Ce este stratificarea?" (nu știa mai bine)</td>
+        <td>„Acum știm cum ar fi trebuit să o facem"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Datoria deliberată prudentă este singurul tip pe care ar trebui să îl asumi în mod conștient — și numai când documentezi compromisul și planifici rambursarea. Toate celelalte tipuri sunt probleme: datoria imprudentă este neglijență; datoria neintenționată este produsul cunoașterii inginerești lipsă.</p>
+
+  <h2>AI și problema datoriei invizibile</h2>
+  <p>Dezvoltarea asistată de AI are un profil de datorie unic. Deoarece AI generează cod rapid și acesta pare coerent, echipele acumulează cantități mari de datorie neintenționată fără să observe. Surse frecvente:</p>
+
+  <ul>
+    <li><strong>Abstracțiuni lipsă</strong> — AI scrie implementări directe; nu observă că trei controllere fac aceeași transformare care ar aparține unui serviciu comun.</li>
+    <li><strong>Convenții inconsistente</strong> — pe parcursul mai multor sesiuni AI, denumirea, gestionarea erorilor și tiparele de validare derivă. Nicio sesiune nu vede întregul codebase.</li>
+    <li><strong>Gestionarea lipsă a cazurilor limită</strong> — AI acoperă cazul fericit; cazurile limită specificate doar în capul tău sunt omise în tăcere.</li>
+    <li><strong>Complexitate speculativă</strong> — încălcări YAGNI din AI care adaugă flexibilitate pe care nimeni nu a cerut-o și toți trebuie să o întrețină.</li>
+    <li><strong>Lipsuri în teste</strong> — AI omite adesea teste pentru cazuri limită, căi de eroare și limite de securitate dacă nu este solicitat explicit.</li>
+  </ul>
+
+  <h2>Cum să urmărești datoria intenționat</h2>
+  <p>Datoria pe care nu o poți vedea nu poate fi gestionată. Sistemul minim viabil de urmărire a datoriei:</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>Denumește-o când o creezi.</strong> Când iei în mod conștient o scurtătură, lasă un comentariu <code>// TODO(datorie): descriere — problemă cunoscută, plan: refactorizare în sprintul X</code>. Nu lăsa TODO-uri anonime.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>Loghează-o într-un registru de datorii.</strong> Un tabel simplu în README-ul sau wiki-ul proiectului: ce este, unde este, ce costă (teste lente? greu de schimbat?) și ce necesită rambursarea.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Tratează rambursarea ca lucru programat.</strong> Rezervă capacitate în fiecare sprint pentru reducerea datoriei. Datoria care nu este niciodată programată nu este niciodată plătită.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><strong>Folosește „Regula Cercetașului de Băieți" pentru datoria cu risc scăzut.</strong> Lasă fiecare fișier pe care îl atingi puțin mai curat decât l-ai găsit. Redenumește o variabilă proastă, extrage o expresie repetată, elimină o cale de cod moartă.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Prioritizarea datoriei</h2>
+  <p>Nu toată datoria merită rambursată imediat. Prioritizează în funcție de:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Semnal</th><th>Prioritate</th><th>De ce</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Datorie în cod pe care îl modifici frecvent</td>
+        <td>Ridicată</td>
+        <td>Plătești dobândă la fiecare sprint; corecteaz-o acum</td>
+      </tr>
+      <tr>
+        <td>Datorie care blochează o funcționalitate nouă</td>
+        <td>Ridicată</td>
+        <td>Refactorizarea este oricum pe calea critică</td>
+      </tr>
+      <tr>
+        <td>Datorie în cod stabil, rar modificat</td>
+        <td>Scăzută</td>
+        <td>Rata dobânzii este aproape zero; altă datorie costă mai mult</td>
+      </tr>
+      <tr>
+        <td>Datorie în cod care va fi probabil șters</td>
+        <td>Omite</td>
+        <td>Nu refactoriza ce urmează să elimini</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-label">Euristica hotspot-ului</div>
+    Rulează <code>git log --oneline --follow -p &lt;fisier&gt;</code> pentru a vedea cât de des s-a schimbat un fișier. Fișierele care se schimbă la fiecare sprint sunt datoria cu cea mai mare dobândă — te costă cel mai mult. Corectează-le primele.
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Audit de datorie</div>
+    <ol>
+      <li>Caută în codebase-ul tău comentariile TODO, FIXME și HACK existente: <code>grep -r "TODO\|FIXME\|HACK" --include="*.php" .</code></li>
+      <li>Pentru fiecare, clasifică-l folosind cadranul: deliberat/neintenționat × imprudent/prudent.</li>
+      <li>Găsește cele trei fișiere cu cele mai multe commit-uri git în ultimele 30 de zile.</li>
+      <li>Revizuiește acele trei fișiere pentru semne de datorie: funcții lungi, imbricare adâncă, tipare repetate, teste lipsă.</li>
+      <li>Creează o intrare în registrul de datorii pentru cel mai costisitor element găsit.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://martinfowler.com/bliki/TechnicalDebtQuadrant.html" target="_blank">Technical Debt Quadrant — Martin Fowler</a>. Explicația definitivă a modelului cadrant, inclusiv clarificarea lui Fowler că Cunningham a intenționat termenul să descrie doar datoria deliberată prudentă, nu imprudența.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Conform cadranului lui Fowler, care este SINGURUL tip de datorie tehnică acceptabil să fie asumat deliberat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Datorie deliberată imprudentă asumată pentru a îndeplini un termen agresiv</button></li>
+        <li><button data-correct="true">Datorie deliberată prudentă cu un compromis documentat și un plan de rambursare</button></li>
+        <li><button data-correct="false">Datorie neintenționată prudentă descoperită după ce un sistem este în producție</button></li>
+        <li><button data-correct="false">Datorie neintenționată imprudentă cauzată de lipsa cunoașterii inginerești</button></li>
+      </ul>
+      <div class="quiz-feedback">Datoria prudentă deliberată este aleasă în mod conștient („livrăm acum, corectăm în sprintul 5") cu un motiv documentat și o rambursare planificată. Datoria imprudentă este neglijență. Datoria neintenționată este produsul cunoașterii lipsă. Numai primul tip este un compromis ingineresc legitim.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce dezvoltarea asistată de AI generează mai multă datorie neintenționată decât dezvoltarea tradițională?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece AI produce cod mai greu de citit decât codul scris de om</button></li>
+        <li><button data-correct="false">Deoarece instrumentele AI necesită hardware scump care reduce timpul de testare</button></li>
+        <li><button data-correct="true">Deoarece AI generează cod rapid pe parcursul sesiunilor, fiecare fără o vedere de ansamblu asupra codebase-ului</button></li>
+        <li><button data-correct="false">Deoarece AI nu poate genera teste, deci fiecare funcționalitate generată este netestată</button></li>
+      </ul>
+      <div class="quiz-feedback">Fiecare sesiune AI vede doar contextul pe care îl furnizezi. Pe parcursul sesiunilor, denumirea derivă, tiparele diverge și logica partajată se duplică. Nicio sesiune nu observă deoarece nu poate vedea întregul codebase. Viteza agravează asta — mai mult cod înseamnă mai multă datorie, mai repede.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce fișiere ar trebui să prioritizezi pentru rambursarea datoriei?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cele mai mari fișiere măsurate prin linii de cod din repository</button></li>
+        <li><button data-correct="false">Cele mai vechi fișiere care nu au fost atinse de mai mult de un an</button></li>
+        <li><button data-correct="true">Fișierele care se modifică frecvent, deoarece plătești costul dobânzii de fiecare dată</button></li>
+        <li><button data-correct="false">Fișierele care au cele mai multe dependențe externe importate la început</button></li>
+      </ul>
+      <div class="quiz-feedback">Datoria în cod rar modificat are o rată de dobândă aproape zero. Datoria în cod frecvent modificat te costă la fiecare sprint — schimbări mai lente, risc mai mare de bug-uri, cicluri de revizuire mai lungi. Euristica hotspot-ului (frecvența commit-urilor git log) identifică datoria cu cea mai mare dobândă.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce este „Regula Cercetașului de Băieți" în contextul datoriei tehnice?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Scrie întotdeauna teste înainte de a atinge orice fișier dintr-un codebase moștenire</button></li>
+        <li><button data-correct="false">Refactorizează întregul modul înainte de a adăuga o funcționalitate nouă în el</button></li>
+        <li><button data-correct="true">Lasă fiecare fișier pe care îl atingi puțin mai curat decât l-ai găsit</button></li>
+        <li><button data-correct="false">Documentează fiecare scurtătură cu un TODO înainte de a face commit la cod</button></li>
+      </ul>
+      <div class="quiz-feedback">Regula Cercetașului de Băieți (de la Robert Martin) este o strategie de reducere incrementală a datoriei: îmbunătățiri mici la fiecare commit — o variabilă redenumită, o metodă extrasă, o cale de cod moartă eliminată — se compun în timp fără a necesita sprinturi dedicate de refactoring.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Când NU ar trebui să rambursezi datoria tehnică?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când codul a fost scris de AI în loc de un dezvoltator uman</button></li>
+        <li><button data-correct="false">Când datoria a fost neintenționată mai degrabă decât aleasă deliberat</button></li>
+        <li><button data-correct="true">Când codul care conține datoria va fi probabil șters în curând</button></li>
+        <li><button data-correct="false">Când datoria este într-un fișier care nu s-a schimbat în ultima lună</button></li>
+      </ul>
+      <div class="quiz-feedback">Nu refactoriza ce urmează să elimini — acea investiție are randament zero. Datoria în cod stabil, rar modificat este de asemenea la prioritate scăzută (rată de dobândă aproape zero), dar cazul ștergerii este și mai clar: „datoria" dispare odată cu codul.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Cum conving un stakeholder non-tehnic să aloce timp pentru reducerea datoriei?"</em> sau <em>„Cum arată un registru de datorii bun în practică?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0006-requirements-engineering.html">← Lecția 6: Ingineria Cerințelor</a>
+    <a href="0008-testing-strategy.html">Lecția 8: Strategia de Testare →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

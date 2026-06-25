@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 4 — Căutare full-text</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 04 · OpenSearch + Laravel</span>
+  <h1>Căutare full-text</h1>
+  <p class="subtitle">Query DSL — match, multi_match, match_phrase și structura răspunsului</p>
+</div>
+
+<p>
+  Aceasta este lecția centrală. Căutarea este motivul pentru care există OpenSearch.
+  Vei înțelege cum funcționează <strong>Query DSL</strong> — limbajul de interogare JSON al OpenSearch —
+  și vei scrie primele căutări reale din Laravel.
+</p>
+
+<!-- ══════════════════════════════════════════ QUERY DSL ══ -->
+<h2>1. Ce este Query DSL</h2>
+
+<p>
+  Query DSL (<em>Domain Specific Language</em>) este formatul JSON prin care descrii
+  ce vrei să cauți. Îl trimiți în câmpul <code>body</code> al cererii de search.
+</p>
+
+<pre><code><span class="cm">// Structura generală a unui request de search</span>
+$client-><span class="fn">search</span>([
+    <span class="str">'index'</span> => <span class="str">'articles'</span>,
+    <span class="str">'body'</span>  => [
+        <span class="cm">// --- Ce returnezi ---</span>
+        <span class="str">'size'</span> => <span class="num">10</span>,          <span class="cm">// câte rezultate (implicit 10)</span>
+        <span class="str">'from'</span> => <span class="num">0</span>,           <span class="cm">// offset pentru paginare</span>
+
+        <span class="cm">// --- Cum cauți ---</span>
+        <span class="str">'query'</span> => [
+            <span class="cm">// ... query DSL vine aici</span>
+        ],
+
+        <span class="cm">// --- Cum sortezi ---</span>
+        <span class="str">'sort'</span> => [
+            <span class="cm">// ... sortare vine aici</span>
+        ],
+    ],
+]);</code></pre>
+
+<!-- ══════════════════════════════════════════ MATCH ══ -->
+<h2>2. match — căutare într-un singur câmp</h2>
+
+<p>
+  <code>match</code> este interogarea de bază pentru text. OpenSearch <strong>analizează</strong>
+  textul de căutat: îl tokenizează, îl normalizează (lowercase, diacritice),
+  și caută documente care conțin acei termeni.
+</p>
+
+<pre><code><span class="cm">// Caută articole care conțin „laravel" în titlu</span>
+<span class="kw">public function</span> <span class="fn">searchByTitle</span>(string $query): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => <span class="num">10</span>,
+            <span class="str">'query'</span> => [
+                <span class="str">'match'</span> => [
+                    <span class="str">'titlu'</span> => [
+                        <span class="str">'query'</span>     => $query,
+                        <span class="str">'operator'</span>  => <span class="str">'or'</span>,    <span class="cm">// 'or' (implicit) sau 'and'</span>
+                        <span class="str">'fuzziness'</span> => <span class="str">'AUTO'</span>, <span class="cm">// toleranță typo-uri</span>
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}</code></pre>
+
+<div class="box box-info">
+  <span class="box-title">operator: 'or' vs 'and'</span>
+  <ul>
+    <li><strong>or</strong> (implicit): „laravel tutorial" → documente care conțin „laravel" SAU „tutorial" → mai multe rezultate</li>
+    <li><strong>and</strong>: „laravel tutorial" → documente care conțin „laravel" ȘI „tutorial" → rezultate mai precise</li>
+  </ul>
+  <code>fuzziness: 'AUTO'</code> permite typo-uri: „laravell" va găsi tot „laravel".
+</div>
+
+<!-- ══════════════════════════════════════════ MULTI_MATCH ══ -->
+<h2>3. multi_match — căutare în mai multe câmpuri</h2>
+
+<p>
+  Cel mai frecvent folosit în practică: caută același termen în mai multe câmpuri deodată.
+  Poți <strong>boosta</strong> un câmp (titlul contează mai mult decât conținutul).
+</p>
+
+<pre><code><span class="cm">// Caută în titlu, continut și taguri — titlul are prioritate</span>
+<span class="kw">public function</span> <span class="fn">search</span>(string $query): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => <span class="num">10</span>,
+            <span class="str">'query'</span> => [
+                <span class="str">'multi_match'</span> => [
+                    <span class="str">'query'</span>  => $query,
+                    <span class="str">'fields'</span> => [
+                        <span class="str">'titlu^3'</span>,     <span class="cm">// ^3 = de 3× mai important</span>
+                        <span class="str">'continut'</span>,    <span class="cm">// relevanță normală</span>
+                        <span class="str">'taguri^2'</span>,    <span class="cm">// de 2× mai important</span>
+                        <span class="str">'autor'</span>,       <span class="cm">// relevanță normală</span>
+                    ],
+                    <span class="str">'type'</span>       => <span class="str">'best_fields'</span>,  <span class="cm">// scorul celui mai bun câmp</span>
+                    <span class="str">'fuzziness'</span>  => <span class="str">'AUTO'</span>,
+                ],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}</code></pre>
+
+<div class="box box-tip">
+  <span class="box-title">Tipuri de multi_match</span>
+  <ul>
+    <li><strong>best_fields</strong> (implicit): scorul vine de la câmpul cu cea mai mare relevanță</li>
+    <li><strong>most_fields</strong>: cumulează scoruri din toate câmpurile — bun pentru text duplicat în variante</li>
+    <li><strong>cross_fields</strong>: tratează câmpurile ca un singur câmp — bun pentru nume/prenume</li>
+    <li><strong>phrase</strong>: match_phrase în toate câmpurile — bun pentru expresii exacte</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════ MATCH_PHRASE ══ -->
+<h2>4. match_phrase — expresie exactă</h2>
+
+<p>
+  Caută expresia <strong>exact</strong> în ordinea cuvintelor.
+  „laravel tutorial" va găsi doar documente cu aceste cuvinte unul lângă altul.
+</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchPhrase</span>(string $phrase): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'query'</span> => [
+                <span class="str">'match_phrase'</span> => [
+                    <span class="str">'continut'</span> => $phrase,
+                ],
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ RASPUNS ══ -->
+<h2>5. Structura răspunsului — cum citești rezultatele</h2>
+
+<p>
+  Orice query de search returnează același format JSON. Trebuie să știi unde să te uiți.
+</p>
+
+<pre><code><span class="cm">// Răspunsul complet de la OpenSearch:</span>
+[
+    <span class="str">'took'</span>      => <span class="num">5</span>,         <span class="cm">// milisecunde cât a durat</span>
+    <span class="str">'timed_out'</span> => <span class="kw">false</span>,
+    <span class="str">'hits'</span> => [
+        <span class="str">'total'</span> => [
+            <span class="str">'value'</span>    => <span class="num">42</span>,       <span class="cm">// numărul TOTAL de documente găsite</span>
+            <span class="str">'relation'</span> => <span class="str">'eq'</span>,
+        ],
+        <span class="str">'max_score'</span> => <span class="num">1.8734</span>,    <span class="cm">// scorul celui mai relevant document</span>
+        <span class="str">'hits'</span> => [               <span class="cm">// lista de documente returnate (max 'size')</span>
+            [
+                <span class="str">'_index'</span>  => <span class="str">'articles'</span>,
+                <span class="str">'_id'</span>     => <span class="str">'64f1a2b3...'</span>,
+                <span class="str">'_score'</span>  => <span class="num">1.8734</span>,   <span class="cm">// relevanța acestui document</span>
+                <span class="str">'_source'</span> => [          <span class="cm">// datele tale</span>
+                    <span class="str">'titlu'</span>    => <span class="str">'Introducere în Laravel'</span>,
+                    <span class="str">'autor'</span>    => <span class="str">'Paul'</span>,
+                    <span class="str">'continut'</span> => <span class="str">'...'</span>,
+                ],
+            ],
+            <span class="cm">// ... restul documentelor</span>
+        ],
+    ],
+]</code></pre>
+
+<pre><code><span class="cm">// Metodă helper pentru a extrage datele utile</span>
+<span class="kw">protected function</span> <span class="fn">extractHits</span>(array $response): array
+{
+    <span class="kw">return</span> [
+        <span class="str">'total'</span>   => $response[<span class="str">'hits'</span>][<span class="str">'total'</span>][<span class="str">'value'</span>],
+        <span class="str">'results'</span> => <span class="fn">collect</span>($response[<span class="str">'hits'</span>][<span class="str">'hits'</span>])
+            -><span class="fn">map</span>(<span class="kw">fn</span>($hit) => <span class="fn">array_merge</span>(
+                [<span class="str">'_id'</span> => $hit[<span class="str">'_id'</span>], <span class="str">'_score'</span> => $hit[<span class="str">'_score'</span>]],
+                $hit[<span class="str">'_source'</span>]
+            ))
+            -><span class="fn">toArray</span>(),
+    ];
+}
+
+<span class="cm">// Utilizare în controller:</span>
+$results = $search-><span class="fn">search</span>(<span class="str">'laravel tutorial'</span>);
+<span class="cm">// $results['total']   = 42</span>
+<span class="cm">// $results['results'] = [['_id' => '...', 'titlu' => '...', '_score' => 1.8], ...]</span></code></pre>
+
+<!-- ══════════════════════════════════════════ MATCH_ALL ══ -->
+<h2>6. match_all — returnează toate documentele</h2>
+
+<pre><code><span class="cm">// Returnează toate documentele (util pentru listare)</span>
+<span class="kw">public function</span> <span class="fn">getAll</span>(int $size = <span class="num">10</span>, int $from = <span class="num">0</span>): array
+{
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => $size,
+            <span class="str">'from'</span>  => $from,
+            <span class="str">'query'</span> => [<span class="str">'match_all'</span> => (object)[]],  <span class="cm">// obiect gol</span>
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractHits</span>($response);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="B">
+    <p>1. Care este diferența între <code>match</code> și <code>match_phrase</code>?</p>
+    <button class="quiz-opt" data-val="A">match caută exact, match_phrase este mai tolerant</button>
+    <button class="quiz-opt" data-val="B">match caută termeni individuali, match_phrase cere cuvintele în ordine exactă</button>
+    <button class="quiz-opt" data-val="C">match_phrase este mai rapid, match caută în toate câmpurile</button>
+    <button class="quiz-opt" data-val="D">Nu există diferență practică între ele</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="C">
+    <p>2. Ce înseamnă <code>'titlu^3'</code> în lista de câmpuri la <code>multi_match</code>?</p>
+    <button class="quiz-opt" data-val="A">Caută în primele 3 cuvinte din titlu</button>
+    <button class="quiz-opt" data-val="B">Titlul trebuie să conțină cel puțin 3 termeni</button>
+    <button class="quiz-opt" data-val="C">Scorul din câmpul titlu este înmulțit cu 3 (boost)</button>
+    <button class="quiz-opt" data-val="D">Câmpul titlu are 3 variante analizate diferit</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. Câte documente găsite total îți spune <code>$response['hits']['total']['value']</code>?</p>
+    <button class="quiz-opt" data-val="A">Numărul de documente returnate în această pagină</button>
+    <button class="quiz-opt" data-val="B">Numărul maxim de documente din index</button>
+    <button class="quiz-opt" data-val="C">Scorul mediu al documentelor găsite</button>
+    <button class="quiz-opt" data-val="D">Numărul total de documente care match-uiesc query-ul</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>4. Ce face <code>fuzziness: 'AUTO'</code> la un query de match?</p>
+    <button class="quiz-opt" data-val="A">Permite typo-uri în termenul căutat (ex: „laravell" găsește „laravel")</button>
+    <button class="quiz-opt" data-val="B">Sortează rezultatele aleatoriu</button>
+    <button class="quiz-opt" data-val="C">Caută în toate câmpurile automat</button>
+    <button class="quiz-opt" data-val="D">Dezactivează analizatorul pentru câmpul respectiv</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/query-dsl/full-text/match/" target="_blank">Match query — OpenSearch Documentation</a></li>
+    <li><a href="https://docs.opensearch.org/latest/query-dsl/full-text/multi-match/" target="_blank">Multi-match query — OpenSearch Documentation</a></li>
+    <li><a href="https://docs.opensearch.org/latest/query-dsl/" target="_blank">Query DSL — OpenSearch Documentation</a> — sursa principală recomandată</li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0003-crud.html">← Lecția 3: CRUD</a>
+  <a href="0005-mapping.html">Lecția 5: Mapping →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă rezultatele nu sunt relevante sau query-ul returnează prea puține/multe rezultate, descrie-mi cazul concret și optimizăm împreună.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

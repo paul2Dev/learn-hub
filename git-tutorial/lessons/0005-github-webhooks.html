@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 05 — GitHub Webhooks</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── comparison columns ── */
+    .compare-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .compare-col {
+      border: 1px solid #e8e5e0;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+    }
+    .compare-col.col-actions  { border-top: 3px solid #059669; }
+    .compare-col.col-webhooks { border-top: 3px solid #7c3aed; }
+    .compare-col h3 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .col-actions  h3 { color: #059669; }
+    .col-webhooks h3 { color: #7c3aed; }
+    .compare-col .flow-line {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      margin-bottom: 0.9rem;
+    }
+    .flow-line .fl-step {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .flow-line .fl-arrow {
+      color: #9ca3af;
+      font-size: 0.75rem;
+      padding-left: 0.9rem;
+    }
+    .fl-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.1rem 0.5rem;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .fl-badge.green { background: #d1fae5; color: #065f46; }
+    .fl-badge.violet { background: #ede9fe; color: #5b21b6; }
+    .compare-col p {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ── JSON payload block ── */
+    .json-block {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    .jk  { color: #89b4fa; }   /* key */
+    .jvs { color: #a6e3a1; }   /* string value */
+    .jvc { color: #6c7086; }   /* comment */
+    .jhd { color: #f9e2af; }   /* header */
+
+    /* ── decision table ── */
+    .decision-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.86rem;
+      margin: 1.25rem 0;
+    }
+    .decision-table th {
+      text-align: left;
+      padding: 0.55rem 0.9rem;
+      border: 1px solid #e8e5e0;
+      font-weight: 700;
+    }
+    .decision-table th.th-actions  { background: #f0fdf4; color: #065f46; }
+    .decision-table th.th-webhooks { background: #f5f3ff; color: #5b21b6; }
+    .decision-table td {
+      padding: 0.5rem 0.9rem;
+      border: 1px solid #e8e5e0;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    .decision-table tr:nth-child(even) td { background: #fafaf8; }
+
+    /* ── setup steps ── */
+    .setup-steps {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0;
+      counter-reset: ss;
+    }
+    .setup-steps li {
+      counter-increment: ss;
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+      font-size: 0.93rem;
+      line-height: 1.5;
+    }
+    .ss-num {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: white;
+      background: #7c3aed;
+      width: 1.5rem;
+      min-width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: inline-block;
+      text-align: center;
+      line-height: 1.5rem;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 0.2rem;
+    }
+    .setup-steps li > span { flex: 1; min-width: 0; }
+
+    /* ── real-world examples ── */
+    .examples-list {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0;
+    }
+    .examples-list li {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .ex-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .ex-body strong {
+      display: block;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 0.15rem;
+    }
+    .ex-body span {
+      font-size: 0.86rem;
+      color: #374151;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 520px) {
+      .compare-cols { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 05 &middot; Git &amp; GitHub Fluency</p>
+      <h1>GitHub Webhooks</h1>
+      <p class="tagline">What they are, how they differ from Actions, and when to reach for one</p>
+    </header>
+
+    <section>
+      <h2>The one-sentence definition</h2>
+      <p>
+        A webhook is a URL on <strong>your server</strong> that GitHub calls — with an HTTP
+        POST containing event data — whenever something happens in your repository.
+      </p>
+      <p>
+        Think of it this way: with
+        <a href="0004-github-actions.html">GitHub Actions</a>, GitHub runs code on
+        <em>its</em> servers. With webhooks, GitHub notifies <em>your</em> server, and
+        your code decides what to do. You provide the phone number; GitHub makes the call.
+      </p>
+    </section>
+
+    <section>
+      <h2>Actions vs. Webhooks: where the code runs</h2>
+      <p>This is the single most important distinction between the two:</p>
+
+      <div class="compare-cols">
+        <div class="compare-col col-actions">
+          <h3>GitHub Actions</h3>
+          <div class="flow-line">
+            <div class="fl-step"><span class="fl-badge green">event</span> push to main</div>
+            <div class="fl-arrow">↓</div>
+            <div class="fl-step"><span class="fl-badge green">runs on</span> GitHub's servers</div>
+            <div class="fl-arrow">↓</div>
+            <div class="fl-step"><span class="fl-badge green">executes</span> your .yml steps</div>
+            <div class="fl-arrow">↓</div>
+            <div class="fl-step"><span class="fl-badge green">result</span> ✓ / ✗ on commit</div>
+          </div>
+          <p>No server required. GitHub handles everything.</p>
+        </div>
+
+        <div class="compare-col col-webhooks">
+          <h3>GitHub Webhooks</h3>
+          <div class="flow-line">
+            <div class="fl-step"><span class="fl-badge violet">event</span> push to main</div>
+            <div class="fl-arrow">↓</div>
+            <div class="fl-step"><span class="fl-badge violet">posts to</span> https://yourapp.com/hook</div>
+            <div class="fl-arrow">↓</div>
+            <div class="fl-step"><span class="fl-badge violet">runs on</span> your server</div>
+            <div class="fl-arrow">↓</div>
+            <div class="fl-step"><span class="fl-badge violet">does</span> whatever you wrote</div>
+          </div>
+          <p>Requires a server that GitHub can reach over the internet.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>What GitHub sends</h2>
+      <p>
+        Every webhook delivery is an HTTP POST to your URL. It includes two important
+        headers and a JSON body describing exactly what happened:
+      </p>
+
+      <p><strong>Headers:</strong></p>
+      <pre class="json-block"><span class="jhd">X-GitHub-Event</span>: push
+<span class="jhd">X-Hub-Signature-256</span>: sha256=3a7bd3e2...  <span class="jvc">← security signature</span>
+<span class="jhd">Content-Type</span>: application/json</pre>
+
+      <p><strong>Body (the payload) — a push event example:</strong></p>
+      <pre class="json-block">{
+  <span class="jk">"ref"</span>: <span class="jvs">"refs/heads/main"</span>,              <span class="jvc">← which branch was pushed</span>
+  <span class="jk">"repository"</span>: {
+    <span class="jk">"name"</span>: <span class="jvs">"my-project"</span>,
+    <span class="jk">"full_name"</span>: <span class="jvs">"paulm/my-project"</span>
+  },
+  <span class="jk">"pusher"</span>: {
+    <span class="jk">"name"</span>: <span class="jvs">"paulm"</span>                       <span class="jvc">← who pushed</span>
+  },
+  <span class="jk">"commits"</span>: [
+    {
+      <span class="jk">"id"</span>: <span class="jvs">"a3f1c29"</span>,
+      <span class="jk">"message"</span>: <span class="jvs">"Add login validation"</span>,    <span class="jvc">← commit message</span>
+      <span class="jk">"author"</span>: { <span class="jk">"name"</span>: <span class="jvs">"Paul"</span> }
+    }
+  ]
+}</pre>
+
+      <p>
+        Every event type (PR opened, issue created, release published…) has its own payload
+        shape. The full list is in the
+        <a href="https://docs.github.com/en/webhooks/webhook-events-and-payloads"
+           target="_blank" rel="noopener noreferrer">Webhook Events and Payloads reference</a>.
+      </p>
+    </section>
+
+    <section>
+      <h2>Security: always verify the signature</h2>
+      <div class="callout">
+        <p>
+          When you create a webhook, you set a <strong>secret</strong>. GitHub uses it to
+          sign every payload and sends the signature in the
+          <code>X-Hub-Signature-256</code> header. Your server should compute the same
+          HMAC-SHA256 hash and compare — if they do not match, reject the request.
+          This prevents anyone else from sending fake events to your webhook URL.
+          The official docs include code examples for Node, Python, Ruby, and others.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>When to use each</h2>
+      <table class="decision-table">
+        <thead>
+          <tr>
+            <th class="th-actions">Reach for GitHub Actions when…</th>
+            <th class="th-webhooks">Reach for a Webhook when…</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Running tests, linting, or builds on GitHub's servers</td>
+            <td>You already have a server that must react to GitHub events</td>
+          </tr>
+          <tr>
+            <td>You don't want to run or maintain any server</td>
+            <td>Integrating GitHub with an external system (Jira, custom Slack bot, analytics DB)</td>
+          </tr>
+          <tr>
+            <td>Deploying via the Actions marketplace (<code>deploy to AWS</code>, etc.)</td>
+            <td>Triggering CI on an external server like Jenkins or TeamCity</td>
+          </tr>
+          <tr>
+            <td>Automating GitHub-internal tasks (labels, PR comments, releases)</td>
+            <td>Building your own tool that processes GitHub event data in real time</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <p>
+          <strong>Rule of thumb:</strong> if you don't have a server and the task lives
+          entirely inside GitHub, use Actions. If you have a server and need GitHub events
+          to flow <em>into</em> your own systems, use webhooks.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Setting one up: four steps</h2>
+      <ol class="setup-steps">
+        <li>
+          <span class="ss-num">1</span>
+          <span>Go to your repository on GitHub → <strong>Settings</strong> → <strong>Webhooks</strong> → <strong>Add webhook</strong>.</span>
+        </li>
+        <li>
+          <span class="ss-num">2</span>
+          <span>Enter your server's <strong>Payload URL</strong> (e.g., <code>https://yourapp.com/github-hook</code>), set Content-Type to <code>application/json</code>, and enter a <strong>Secret</strong> for signature verification.</span>
+        </li>
+        <li>
+          <span class="ss-num">3</span>
+          <span>Choose which events to subscribe to — you can select <em>Just the push event</em>, <em>Send me everything</em>, or pick individual events. Only subscribe to what you actually handle.</span>
+        </li>
+        <li>
+          <span class="ss-num">4</span>
+          <span>Click <strong>Add webhook</strong>. GitHub immediately sends a <code>ping</code> event to your URL. If your server responds with HTTP 200, the webhook is active. You can inspect all deliveries (and redeliver any of them for debugging) in the <em>Recent Deliveries</em> tab.</span>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Real-world examples</h2>
+      <ul class="examples-list">
+        <li>
+          <span class="ex-icon">&#x1F4AC;</span>
+          <div class="ex-body">
+            <strong>Custom Slack notifications</strong>
+            <span>When a PR is merged, your server receives the event and posts a richly-formatted message to Slack with the author, PR title, and a direct link — formatted exactly the way your team wants, not limited by a Marketplace action.</span>
+          </div>
+        </li>
+        <li>
+          <span class="ex-icon">&#x1F4CB;</span>
+          <div class="ex-body">
+            <strong>Jira / Linear sync</strong>
+            <span>When a GitHub issue is opened or closed, your server syncs the state to your project management tool automatically. Keeps both systems in agreement without manual updates.</span>
+          </div>
+        </li>
+        <li>
+          <span class="ex-icon">&#x1F3D7;&#xFE0F;</span>
+          <div class="ex-body">
+            <strong>Trigger an external CI server</strong>
+            <span>Your company uses Jenkins or TeamCity. On every push to <code>main</code>, GitHub fires a webhook to the Jenkins API, which starts the build pipeline on your own infrastructure.</span>
+          </div>
+        </li>
+        <li>
+          <span class="ex-icon">&#x1F4CA;</span>
+          <div class="ex-body">
+            <strong>Engineering metrics dashboard</strong>
+            <span>Every PR event (opened, reviewed, merged) writes a row to your database. Your team dashboard tracks mean-time-to-merge, review turnaround, and deployment frequency — data that Actions alone cannot produce.</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary source ── -->
+    <section class="primary-source">
+      <h2>Primary source</h2>
+      <p>
+        Read
+        <a href="https://docs.github.com/en/webhooks/about-webhooks"
+           target="_blank" rel="noopener noreferrer">
+          About Webhooks — GitHub Docs
+        </a>
+        for the official introduction, then bookmark
+        <a href="https://docs.github.com/en/webhooks/webhook-events-and-payloads"
+           target="_blank" rel="noopener noreferrer">
+          Webhook Events and Payloads
+        </a>
+        as a reference for every event type and its JSON shape — you will reach for it every
+        time you build a webhook handler.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        If you are building a webhook handler and are not sure how to structure it, paste
+        your code or question into the chat — your teacher will walk through it with you.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0004-github-actions.html">← Lesson 04: GitHub Actions</a>
+        <a class="nav-next" href="0006-cicd-pipelines.html">Lesson 06: CI/CD Pipelines →</a>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'When a subscribed event fires, GitHub sends your server…',
+        options: [
+          'An HTTP POST with JSON payload',
+          'An SSH command to run code',
+          'An email with all event details',
+          'A new pull request to review'
+        ],
+        correct: 0,
+        explain:
+          'GitHub delivers webhooks as HTTP POST requests. The body is a JSON payload ' +
+          'describing the event, and the <code>X-GitHub-Event</code> header tells you ' +
+          'which event type it is. Your server reads the body and acts accordingly.'
+      },
+      {
+        q: 'Unlike Actions, with webhooks your code runs on…',
+        options: [
+          'Your own server infrastructure',
+          'GitHub\'s runner machines always',
+          'GitHub Marketplace hosted servers',
+          'Cloud-based GitHub runners only'
+        ],
+        correct: 0,
+        explain:
+          'This is the core distinction. Actions runs on GitHub\'s virtual machines. ' +
+          'Webhooks just send an HTTP request to a URL you control — your code runs on ' +
+          'your server, not GitHub\'s. That is why webhooks require you to have a server.'
+      },
+      {
+        q: 'A webhook is the right tool when…',
+        options: [
+          'Your server must react to GitHub',
+          'You want tests on every push',
+          'You need GitHub to run code',
+          'CI needs to run on GitHub'
+        ],
+        correct: 0,
+        explain:
+          'Webhooks shine when events need to flow <em>out of</em> GitHub and <em>into</em> ' +
+          'your own systems — a database, a CI server, a notification service. If you just ' +
+          'need to run tests or automation without maintaining a server, Actions is the ' +
+          'right choice.'
+      }
+    ]);
+  </script>
+</body>
+</html>

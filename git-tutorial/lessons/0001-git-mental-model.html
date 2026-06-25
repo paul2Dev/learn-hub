@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 01 — The Git Commit Graph</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 01 &middot; Git &amp; GitHub Fluency</p>
+      <h1>The Git Commit Graph</h1>
+      <p class="tagline">What Git actually stores — and why it explains everything you feared</p>
+    </header>
+
+    <section>
+      <h2>Why this lesson first</h2>
+      <p>
+        Every Git situation that feels scary — a merge conflict, a rebase you are not sure about,
+        a "detached HEAD" warning — is scary for the same reason: you cannot see the structure
+        underneath. Once you can, these things become logical operations on a simple graph.
+        This lesson gives you that picture. Everything else in this course builds on top of it.
+      </p>
+    </section>
+
+    <section>
+      <h2>What a commit really is</h2>
+      <p>
+        A commit is <strong>not</strong> a "diff" or a list of changes. It is a
+        <strong>complete snapshot</strong> — a full record of every tracked file at that exact
+        moment. Along with the snapshot, each commit stores four things:
+      </p>
+      <ul>
+        <li>A unique identifier — a hash like <code>a3f1c29</code></li>
+        <li>Author name, email, and a timestamp</li>
+        <li>A commit message</li>
+        <li>A pointer to its <strong>parent commit</strong> — the commit that came before it</li>
+      </ul>
+      <p>
+        That last item — the parent pointer — is what creates the
+        <em>commit graph</em>: a chain of snapshots linked through time.
+      </p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 370 78" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Three commits A, B, C in a chain with arrows showing time flowing left to right">
+          <defs>
+            <marker id="arr1" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#9ca3af"/>
+            </marker>
+          </defs>
+          <!-- arrows -->
+          <line x1="72" y1="39" x2="158" y2="39"
+                stroke="#9ca3af" stroke-width="2" marker-end="url(#arr1)"/>
+          <line x1="202" y1="39" x2="288" y2="39"
+                stroke="#9ca3af" stroke-width="2" marker-end="url(#arr1)"/>
+          <!-- commits -->
+          <circle cx="50"  cy="39" r="22" fill="#4338ca"/>
+          <text x="50"  y="45" text-anchor="middle" fill="white"
+                font-size="16" font-weight="bold" font-family="'Courier New', monospace">A</text>
+          <circle cx="180" cy="39" r="22" fill="#4338ca"/>
+          <text x="180" y="45" text-anchor="middle" fill="white"
+                font-size="16" font-weight="bold" font-family="'Courier New', monospace">B</text>
+          <circle cx="310" cy="39" r="22" fill="#4338ca"/>
+          <text x="310" y="45" text-anchor="middle" fill="white"
+                font-size="16" font-weight="bold" font-family="'Courier New', monospace">C</text>
+          <!-- time label -->
+          <text x="183" y="72" text-anchor="middle" fill="#9ca3af"
+                font-size="11" font-family="system-ui, sans-serif">time &#x2192;</text>
+        </svg>
+        <p class="diagram-caption">
+          Commit B was built on A; commit C was built on B. Each stores a complete snapshot.
+        </p>
+      </div>
+
+      <div class="callout">
+        <p>
+          <strong>Real-world benefit:</strong> Because Git stores full snapshots (not diffs),
+          it can instantly show you what any commit looked like — no "replaying" of changes needed.
+          This is also why <code>git checkout &lt;hash&gt;</code> is instantaneous.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What a branch really is</h2>
+      <p>
+        Here is the insight that changes everything:
+        <strong>a branch is nothing more than a named pointer to a single commit.</strong>
+        That is all. It contains no files, no history — it is a label, 41 bytes on disk,
+        that says "this branch is currently pointing here."
+      </p>
+      <p>
+        When you run <code>git commit</code>, Git does exactly two things:
+      </p>
+      <ol>
+        <li>Creates a new commit, pointing back to the current commit as its parent.</li>
+        <li><strong>Moves the branch pointer forward</strong> to the new commit.</li>
+      </ol>
+      <p>
+        A branch "moves" because it is a pointer, and updating a pointer is trivially cheap.
+        Creating a new branch in Git takes milliseconds because nothing is copied — a new
+        pointer is just written.
+      </p>
+    </section>
+
+    <section>
+      <h2>What HEAD is</h2>
+      <p>
+        <code>HEAD</code> is a special pointer that tracks <strong>where you currently are</strong>
+        in the repository. Usually it points to a branch name, which in turn points to a commit.
+      </p>
+      <p>
+        When you run <code>git checkout feature</code>, HEAD moves to point at
+        <code>feature</code>. When you then make a commit, <code>feature</code> moves
+        forward to the new commit — and HEAD follows it, because HEAD points to the branch.
+      </p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 430 90" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Commit graph showing HEAD pointing to main, which points to commit C">
+          <defs>
+            <marker id="arr2" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#9ca3af"/>
+            </marker>
+            <marker id="arr-g" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#059669"/>
+            </marker>
+            <marker id="arr-a" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#b45309"/>
+            </marker>
+          </defs>
+
+          <!-- commit chain arrows -->
+          <line x1="72" y1="56" x2="158" y2="56"
+                stroke="#9ca3af" stroke-width="2" marker-end="url(#arr2)"/>
+          <line x1="202" y1="56" x2="288" y2="56"
+                stroke="#9ca3af" stroke-width="2" marker-end="url(#arr2)"/>
+
+          <!-- C → main -->
+          <line x1="332" y1="56" x2="350" y2="56"
+                stroke="#059669" stroke-width="2" marker-end="url(#arr-g)"/>
+
+          <!-- HEAD → main (vertical) -->
+          <line x1="381" y1="32" x2="381" y2="44"
+                stroke="#b45309" stroke-width="2" marker-end="url(#arr-a)"/>
+
+          <!-- commit circles -->
+          <circle cx="50"  cy="56" r="22" fill="#4338ca"/>
+          <text x="50"  y="62" text-anchor="middle" fill="white"
+                font-size="16" font-weight="bold" font-family="'Courier New', monospace">A</text>
+
+          <circle cx="180" cy="56" r="22" fill="#4338ca"/>
+          <text x="180" y="62" text-anchor="middle" fill="white"
+                font-size="16" font-weight="bold" font-family="'Courier New', monospace">B</text>
+
+          <circle cx="310" cy="56" r="22" fill="#4338ca"/>
+          <text x="310" y="62" text-anchor="middle" fill="white"
+                font-size="16" font-weight="bold" font-family="'Courier New', monospace">C</text>
+
+          <!-- main badge -->
+          <rect x="352" y="44" width="56" height="24" rx="12" fill="#059669"/>
+          <text x="380" y="60" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="12" font-weight="600">main</text>
+
+          <!-- HEAD badge -->
+          <rect x="352" y="10" width="56" height="22" rx="11" fill="#b45309"/>
+          <text x="380" y="25" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="12" font-weight="600">HEAD</text>
+        </svg>
+        <p class="diagram-caption">
+          <code>HEAD</code> points to <code>main</code>. <code>main</code> points to commit C.
+          You are on the <code>main</code> branch at commit C.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Why this explains what scared you</h2>
+      <p>
+        With the commit graph in mind, two things that felt mysterious become logical:
+      </p>
+      <ul>
+        <li>
+          <strong>Merge conflicts</strong> happen when two branches both changed the same lines
+          of the same file. Git tries to combine two snapshots automatically, but when it cannot
+          decide which change wins, it stops and asks you. It is not losing your work — it is
+          asking for guidance on one specific collision. <em>(Lesson 02 covers this step by step.)</em>
+        </li>
+        <li>
+          <strong>Rebase</strong> takes the commits on your branch and replays them on top of
+          a different commit — it rewrites the parent pointers to give your work a new starting
+          point. Once you see the graph, it looks exactly like what the word describes.
+          <em>(Lesson 03 covers when and why.)</em>
+        </li>
+      </ul>
+      <p>
+        Nothing is lost. Nothing is random. Git is operating on a graph of pointers,
+        and every command just moves or creates things in that graph.
+      </p>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary source ── -->
+    <section class="primary-source">
+      <h2>Primary source</h2>
+      <p>
+        Read
+        <a href="https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell"
+           target="_blank" rel="noopener noreferrer">
+          Pro Git, Chapter 3.1 — Branches in a Nutshell
+        </a>
+        by Scott Chacon &amp; Ben Straub. It is free, authoritative, and contains the best
+        diagrams of the commit graph you will find anywhere. Ten minutes with it will solidify
+        everything in this lesson.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        Ask your teacher — type anything that is unclear into the chat and you will get an
+        explanation built around exactly where you are right now.
+      </p>
+      <nav class="lesson-nav">
+        <span></span>
+        <a class="nav-next" href="0002-merge-conflicts.html">Lesson 02: Merge Conflicts →</a>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'In Git, a branch is…',
+        options: [
+          'A named pointer to one commit',
+          'A copy of all your files',
+          'A folder holding your changed code',
+          'A backup stored on the server'
+        ],
+        correct: 0,
+        explain:
+          'A branch is just a lightweight pointer — a label that stores one commit hash. ' +
+          'It contains no files and no history of its own. That is why creating a branch ' +
+          'is nearly instant.'
+      },
+      {
+        q: 'After you run <code>git commit</code>, the current branch…',
+        options: [
+          'Stays on the previous commit',
+          'Moves to the new commit',
+          'Splits into two new branches',
+          'Gets pushed to the remote'
+        ],
+        correct: 1,
+        explain:
+          'Git creates the new commit, then automatically updates the branch pointer to ' +
+          'point at it. That is what "the branch moves forward" means — the pointer updates.'
+      },
+      {
+        q: 'In Git, HEAD points to…',
+        options: [
+          'The very first commit ever',
+          'The commit you are on',
+          'The latest remote server commit',
+          'Always the tip of main'
+        ],
+        correct: 1,
+        explain:
+          'HEAD marks your current location in the repository. Usually it points to a ' +
+          'branch name (which then points to a commit). When you switch branches with ' +
+          '<code>git checkout</code>, HEAD follows.'
+      }
+    ]);
+  </script>
+</body>
+</html>

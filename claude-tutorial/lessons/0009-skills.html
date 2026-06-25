@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>09 · Claude Skills — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 9 din 12</p>
+  <h1>Claude Skills — Slash Commands Personalizate</h1>
+  <p class="tagline">Automatizează fluxurile repetitive cu comenzi proprii — de la /code-review la /deploy, orice workflow devine o singură comandă.</p>
+
+  <section>
+    <h2>Ce sunt Skills?</h2>
+    <p>Skills sunt <strong>slash commands personalizate</strong> pe care tu le definești. Un skill e un fișier Markdown cu instrucțiuni pentru Claude, salvat în <code>.claude/commands/</code> al proiectului sau în <code>~/.claude/commands/</code> pentru a fi disponibil global.</p>
+    <p>Când tastezi <code>/code-review</code> în Claude Code, de fapt rulezi un skill — un fișier Markdown cu instrucțiuni detaliate despre cum să facă code review-ul. Poți crea propriile tale slash commands exact la fel.</p>
+    <div class="callout">
+      <p><strong>Structura:</strong> Fișierul skill = instrucțiunile pe care Claude le primește când invoci comanda. Ce scrii în fișier, aia face Claude.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>De ce să folosești Skills?</h2>
+    <p>Trei probleme reale pe care le rezolvă skills:</p>
+    <ul>
+      <li><strong>Repetitivitate</strong> — Dacă trimiți același prompt de 10 ori pe zi ("fă code review cu accent pe securitate și performanță"), transformă-l într-un skill. O dată definit, <code>/review</code> face tot ce ai scris.</li>
+      <li><strong>Standardizare în echipă</strong> — Skills salvate în <code>.claude/commands/</code> și commituite în git sunt disponibile tuturor din echipă. Toți fac code review la fel, cu aceleași criterii.</li>
+      <li><strong>Instrucțiuni complexe, invocație simplă</strong> — Un skill poate conține 50 de linii de instrucțiuni, exemple de format, contexte de cod. Tu tastezi <code>/deploy</code> și obții tot comportamentul complex.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Cum creezi un Skill</h2>
+    <p>Creează directorul și un fișier <code>.md</code> — numele fișierului devine numele comenzii:</p>
+    <pre><code>mkdir -p .claude/commands
+# Fișierul acesta se invocă cu /code-review
+touch .claude/commands/code-review.md</code></pre>
+    <p>Conținutul fișierului e exact prompt-ul pe care Claude îl primește:</p>
+    <pre><code># Code Review
+
+Fă un code review al modificărilor din branch-ul curent față de main.
+
+Structurează răspunsul în trei secțiuni:
+1. **Probleme critice** — bug-uri, vulnerabilități de securitate, logică greșită
+2. **Îmbunătățiri** — performanță, lizibilitate, refolosire cod
+3. **Ce e bine** — pattern-uri corecte, cod curat (minim 2-3 observații pozitive)
+
+Dacă nu există probleme critice, spune explicit asta.
+Nu comenta stilul de formatare dacă există deja un linter configurat.</code></pre>
+    <p>Acum invoci din orice sesiune Claude Code:</p>
+    <pre><code>&gt; /code-review</code></pre>
+  </section>
+
+  <section>
+    <h2>Argumente dinamice cu $ARGUMENTS</h2>
+    <p>Skills pot accepta argumente dinamice cu placeholder-ul <code>$ARGUMENTS</code>:</p>
+    <pre><code># .claude/commands/new-feature.md
+
+Creează un feature nou pentru: $ARGUMENTS
+
+Pași:
+1. Analizează codul existent pentru a înțelege pattern-urile folosite
+2. Implementează feature-ul urmând convențiile din proiect
+3. Adaugă teste unitare
+4. Actualizează documentația relevantă dacă e necesar</code></pre>
+    <p>Invocarea cu argument:</p>
+    <pre><code>&gt; /new-feature sistem de autentificare cu JWT</code></pre>
+    <p><code>$ARGUMENTS</code> devine <em>"sistem de autentificare cu JWT"</em>. Claude primește instrucțiunile tale complete plus argumentul tău.</p>
+    <div class="callout callout--tip">
+      <p><strong>Pattern util:</strong> Skills fără <code>$ARGUMENTS</code> pentru fluxuri fixe (code review, standup). Skills cu <code>$ARGUMENTS</code> pentru fluxuri parametrizabile (new-feature, debug-issue, explain-module).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Skills de proiect vs. Skills globale</h2>
+    <p>Skills pot fi stocate în două locuri, cu scopuri diferite:</p>
+    <ul>
+      <li><strong>De proiect</strong> — <code>.claude/commands/</code> în rădăcina proiectului. Disponibile doar în acel proiect. Commituite în git → accesibile tuturor din echipă automat.</li>
+      <li><strong>Globale</strong> — <code>~/.claude/commands/</code> în home directory. Disponibile în orice proiect, pe mașina ta. Invizibile pentru restul echipei.</li>
+    </ul>
+    <div class="callout callout--tip">
+      <p><strong>Strategie recomandată:</strong> Skills legate de proiect (deploy, convenții specifice stack-ului, checklist de PR) → de proiect. Skills legate de tine ca programator (stilul tău de code review, template-ul tău de commit message) → globale.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exemple concrete de Skills utile</h2>
+    <p><strong>1. Daily standup</strong> (<code>.claude/commands/standup.md</code>):</p>
+    <pre><code>Uită-te la commit-urile mele din ultimele 24 de ore.
+Generează un rezumat pentru standup-ul zilnic în format:
+- Ce am terminat ieri
+- Ce fac azi (bazat pe branch-ul curent și TODO-urile deschise)
+- Blocanți (dacă există comentarii cu "blocked" sau "waiting")</code></pre>
+    <p><strong>2. Pregătire PR</strong> (<code>.claude/commands/prep-pr.md</code>):</p>
+    <pre><code>Pregătește PR-ul pentru branch-ul curent:
+1. Verifică că nu există console.log sau debugger lăsat în cod
+2. Verifică că testele trec
+3. Generează descrierea PR: Summary, Changes Made, How to Test
+4. Propune un titlu scurt, clar, în format Conventional Commits</code></pre>
+    <p><strong>3. Audit securitate rapid</strong> (<code>.claude/commands/security-check.md</code>):</p>
+    <pre><code>Auditează codul modificat în sesiunea curentă pentru:
+- SQL injection și XSS
+- Date sensibile expuse în logs sau răspunsuri API
+- Validare input lipsă la granițele sistemului (input din request)
+- Dependențe cu vulnerabilități cunoscute (verifică package.json dacă există)</code></pre>
+    <p><strong>4. Explain pentru onboarding</strong> (<code>.claude/commands/explain.md</code>):</p>
+    <pre><code>Explică modulul sau fișierul: $ARGUMENTS
+
+Structurează explicația pentru un programator nou în proiect:
+1. Ce problemă rezolvă
+2. Cum e structurat (fișiere cheie și rolul lor)
+3. Cum se integrează cu restul sistemului
+4. Ce trebuie să știe înainte să modifice ceva</code></pre>
+  </section>
+
+  <section>
+    <h2>Skills cu resurse atașate</h2>
+    <p>Un skill poate include fișiere din proiect ca referință, folosind sintaxa de includere Markdown. Util pentru skills care trebuie să respecte un standard specific:</p>
+    <pre><code># .claude/commands/migration.md
+
+Creează o nouă migrare de bază de date pentru: $ARGUMENTS
+
+Urmează exact structura din fișierele existente de migrare.
+Convenții obligatorii:
+- Fiecare migrare are up() și down()
+- Comentariu în header cu autorul și data
+- Testează că down() revine exact la starea inițială</code></pre>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-9"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/slash-commands" target="_blank" rel="noopener">Claude Code Slash Commands — documentație oficială Anthropic</a><br/>
+    Referința completă pentru slash commands built-in și cum să creezi comenzi personalizate pentru proiect și global.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> și spune: <em>"Creează un skill /code-review personalizat pentru proiectul meu."</em> El analizează proiectul și scrie skill-ul potrivit.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0008-productivitate-zilnica.html">← Lecția 8: Productivitate Zilnică</a>
+    <a class="nav-next" href="0010-hooks.html">Lecția 10: Hooks →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-9', [
+  {
+    q: 'Unde salvezi un skill care trebuie să fie disponibil tuturor din echipă?',
+    options: [
+      'În ~/.claude/commands/ pe mașina ta',
+      'În .claude/commands/ în proiect, commituit în git',
+      'În CLAUDE.md al proiectului',
+      'În settings.json al extensiei VS Code'
+    ],
+    correct: 1,
+    explain: '.claude/commands/ din proiect e commituit în git și disponibil automat tuturor celor care clonează repo-ul. ~/.claude/commands/ e local pe mașina ta și invizibil pentru echipă.'
+  },
+  {
+    q: 'Ce conține, tehnic, un fișier de skill?',
+    options: [
+      'Cod JavaScript care rulează în Node.js',
+      'Un fișier JSON cu configurația comenzii',
+      'Un fișier Markdown cu instrucțiunile pe care Claude le primește la invocare',
+      'Un script bash care se execută automat'
+    ],
+    correct: 2,
+    explain: 'Un skill e pur și simplu un fișier Markdown — ce scrii acolo e exact prompt-ul pe care Claude îl primește când tastezi /comanda. Simplu și direct.'
+  },
+  {
+    q: 'Cum trimiți un argument dinamic la un skill?',
+    options: [
+      'Cu sintaxa /skill --arg="valoare"',
+      'Cu placeholder-ul $ARGUMENTS în fișierul skill',
+      'Cu variabile de mediu definite în .env',
+      'Nu se pot trimite argumente la skills'
+    ],
+    correct: 1,
+    explain: '$ARGUMENTS în fișierul skill e înlocuit cu tot ce scrii după numele comenzii. De exemplu: /new-feature sistem login — "sistem login" devine $ARGUMENTS.'
+  }
+]);
+</script>
+</body>
+</html>

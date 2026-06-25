@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3 — YAGNI, KISS, DRY | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 3 din 10</span>
+    <span>⏱ 15 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>YAGNI, KISS, DRY</h1>
+  <p>Trei principii ale simplității care devin și mai importante când AI poate genera complexitate fără costuri aparente.</p>
+
+  <h2>Capcana supraingineriei cu AI</h2>
+  <p>AI vrea să fie pe plac. Cere-i să construiască o funcționalitate de înregistrare a utilizatorilor și va returna adesea un factory, un repository, un strat de servicii, un event dispatcher și un DTO — chiar dacă aplicația ta este un instrument intern de două pagini. Codul este arhitectural coerent. Este și masiv supraingineriat.</p>
+  <p>YAGNI, KISS și DRY sunt cele trei întrebări pe care le pui înainte de a accepta orice cod generat — sau orice idee proprie:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">Y</div>
+      <div class="arch-info">
+        <h4>YAGNI — You Aren't Gonna Need It</h4>
+        <p>Nu construi ceva până când nu ai cu adevărat nevoie de el. Șterge funcționalitățile speculative.</p>
+      </div>
+      <div class="arch-tag">anti-speculativ</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">K</div>
+      <div class="arch-info">
+        <h4>KISS — Keep It Simple, Stupid</h4>
+        <p>Preferă cea mai simplă soluție care funcționează. Complexitatea trebuie să se justifice.</p>
+      </div>
+      <div class="arch-tag">anti-complexitate</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">D</div>
+      <div class="arch-info">
+        <h4>DRY — Don't Repeat Yourself</h4>
+        <p>Fiecare bucată de cunoaștere ar trebui să aibă o singură reprezentare autoritativă în sistem.</p>
+      </div>
+      <div class="arch-tag">anti-duplicare</div>
+    </div>
+  </div>
+
+  <h2>YAGNI — You Aren't Gonna Need It</h2>
+  <p>YAGNI spune: nu implementa ceva bazat pe o cerință ipotetică viitoare. Construiește ce cere specificația curentă, și nimic altceva. Funcționalitățile speculative costă de două ori: o dată la construire și din nou la mentenanță (sau la eliminare, când ipoteza se dovedește greșită).</p>
+
+  <div class="callout warn">
+    <div class="callout-label">Semnale YAGNI în output-ul AI</div>
+    Caută: clase de bază abstracte cu o singură subclasă; arhitecturi de plugin pentru o funcționalitate cu o singură implementare; flag-uri de configurare care nu sunt niciodată setate; metode utilitare generice apelate o singură dată.
+  </div>
+
+  <pre><code>// Încălcare YAGNI — sistem de plugin pe care specificația nu l-a cerut
+class PaymentProcessorFactory {
+    private array $drivers = [];
+
+    public function register(string $name, callable $driver): void {
+        $this->drivers[$name] = $driver;
+    }
+    public function make(string $name): PaymentGateway {
+        return ($this->drivers[$name])();
+    }
+}
+// Specificația spune: "suportă Stripe". Atât.
+// O clasă directă StripeGateway costă cu 80% mai puțin de citit și întreținut.</code></pre>
+
+  <p>Ironia dureroasă: AI construiește sistemul de plugin în câteva secunde, deci pare gratuit. Dar plătești pentru el de fiecare dată când integrezi un nou dezvoltator, depanezi o problemă în producție sau înțelegi ce face sistemul.</p>
+
+  <h2>KISS — Keep It Simple, Stupid</h2>
+  <p>KISS nu înseamnă „scrie cod banal." Înseamnă: când ai două soluții care rezolvă aceeași problemă la fel de bine, preferă-o pe cea pe care un nou dezvoltator o poate înțelege în cinci minute. Complexitatea este un cost, iar acel cost se compune în timp.</p>
+
+  <p>Întrebarea KISS este: <strong>care este cel mai simplu lucru care ar putea funcționa?</strong> Pornește de acolo. Adaugă complexitate numai când versiunea simplă nu poate demonstrabil să îndeplinească cerința.</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Abordare complexă</th><th>Abordare simplă</th><th>Când adaugi complexitate</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Istoricul comenzilor prin event sourcing</td>
+        <td>Timestamp <code>updated_at</code> + soft delete</td>
+        <td>Când ai nevoie de audit trail complet cu replay</td>
+      </tr>
+      <tr>
+        <td>Microservicii per domeniu</td>
+        <td>Monolit cu foldere de module clare</td>
+        <td>Când echipa sau scalabilitatea o cer cu adevărat</td>
+      </tr>
+      <tr>
+        <td>DSL generic pentru query builder</td>
+        <td>Două query-uri Eloquent specifice</td>
+        <td>Când ai 10+ tipare de query similare</td>
+      </tr>
+      <tr>
+        <td>Cache Redis + pattern cache-aside</td>
+        <td>Query direct în baza de date cu index</td>
+        <td>Când query-ul este măsurabil lent sub încărcare</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>DRY — Don't Repeat Yourself</h2>
+  <p>DRY este cel mai înțeles greșit dintre cele trei. Nu este despre eliminarea liniilor de cod duplicate. Este despre eliminarea <strong>cunoașterii</strong> duplicate. Pragmatic Programmers l-au formulat precis: <em>„Fiecare bucată de cunoaștere trebuie să aibă o singură reprezentare neambiguă și autoritativă într-un sistem."</em></p>
+
+  <p>Duplicarea codului este adesea un simptom. Boala este duplicarea cunoașterii: două locuri care „știu" amândouă aceeași regulă de business, constrângere de validare sau schemă de date. Când regula se schimbă, trebuie să actualizezi ambele — și dacă ratezi una, ai un bug.</p>
+
+  <pre><code>// Încălcare DRY — regula de validare duplicată în două locuri
+// OrderController.php
+$request->validate(['amount' => 'required|numeric|min:0.01|max:10000']);
+
+// RefundController.php
+$request->validate(['amount' => 'required|numeric|min:0.01|max:10000']);
+
+// Rezolvare DRY — o singură locație autoritativă pentru regulă
+// AmountRule.php
+class AmountRule {
+    public static function rules(): array {
+        return ['required', 'numeric', 'min:0.01', 'max:10000'];
+    }
+}
+// Ambele controllere apelează AmountRule::rules()</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Anti-pattern DRY: abstracție prematură</div>
+    Nu aplica DRY pe cod doar pentru că arată similar. Două lucruri care seamănă dar reprezintă concepte de business diferite ar trebui să rămână separate — cuplarea lor deoarece împart trei linii azi cauzează durere când vor diverge mâine. Așteaptă până ai trei sau mai multe cazuri înainte de a abstrage.
+  </div>
+
+  <h2>Cum interacționează cele trei principii</h2>
+  <p>Aceste trei principii trag în direcții ușor diferite, și această tensiune este productivă:</p>
+  <ul>
+    <li>YAGNI te oprește să construiești lucruri de care nu ai nevoie.</li>
+    <li>KISS te oprește să faci lucrurile necesare mai complexe decât trebuie să fie.</li>
+    <li>DRY te oprește să duplici cunoașterea odată ce ai ales ce să construiești.</li>
+  </ul>
+  <p>Aplicate împreună, produc cel mai mic și mai clar sistem care îndeplinește cerințele actuale — care este și cel mai ușor sistem de extins când cerințele se schimbă cu adevărat.</p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Audit al simplității</div>
+    <ol>
+      <li>Deschide orice clasă de serviciu generată recent de AI în proiectul tău.</li>
+      <li>Evidențiază fiecare linie care există pentru a suporta o cerință <em>viitoare</em> (verificare YAGNI).</li>
+      <li>Identifică cel mai complex tipar din clasă (lucrul care ar dura cel mai mult să-l explici unui nou angajat). Este complexitatea aceea câștigată? (verificare KISS)</li>
+      <li>Găsește orice regulă de business duplicată — aceeași validare, formulă sau constantă apărând în două locuri. (verificare DRY)</li>
+      <li>Șterge sau consolidează ce găsești. Măsoară: câte linii ai eliminat?</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/" target="_blank"><em>The Pragmatic Programmer</em> — Hunt &amp; Thomas</a>. Capitolul 2 acoperă DRY în profunzime; Capitolul 3 introduce principiul mai larg al evitării speculației. Sursa definitivă pentru toate cele trei principii.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Un dezvoltator adaugă un sistem de înregistrare a plugin-urilor „în caz că vom avea nevoie de alte gateway-uri de plată mai târziu." Ce principiu încalcă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">DRY — sistemul duplică logica gateway-ului în două locuri</button></li>
+        <li><button data-correct="false">KISS — API-ul de înregistrare este prea complex de înțeles</button></li>
+        <li><button data-correct="true">YAGNI — sistemul a fost construit pentru a satisface o cerință ipotetică viitoare</button></li>
+        <li><button data-correct="false">SRP — sistemul de înregistrare are mai mult de o responsabilitate</button></li>
+      </ul>
+      <div class="quiz-feedback">YAGNI este principiul împotriva generalității speculative. Construirea infrastructurii pentru a suporta cerințe viitoare care nu au fost specificate — și care poate nu vor fi niciodată — este o încălcare YAGNI. Plătești costul de mentenanță acum; beneficiul poate să nu ajungă niciodată.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">KISS NU înseamnă care dintre următoarele?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Preferă un query de două linii față de un DSL custom pentru query builder când ambele funcționează</button></li>
+        <li><button data-correct="true">Scrie cod trivial astfel încât dezvoltatorii juniori să nu fie nevoiți să învețe nimic</button></li>
+        <li><button data-correct="false">Alege arhitectura mai simplă până când complexitatea este demonstrabil necesară</button></li>
+        <li><button data-correct="false">Fă ca un nou dezvoltator să poată înțelege soluția în cinci minute</button></li>
+      </ul>
+      <div class="quiz-feedback">KISS înseamnă selectarea celei mai simple soluții care rezolvă corect problema — nu simplificarea excesivă a codului sau evitarea tuturor tiparelor avansate. Complexitatea este permisă când este cu adevărat necesară și își justifică costul.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">DRY vizează în principal eliminarea duplicării a ce?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Duplicate ale numelor de funcții în diferite module sau fișiere</button></li>
+        <li><button data-correct="false">Linii de cod duplicate în oricare două fișiere din codebase</button></li>
+        <li><button data-correct="true">Cunoaștere duplicată — reguli de business encodate în mai mult de un loc</button></li>
+        <li><button data-correct="false">Atribuiri de variabile duplicate în interiorul unui singur corp de funcție</button></li>
+      </ul>
+      <div class="quiz-feedback">DRY vizează duplicarea cunoașterii, nu duplicarea liniilor. Două funcții pot arăta identic dar reprezintă concepte de business diferite și ar trebui să rămână separate. Invers, aceeași regulă de business aplicată în două fișiere este o încălcare DRY chiar dacă codul arată diferit.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Când este potrivit să abstractizezi două bucăți de cod cu aspect similar?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Imediat, ori de câte ori două funcții împart mai mult de trei linii de cod</button></li>
+        <li><button data-correct="false">Doar după ce peer review confirmă că duplicarea este intenționată</button></li>
+        <li><button data-correct="true">Când ai trei sau mai multe cazuri și ești sigur că reprezintă aceeași cunoaștere</button></li>
+        <li><button data-correct="false">Niciodată — fiecare funcție ar trebui scrisă independent pentru a evita cuplajul</button></li>
+      </ul>
+      <div class="quiz-feedback">„Regula celor trei" este o euristică practică DRY: tolerezi duplicarea până la a treia apariție, apoi abstractizezi. Două apariții ar putea fi coincidență; trei sugerează un concept comun genuini care merită extras.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce este YAGNI deosebit de important când lucrezi cu cod generat de AI?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece AI nu poate genera tipare complexe precum factory-uri sau sisteme de evenimente</button></li>
+        <li><button data-correct="false">Deoarece AI percepe mai mulți tokeni pentru generarea infrastructurii speculative</button></li>
+        <li><button data-correct="true">Deoarece AI generează complexitate fără costuri aparente, făcând supraingineria să pară gratuită</button></li>
+        <li><button data-correct="false">Deoarece codul generat de AI include întotdeauna plugin-uri și adaptoare în mod implicit</button></li>
+      </ul>
+      <div class="quiz-feedback">AI generează un sistem de evenimente sau un factory de plugin-uri în câteva secunde — deci complexitatea speculativă pare că nu costă nimic. Dar plătești în continuare costul complet de mentenanță: să-l citești, să-l explici, să-l depanezi și să-l elimini când cerințele se dovedesc diferite față de anticipat.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Când intră DRY în conflict cu YAGNI?"</em> sau <em>„Cum resping cererea unui client pentru un sistem „flexibil"?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0002-solid-principles.html">← Lecția 2: Principiile SOLID</a>
+    <a href="0004-systems-thinking.html">Lecția 4: Gândire Sistemică →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

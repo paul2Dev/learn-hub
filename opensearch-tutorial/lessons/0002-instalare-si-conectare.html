@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 2 — Instalare și conectare din Laravel</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 02 · OpenSearch + Laravel</span>
+  <h1>Instalare și conectare din Laravel</h1>
+  <p class="subtitle">Docker + pachet PHP + configurare .env — de la zero la prima conexiune</p>
+</div>
+
+<!-- ══════════════════════════════════════════ DOCKER ══ -->
+<h2>1. Pornești OpenSearch cu Docker</h2>
+
+<p>
+  Cel mai simplu mod de a rula OpenSearch local este prin Docker.
+  Creează un fișier <code>docker-compose.yml</code> în rădăcina proiectului Laravel:
+</p>
+
+<pre><code><span class="cm"># docker-compose.yml</span>
+version: <span class="str">'3.8'</span>
+services:
+
+  opensearch:
+    image: opensearchproject/opensearch:<span class="num">2.17.0</span>
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - discovery.type=single-node          <span class="cm"># mod development, un singur nod</span>
+      - bootstrap.memory_lock=<span class="str">true</span>
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - DISABLE_SECURITY_PLUGIN=<span class="str">true</span>        <span class="cm"># dezactivat pentru dev local</span>
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Admin@1234  <span class="cm"># necesar din v2.12+</span>
+    ulimits:
+      memlock:
+        soft: -<span class="num">1</span>
+        hard: -<span class="num">1</span>
+      nofile:
+        soft: <span class="num">65536</span>
+        hard: <span class="num">65536</span>
+    ports:
+      - <span class="str">"9200:9200"</span>
+      - <span class="str">"9600:9600"</span>
+    networks:
+      - app-network
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:<span class="num">2.17.0</span>
+    container_name: opensearch-dashboards
+    ports:
+      - <span class="str">"5601:5601"</span>
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=<span class="str">true</span>
+    depends_on:
+      - opensearch
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge</code></pre>
+
+<div class="box box-warn">
+  <span class="box-title">Windows / WSL — mapare memorie</span>
+  Pe Windows cu WSL, dacă OpenSearch nu pornește, rulează în PowerShell ca administrator:
+  <code>wsl -d docker-desktop sysctl -w vm.max_map_count=262144</code>
+</div>
+
+<h3>Pornire și verificare</h3>
+
+<pre><code><span class="cm"># Pornești containerele</span>
+docker-compose up -d
+
+<span class="cm"># Verifici că OpenSearch răspunde (după ~30 secunde)</span>
+curl http://localhost:9200
+
+<span class="cm"># Răspuns așteptat:</span>
+{
+  <span class="str">"name"</span>: <span class="str">"opensearch-node1"</span>,
+  <span class="str">"cluster_name"</span>: <span class="str">"opensearch-cluster"</span>,
+  <span class="str">"version"</span>: { <span class="str">"number"</span>: <span class="str">"2.17.0"</span>, ... }
+}</code></pre>
+
+<div class="box box-tip">
+  <span class="box-title">OpenSearch Dashboards</span>
+  Interfața vizuală este disponibilă la <code>http://localhost:5601</code>.
+  E opțională, dar utilă pentru a vedea indexurile și a testa query-uri interactiv.
+</div>
+
+<!-- ══════════════════════════════════════════ DOUA OPTIUNI ══ -->
+<h2>2. Două opțiuni de integrare Laravel</h2>
+
+<p>Există două pachete principale. Alege în funcție de nevoie:</p>
+
+<table>
+  <tr>
+    <th>Pachet</th>
+    <th>Abordare</th>
+    <th>Când îl folosești</th>
+  </tr>
+  <tr>
+    <td><code>pdphilip/opensearch</code></td>
+    <td>Eloquent ORM complet — modele, relații, query builder</td>
+    <td><strong>Recomandat</strong> — vrei să lucrezi ca cu Eloquent normal</td>
+  </tr>
+  <tr>
+    <td><code>friendsofcat/opensearch-client</code></td>
+    <td>Clientul PHP oficial înregistrat ca serviciu Laravel</td>
+    <td>Vrei control low-level total, sau query DSL pur</td>
+  </tr>
+</table>
+
+<p>
+  Vom folosi <strong><code>pdphilip/opensearch</code></strong> ca abordare principală (Lecțiile 7+),
+  și <strong><code>friendsofcat/opensearch-client</code></strong> pentru a înțelege CRUD și query DSL pur
+  (Lecțiile 3–6). Astfel înveți ambele straturi.
+</p>
+
+<!-- ══════════════════════════════════════════ PACHET LOW-LEVEL ══ -->
+<h2>3. Instalare clientul low-level (Lecțiile 3–6)</h2>
+
+<pre><code>composer require friendsofcat/opensearch-client</code></pre>
+
+<pre><code><span class="cm"># Publică fișierul de configurare</span>
+php artisan vendor:publish --provider=<span class="str">"OpenSearch\Laravel\Client\ServiceProvider"</span></code></pre>
+
+<p>Editează <code>config/opensearch.client.php</code>:</p>
+
+<pre><code><span class="cm">// config/opensearch.client.php</span>
+<span class="kw">return</span> [
+    <span class="str">'default'</span> => env(<span class="str">'OPENSEARCH_CONNECTION'</span>, <span class="str">'default'</span>),
+    <span class="str">'connections'</span> => [
+        <span class="str">'default'</span> => [
+            <span class="str">'hosts'</span> => [
+                env(<span class="str">'OPENSEARCH_HOST'</span>, <span class="str">'http://localhost:9200'</span>),
+            ],
+            <span class="str">'httpClientOptions'</span> => [
+                <span class="str">'timeout'</span> => <span class="num">5</span>,
+            ],
+        ],
+    ],
+];</code></pre>
+
+<p>Adaugă în <code>.env</code>:</p>
+
+<pre><code>OPENSEARCH_CONNECTION=default
+OPENSEARCH_HOST=http://localhost:9200</code></pre>
+
+<!-- ══════════════════════════════════════════ SERVICE ══ -->
+<h2>4. Creează un Service Laravel pentru OpenSearch</h2>
+
+<p>
+  Cel mai bun pattern în Laravel este să înregistrezi un <strong>Service class</strong>
+  care primește clientul prin dependency injection.
+</p>
+
+<pre><code><span class="cm">// app/Services/OpenSearchService.php</span>
+<span class="kw">namespace</span> App\Services;
+
+<span class="kw">use</span> OpenSearch\Laravel\Client\ClientBuilderInterface;
+
+<span class="kw">class</span> <span class="cls">OpenSearchService</span>
+{
+    <span class="kw">protected</span> $client;
+
+    <span class="kw">public function</span> <span class="fn">__construct</span>(ClientBuilderInterface $builder)
+    {
+        $<span class="kw">this</span>->client = $builder-><span class="fn">default</span>();
+    }
+
+    <span class="kw">public function</span> <span class="fn">ping</span>(): bool
+    {
+        <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">ping</span>();
+    }
+}</code></pre>
+
+<p>Înregistrează-l în <code>AppServiceProvider</code> sau folosește-l direct prin DI:</p>
+
+<pre><code><span class="cm">// Injectare directă în Controller</span>
+<span class="kw">use</span> App\Services\OpenSearchService;
+
+<span class="kw">class</span> <span class="cls">ArticleController</span> <span class="kw">extends</span> <span class="cls">Controller</span>
+{
+    <span class="kw">public function</span> <span class="fn">__construct</span>(
+        <span class="kw">private</span> <span class="cls">OpenSearchService</span> $search
+    ) {}
+
+    <span class="kw">public function</span> <span class="fn">index</span>()
+    {
+        $ok = $<span class="kw">this</span>->search-><span class="fn">ping</span>();
+        <span class="kw">return</span> <span class="fn">response</span>()-><span class="fn">json</span>(['connected' => $ok]);
+    }
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ VERIFICARE ══ -->
+<h2>5. Verifici conexiunea cu Artisan</h2>
+
+<p>Cel mai simplu test — o comandă Artisan:</p>
+
+<pre><code><span class="cm">// app/Console/Commands/OpenSearchPing.php</span>
+<span class="kw">namespace</span> App\Console\Commands;
+
+<span class="kw">use</span> Illuminate\Console\Command;
+<span class="kw">use</span> OpenSearch\Laravel\Client\ClientBuilderInterface;
+
+<span class="kw">class</span> <span class="cls">OpenSearchPing</span> <span class="kw">extends</span> <span class="cls">Command</span>
+{
+    <span class="kw">protected</span> $signature   = <span class="str">'opensearch:ping'</span>;
+    <span class="kw">protected</span> $description = <span class="str">'Testează conexiunea la OpenSearch'</span>;
+
+    <span class="kw">public function</span> <span class="fn">handle</span>(ClientBuilderInterface $builder): <span class="kw">int</span>
+    {
+        $client = $builder-><span class="fn">default</span>();
+
+        <span class="kw">if</span> ($client-><span class="fn">ping</span>()) {
+            $<span class="kw">this</span>-><span class="fn">info</span>(<span class="str">'✓ OpenSearch este disponibil!'</span>);
+            $info = $client-><span class="fn">info</span>();
+            $<span class="kw">this</span>-><span class="fn">line</span>(<span class="str">'Versiune: '</span> . $info[<span class="str">'version'</span>][<span class="str">'number'</span>]);
+            <span class="kw">return</span> <span class="num">0</span>;
+        }
+
+        $<span class="kw">this</span>-><span class="fn">error</span>(<span class="str">'✗ Nu pot contacta OpenSearch!'</span>);
+        <span class="kw">return</span> <span class="num">1</span>;
+    }
+}</code></pre>
+
+<pre><code>php artisan opensearch:ping
+<span class="cm"># ✓ OpenSearch este disponibil!
+# Versiune: 2.17.0</span></code></pre>
+
+<!-- ══════════════════════════════════════════ ARHITECTURA ══ -->
+<h2>6. Cum se potrivesc piesele</h2>
+
+<div class="tree">
+  <div class="tree-root">
+    <span class="tree-label">Laravel App</span>
+    <ul class="tree-children">
+      <li class="tree-item">
+        <span class="tree-label">.env</span>
+        <span class="tree-note">OPENSEARCH_HOST=http://localhost:9200</span>
+      </li>
+      <li class="tree-item">
+        <span class="tree-label">config/opensearch.client.php</span>
+        <span class="tree-note">configurare conexiune, hosts, timeout</span>
+      </li>
+      <li class="tree-item">
+        <span class="tree-label">app/Services/OpenSearchService.php</span>
+        <ul class="tree-children">
+          <li class="tree-item">
+            <span class="tree-label">ClientBuilderInterface</span>
+            <span class="tree-note">injectat prin DI</span>
+            <ul class="tree-children">
+              <li class="tree-item">
+                <span class="tree-label">ClientBuilder</span>
+                <ul class="tree-children">
+                  <li class="tree-item">
+                    <span class="tree-label">OpenSearch Client</span>
+                    <span class="tree-badge">HTTP REST API</span>
+                    <ul class="tree-children">
+                      <li class="tree-item">
+                        <span class="tree-label">OpenSearch :9200</span>
+                        <span class="tree-badge green">container Docker</span>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li class="tree-item">
+        <span class="tree-label">app/Console/Commands/OpenSearchPing.php</span>
+        <span class="tree-badge orange">test conexiune</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="B">
+    <p>1. Ce face <code>discovery.type=single-node</code> în docker-compose?</p>
+    <button class="quiz-opt" data-val="A">Activează autentificarea cu un singur utilizator</button>
+    <button class="quiz-opt" data-val="B">Spune OpenSearch că rulează singur, fără cluster</button>
+    <button class="quiz-opt" data-val="C">Limitează indexurile la un singur shard</button>
+    <button class="quiz-opt" data-val="D">Pornește în modul read-only</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="C">
+    <p>2. Care pachet Laravel îți oferă modele Eloquent pe OpenSearch?</p>
+    <button class="quiz-opt" data-val="A">friendsofcat/opensearch-client</button>
+    <button class="quiz-opt" data-val="B">opensearch-project/opensearch-php</button>
+    <button class="quiz-opt" data-val="C">pdphilip/opensearch</button>
+    <button class="quiz-opt" data-val="D">laravel/scout cu driver opensearch</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>3. La ce adresă răspunde OpenSearch după <code>docker-compose up</code>?</p>
+    <button class="quiz-opt" data-val="A">http://localhost:9200</button>
+    <button class="quiz-opt" data-val="B">http://localhost:3306</button>
+    <button class="quiz-opt" data-val="C">http://localhost:5601</button>
+    <button class="quiz-opt" data-val="D">http://localhost:8080</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>4. Cum primești clientul OpenSearch în clasa ta de Service?</p>
+    <button class="quiz-opt" data-val="A">OpenSearch::client() static call</button>
+    <button class="quiz-opt" data-val="B">new OpenSearchClient() direct</button>
+    <button class="quiz-opt" data-val="C">app('opensearch') din container</button>
+    <button class="quiz-opt" data-val="D">ClientBuilderInterface prin dependency injection</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/install-and-configure/install-opensearch/docker/" target="_blank">Docker — OpenSearch Documentation</a></li>
+    <li><a href="https://github.com/friendsofcat/opensearch-client" target="_blank">friendsofcat/opensearch-client — GitHub</a></li>
+    <li><a href="https://opensearch.pdphilip.com/getting-started/" target="_blank">pdphilip/opensearch — Getting Started</a></li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0001-ce-este-opensearch.html">← Lecția 1: Ce este OpenSearch?</a>
+  <a href="0003-crud.html">Lecția 3: CRUD →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă OpenSearch nu pornește, sau conexiunea eșuează, descrie exact eroarea și te ajut să o rezolvi.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

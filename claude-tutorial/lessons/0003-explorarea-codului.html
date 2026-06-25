@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>03 · Explorarea Codului — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 3 din 12</p>
+  <h1>Explorarea și Înțelegerea Codului</h1>
+  <p class="tagline">Cum să înțelegi un codebase necunoscut în minute, nu ore — și cum să-l faci pe Claude Code mai util cu CLAUDE.md.</p>
+
+  <section>
+    <h2>Prima zi pe un proiect nou</h2>
+    <p>Ești nou pe un proiect. Există sute de fișiere, o arhitectură neclară și zero documentație. Fă asta:</p>
+    <pre><code>cd /proiect-nou
+claude</code></pre>
+    <pre><code>&gt; Explică-mi structura acestui proiect. Ce face, cum e organizat și care sunt fișierele principale?</code></pre>
+    <p>Claude Code va citi structura directoarelor, va inspecta fișierele cheie și îți va returna o hartă mentală a proiectului — în câteva secunde.</p>
+    <div class="callout">
+      <p><strong>Urmărire:</strong> Dacă răspunsul e prea general, adâncește-te: <em>"Explică-mi cum funcționează modulul de autentificare."</em> sau <em>"Trasează ce se întâmplă când un utilizator face login."</em></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Întrebări utile de explorare</h2>
+    <p>Iată patterns care funcționează bine în practică:</p>
+    <pre><code>&gt; Cum funcționează funcția `processPayment` din src/billing.js?
+
+&gt; Unde se validează input-ul utilizatorului în acest proiect?
+
+&gt; Ce dependențe externe folosim și la ce servesc?
+
+&gt; Există cod duplicat sau funcții similare în proiect?
+
+&gt; Explică-mi fluxul de date de la request HTTP până la baza de date.</code></pre>
+    <p>Claude Code va <em>căuta activ</em> în fișierele proiectului, nu va ghici. Răspunsurile sunt ancorate în codul real.</p>
+  </section>
+
+  <section>
+    <h2>CLAUDE.md — Memoria Permanentă a Proiectului</h2>
+    <p>Fiecare sesiune nouă pornește fără memorie. Dar dacă creezi un fișier <code>CLAUDE.md</code> în rădăcina proiectului, Claude Code îl va citi <strong>automat la fiecare sesiune</strong>.</p>
+    <p>Acesta e locul unde documentezi <em>ce nu se poate vedea din cod</em>:</p>
+    <pre><code># CLAUDE.md
+
+## Stack
+- Laravel 11, PHP 8.3
+- PostgreSQL 16
+- Vite + Vue 3 pentru frontend
+
+## Comenzi importante
+- `php artisan serve` — pornește serverul local
+- `npm run dev` — compilează assets
+- `php artisan test` — rulează testele
+
+## Convenții
+- Toate API route-urile sunt versionate: /api/v1/...
+- Nu modifica fișierele din vendor/
+- Branch-urile de feature urmează formatul: feat/TICKET-123-descriere
+
+## Lucruri de evitat
+- Nu folosi `dd()` în producție
+- Nu comite fișierele .env</code></pre>
+    <div class="callout callout--tip">
+      <p><strong>Sfat:</strong> Cere chiar lui Claude Code să genereze un prim draft de <code>CLAUDE.md</code> pentru proiectul tău: <em>"Creează un CLAUDE.md pentru acest proiect bazat pe ce ai văzut."</em></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>CLAUDE.md ierarhic</h2>
+    <p>Poți avea <code>CLAUDE.md</code> la mai multe niveluri:</p>
+    <ul>
+      <li><code>~/.claude/CLAUDE.md</code> — se aplică tuturor proiectelor (preferințele tale globale)</li>
+      <li><code>/proiect/CLAUDE.md</code> — specific proiectului</li>
+      <li><code>/proiect/src/CLAUDE.md</code> — specific unui submodul sau director</li>
+    </ul>
+    <p>Toate sunt citite automat, de sus în jos. Global + proiect + submodul = context complet.</p>
+  </section>
+
+  <section>
+    <h2>Căutarea în codebase</h2>
+    <p>Când știi ce cauți, poți fi mai direct:</p>
+    <pre><code>&gt; Găsește toate locurile unde se apelează `sendEmail()`
+
+&gt; Care fișiere importă modulul `AuthService`?
+
+&gt; Există vreo referință la API-ul deprecat `v1/users` în cod?</code></pre>
+    <p>Claude Code folosește grep și glob intern — e mai rapid decât să cauți manual în IDE.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-3"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/memory" target="_blank" rel="noopener">Claude Code Memory — documentație oficială Anthropic</a><br/>
+    Detalii complete despre CLAUDE.md: locații, format, ierarhie și best practices.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> și întreabă: <em>"Ajută-mă să scriu un CLAUDE.md pentru proiectul meu curent."</em>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0002-mental-model.html">← Lecția 2: Mental Model</a>
+    <a class="nav-next" href="0004-editare-si-implementare.html">Lecția 4: Editare și Implementare →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-3', [
+  {
+    q: 'Unde plasezi fișierul CLAUDE.md pentru ca instrucțiunile să se aplice unui singur proiect?',
+    options: [
+      'În directorul ~/.claude/CLAUDE.md',
+      'În rădăcina proiectului, lângă .git',
+      'În directorul src/ al proiectului',
+      'În directorul de instalare al Claude Code'
+    ],
+    correct: 1,
+    explain: 'CLAUDE.md din rădăcina proiectului (lângă .git) se aplică doar acelui proiect. Cel din ~/.claude/ se aplică global, tuturor proiectelor.'
+  },
+  {
+    q: 'Ce tip de informații documentezi în CLAUDE.md?',
+    options: [
+      'Codul sursă al aplicației, copiat pentru referință rapidă',
+      'Logurile de erori din sesiunile anterioare',
+      'Lucruri care nu se văd din cod: comenzi, convenții, lucruri de evitat',
+      'Lista completă a tuturor fișierelor din proiect'
+    ],
+    correct: 2,
+    explain: 'CLAUDE.md e pentru context invizibil din cod: cum rulezi proiectul, ce convenții urmezi, ce e off-limits. Codul în sine nu are nevoie să fie copiat — Claude îl citește direct.'
+  },
+  {
+    q: 'Cum ceri lui Claude Code să caute toate aparițiile unei funcții în proiect?',
+    options: [
+      'Trebuie să deschizi VS Code și să faci Find in Files manual',
+      'Spui direct: "Găsește toate locurile unde se apelează funcția X"',
+      'Rulezi mai întâi grep manual și dai output-ul lui Claude',
+      'Claude Code nu poate căuta în mai multe fișiere simultan'
+    ],
+    correct: 1,
+    explain: 'Claude Code are acces la grep și glob intern. Îi spui ce vrei să găsești în limbaj natural, el face căutarea în codebase-ul tău real.'
+  }
+]);
+</script>
+</body>
+</html>

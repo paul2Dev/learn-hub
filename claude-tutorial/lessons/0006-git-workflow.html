@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>06 · Git Workflow — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 6 din 12</p>
+  <h1>Git Workflow Integrat</h1>
+  <p class="tagline">Commit, PR, diff și review — cum Claude Code face din git un flux fluid, nu un obstacol.</p>
+
+  <section>
+    <h2>Commit-uri cu mesaje bune, automat</h2>
+    <p>Cel mai folosit pattern git cu Claude Code:</p>
+    <pre><code>&gt; Fă commit cu modificările curente</code></pre>
+    <p>Claude Code va:</p>
+    <ol class="steps">
+      <li>Rula <code>git status</code> și <code>git diff</code> pentru a vedea ce s-a schimbat</li>
+      <li>Citi ultimele commit-uri pentru a respecta stilul de mesaje al proiectului</li>
+      <li>Propune un mesaj de commit descriptiv și contextual</li>
+      <li>Stagea fișierele relevante și creeze commit-ul după aprobare</li>
+    </ol>
+    <div class="callout callout--tip">
+      <p><strong>Avantaj real:</strong> Mesajele de commit generate de Claude Code descriu <em>ce</em> și <em>de ce</em> — nu doar "fix bug" sau "update files". Istoricul git devine lizibil.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pull Requests</h2>
+    <p>După ce ai terminat un feature pe un branch:</p>
+    <pre><code>&gt; Creează un Pull Request pentru branch-ul curent față de main.
+  Descrie ce am implementat și adaugă un checklist de testare.</code></pre>
+    <p>Claude Code va:</p>
+    <ul>
+      <li>Analiza toate commit-urile de pe branch față de main</li>
+      <li>Scrie un titlu concis și un body structurat (summary + test plan)</li>
+      <li>Crea PR-ul via <code>gh pr create</code> (dacă ai GitHub CLI instalat)</li>
+    </ul>
+    <div class="callout callout--warning">
+      <p><strong>Prerechizită:</strong> GitHub CLI (<code>gh</code>) trebuie instalat și autentificat: <code>gh auth login</code>. Descarcă de la <a href="https://cli.github.com" target="_blank" rel="noopener">cli.github.com</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Analiza diff-urilor și istoricului</h2>
+    <pre><code>&gt; Ce s-a schimbat față de main în branch-ul curent?
+
+&gt; Explică-mi ce a făcut ultimul commit
+
+&gt; Care commit a introdus funcția validateUser?
+
+&gt; Ce s-a modificat în src/auth/ în ultimele 2 săptămâni?</code></pre>
+    <p>Claude Code rulează comenzile git necesare și traduce output-ul tehnic în explicații utile.</p>
+  </section>
+
+  <section>
+    <h2>Guardrails — ce Claude Code refuză să facă</h2>
+    <p>Claude Code are protecții încorporate pentru operații git periculoase:</p>
+    <ul>
+      <li><strong>Nu face force push</strong> pe <code>main</code>/<code>master</code> fără avertisment explicit</li>
+      <li><strong>Nu rulează</strong> <code>git reset --hard</code> fără confirmare</li>
+      <li><strong>Nu face push</strong> la remote fără aprobare</li>
+      <li><strong>Nu bypassează hooks</strong> (<code>--no-verify</code>) decât dacă îi ceri explicit</li>
+    </ul>
+    <p>Aceste protecții există pentru că operațiile sunt greu de anulat. Dacă ai nevoie să le faci, Claude Code te va avertiza și va cere confirmare explicită.</p>
+  </section>
+
+  <section>
+    <h2>Rezolvarea conflictelor de merge</h2>
+    <pre><code>&gt; Am conflicte de merge în aceste fișiere. Ajută-mă să le rezolv
+  păstrând logica din branch-ul meu dar integrând și schimbările din main:
+
+  CONFLICT (content): Merge conflict in src/services/auth.js</code></pre>
+    <p>Claude Code va citi fișierul cu markerii de conflict (<code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>), va înțelege intențiile ambelor versiuni și va propune o rezoluție care le îmbină corect.</p>
+  </section>
+
+  <section>
+    <h2>Fluxul complet de feature branch</h2>
+    <pre><code># Creezi branch-ul
+&gt; Creează un branch nou pentru feature-ul de reset parola
+
+# Implementezi
+&gt; Implementează endpoint-ul de reset parola [...]
+
+# Revizuiești
+&gt; Ce am schimbat față de main?
+
+# Commit
+&gt; Fă commit cu modificările
+
+# PR
+&gt; Creează un PR cu descriere completă și checklist de QA</code></pre>
+    <p>Tot fluxul, de la branch la PR, ghidat de Claude Code.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-6"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/github-actions" target="_blank" rel="noopener">Claude Code & GitHub Actions — documentație oficială Anthropic</a><br/>
+    Integrarea Claude Code cu GitHub Actions pentru automatizări CI/CD și code review automat.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> și spune: <em>"Explică-mi cum să configurez gh CLI pentru proiectul meu."</em>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0005-debugging.html">← Lecția 5: Debugging</a>
+    <a class="nav-next" href="0007-extensia-vs-code.html">Lecția 7: VS Code Extension →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-6', [
+  {
+    q: 'Ce face Claude Code când îi ceri "fă commit cu modificările curente"?',
+    options: [
+      'Rulează imediat git add -A && git commit -m "update" fără să te întrebe',
+      'Citește diff-ul, studiază stilul de mesaje, propune mesajul și cere aprobare',
+      'Îți cere să scrii tu mesajul de commit, el doar face git add',
+      'Face commit doar dacă toate testele trec mai întâi'
+    ],
+    correct: 1,
+    explain: 'Claude Code nu face commit orb. Analizează ce s-a schimbat, respectă stilul mesajelor din proiect și îți prezintă propunerea pentru aprobare. Tu ai mereu ultimul cuvânt.'
+  },
+  {
+    q: 'Ce prerechizită ai nevoie pentru ca Claude Code să creeze PR-uri pe GitHub?',
+    options: [
+      'Un token GitHub setat în variabila de mediu GITHUB_TOKEN',
+      'GitHub CLI (gh) instalat și autentificat cu gh auth login',
+      'Extensia GitHub Pull Requests din VS Code',
+      'Acces SSH configurat la repo-ul GitHub'
+    ],
+    correct: 1,
+    explain: 'Claude Code folosește comanda <code>gh pr create</code> pentru a crea PR-uri. Ai nevoie de GitHub CLI instalat și autentificat. Descarcă de la cli.github.com.'
+  },
+  {
+    q: 'Ce operație git periculoasă Claude Code refuză să facă fără avertisment explicit?',
+    options: [
+      'git log --oneline pe branch-ul curent',
+      'git diff față de main',
+      'git push --force pe main sau master',
+      'git stash pentru modificările nesalvate'
+    ],
+    correct: 2,
+    explain: 'Force push pe main poate suprascrie istoricul partajat cu colegii — e o operație ireversibilă. Claude Code te va avertiza și va cere confirmare explicită înainte de a o executa.'
+  }
+]);
+</script>
+</body>
+</html>

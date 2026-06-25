@@ -1,0 +1,327 @@
+/* OpenSearch Tutorial — Stylesheet comun pentru toate lecțiile */
+
+:root {
+  --blue:    #1a5fb4;
+  --blue-lt: #e8f0fb;
+  --green:   #1c7a3b;
+  --green-lt:#e8f5ec;
+  --orange:  #c04f00;
+  --orange-lt:#fdf1e8;
+  --red:     #a51d2d;
+  --red-lt:  #fde8ea;
+  --gray-1:  #f8f8f8;
+  --gray-2:  #e8e8e8;
+  --gray-3:  #999;
+  --text:    #1a1a1a;
+  --muted:   #555;
+  --code-bg: #f0f4f8;
+  --radius:  6px;
+  --shadow:  0 2px 8px rgba(0,0,0,.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--text);
+  background: #fff;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── Tipografie ── */
+h1 { font-size: 2rem; line-height: 1.2; margin-bottom: .3em; color: var(--blue); }
+h2 { font-size: 1.4rem; margin-top: 2.5em; margin-bottom: .6em; border-bottom: 2px solid var(--gray-2); padding-bottom: .2em; }
+h3 { font-size: 1.1rem; margin-top: 1.8em; margin-bottom: .4em; color: var(--blue); }
+p  { margin-bottom: 1em; }
+ul, ol { margin: .6em 0 1em 1.6em; }
+li { margin-bottom: .35em; }
+strong { color: var(--blue); font-weight: 700; }
+em { font-style: italic; }
+a  { color: var(--blue); text-decoration: underline; }
+a:hover { color: var(--orange); }
+
+/* ── Header lecție ── */
+.lesson-header {
+  border-left: 5px solid var(--blue);
+  padding: 16px 20px;
+  margin-bottom: 2em;
+  background: var(--blue-lt);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.lesson-header .meta {
+  font-family: monospace;
+  font-size: .85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.lesson-header h1 { color: var(--blue); margin-bottom: .2em; }
+.lesson-header .subtitle { font-size: 1rem; color: var(--muted); margin: 0; }
+
+/* ── Cod ── */
+pre, code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: .88rem;
+}
+code {
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--orange);
+}
+pre {
+  background: #1e2837;
+  color: #e8edf3;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin: 1em 0 1.5em;
+  line-height: 1.55;
+  box-shadow: var(--shadow);
+}
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: .87rem;
+}
+/* Syntax highlighting simplistic */
+.kw  { color: #7ec8e3; }   /* keywords */
+.str { color: #98c379; }   /* strings */
+.num { color: #d19a66; }   /* numbers */
+.cm  { color: #5c6370; font-style: italic; } /* comments */
+.cls { color: #e5c07b; }   /* class names */
+.fn  { color: #61afef; }   /* function calls */
+
+/* ── Cutii info ── */
+.box {
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 1.5em 0;
+  font-size: .95rem;
+}
+.box-info    { background: var(--blue-lt);   border-left: 4px solid var(--blue);   }
+.box-tip     { background: var(--green-lt);  border-left: 4px solid var(--green);  }
+.box-warn    { background: var(--orange-lt); border-left: 4px solid var(--orange); }
+.box-danger  { background: var(--red-lt);    border-left: 4px solid var(--red);    }
+.box .box-title { font-weight: 700; margin-bottom: .4em; display: block; }
+.box-info  .box-title { color: var(--blue);   }
+.box-tip   .box-title { color: var(--green);  }
+.box-warn  .box-title { color: var(--orange); }
+.box-danger .box-title { color: var(--red);   }
+
+/* ── Tabel comparativ ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: .93rem;
+}
+th {
+  background: var(--blue);
+  color: #fff;
+  text-align: left;
+  padding: 10px 14px;
+  font-family: monospace;
+}
+td { padding: 8px 14px; border-bottom: 1px solid var(--gray-2); }
+tr:nth-child(even) td { background: var(--gray-1); }
+tr:hover td { background: var(--blue-lt); }
+
+/* ── Arbore stilizat CSS ── */
+.tree {
+  background: #f8f9fb;
+  border: 1px solid var(--gray-2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 1.5em 0;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: .87rem;
+  line-height: 1.75;
+}
+.tree-root { margin-bottom: 10px; }
+.tree-root:last-child { margin-bottom: 0; }
+.tree-root > .tree-label {
+  display: inline-block;
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--blue);
+  background: var(--blue-lt);
+  padding: 3px 12px;
+  border-radius: 20px;
+  margin-bottom: 6px;
+}
+.tree-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree-item {
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 0;
+}
+/* L-bracket for each item */
+.tree-item::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border-left: 2px solid #bbb;
+  border-bottom: 2px solid #bbb;
+  border-radius: 0 0 0 5px;
+}
+/* Vertical continuation line for non-last items */
+.tree-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  bottom: -2px;
+  border-left: 2px solid #bbb;
+}
+.tree-label { color: var(--text); font-weight: 600; }
+.tree-note      { color: var(--muted); font-weight: normal; font-size: .83rem; margin-left: 8px; }
+.tree-note.red  { color: var(--red); }
+.tree-badge {
+  display: inline-block;
+  font-size: .75rem;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+  font-weight: normal;
+  vertical-align: middle;
+  background: var(--blue-lt);
+  color: var(--blue);
+}
+.tree-badge.green  { background: var(--green-lt);  color: var(--green);  }
+.tree-badge.orange { background: var(--orange-lt); color: var(--orange); }
+.tree-badge.red    { background: var(--red-lt);    color: var(--red);    }
+.tree-sep {
+  border: none;
+  border-top: 1px dashed var(--gray-2);
+  margin: 10px 0;
+}
+/* ── Diagrama arhitectura (legacy - păstrat pentru compatibilitate) ── */
+.arch-diagram {
+  font-family: monospace;
+  font-size: .82rem;
+  background: var(--gray-1);
+  border: 1px solid var(--gray-2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 1.5em 0;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ── Quiz ── */
+.quiz-section {
+  background: var(--gray-1);
+  border: 1px solid var(--gray-2);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 2em 0;
+}
+.quiz-section h2 { border: none; margin-top: 0; }
+.quiz-q {
+  margin-bottom: 1.5em;
+  padding-bottom: 1.5em;
+  border-bottom: 1px solid var(--gray-2);
+}
+.quiz-q:last-of-type { border-bottom: none; padding-bottom: 0; margin-bottom: 1em; }
+.quiz-q p { font-weight: 700; margin-bottom: .7em; color: var(--text); }
+.quiz-opt {
+  display: block;
+  padding: 9px 14px;
+  margin: 6px 0;
+  border: 2px solid var(--gray-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: #fff;
+  font-family: inherit;
+  font-size: .92rem;
+  text-align: left;
+  width: 100%;
+  transition: border-color .15s, background .15s;
+}
+.quiz-opt:hover { border-color: var(--blue); background: var(--blue-lt); }
+.quiz-opt.correct { border-color: var(--green); background: var(--green-lt); color: var(--green); font-weight: 700; }
+.quiz-opt.wrong   { border-color: var(--red);   background: var(--red-lt);  color: var(--red);   }
+.quiz-opt.reveal  { border-color: var(--green); background: var(--green-lt); color: var(--green); font-weight: 700; }
+.quiz-feedback { margin-top: 8px; font-size: .88rem; color: var(--muted); }
+.quiz-feedback.ok  { color: var(--green); }
+.quiz-feedback.err { color: var(--red); }
+.quiz-score {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: var(--radius);
+  margin-top: 1em;
+  display: none;
+}
+
+/* ── Navigare lecții ── */
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3em;
+  padding-top: 1.5em;
+  border-top: 2px solid var(--gray-2);
+  font-size: .9rem;
+}
+.lesson-nav a {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--blue);
+  color: #fff;
+  text-decoration: none;
+  border-radius: var(--radius);
+  font-family: monospace;
+}
+.lesson-nav a:hover { background: var(--orange); color: #fff; }
+.lesson-nav .disabled { color: var(--gray-3); }
+
+/* ── Surse ── */
+.sources {
+  margin-top: 2.5em;
+  padding: 16px 20px;
+  background: var(--gray-1);
+  border-radius: var(--radius);
+  font-size: .88rem;
+}
+.sources h3 { margin-top: 0; color: var(--muted); font-size: .9rem; text-transform: uppercase; letter-spacing: .05em; }
+.sources ul { margin-left: 1.2em; }
+
+/* ── Ajutor profesor ── */
+.ask-teacher {
+  margin-top: 2em;
+  padding: 14px 18px;
+  background: var(--orange-lt);
+  border-left: 4px solid var(--orange);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: .93rem;
+}
+
+/* ── Print ── */
+@media print {
+  body { max-width: 100%; padding: 0; font-size: 16px; }
+  .quiz-section, .ask-teacher { page-break-inside: avoid; }
+  pre { white-space: pre-wrap; word-break: break-all; }
+  a::after { content: " (" attr(href) ")"; font-size: .8em; color: var(--gray-3); }
+  .lesson-nav { display: none; }
+}
+
+@media (max-width: 600px) {
+  body { font-size: 16px; padding: 24px 16px 60px; }
+  h1 { font-size: 1.6rem; }
+  pre { font-size: .8rem; }
+}

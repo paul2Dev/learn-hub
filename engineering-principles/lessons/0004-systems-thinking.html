@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4 — Gândire Sistemică | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 4 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Gândire Sistemică</h1>
+  <p>Cum să descompui un sistem în componente, să controlezi cuplajul și să proiectezi limite care permit fiecărei părți să se schimbe independent.</p>
+
+  <h2>Ce este un sistem</h2>
+  <p>Un sistem este un set de componente care interacționează pentru a produce comportamente pe care niciuna nu le-ar putea produce singură. Într-o aplicație web, un sistem nu este doar codul tău de aplicație — este baza de date, stratul de cache, workerii de coadă, API-urile externe și oamenii care îl operează. Gândirea sistemică este disciplina de a raționa despre întreg, nu doar despre partea pe care o editezi în prezent.</p>
+
+  <h2>Vocabularul sistemelor</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">C</div>
+      <div class="arch-info">
+        <h4>Componentă</h4>
+        <p>O unitate a sistemului cu o limită definită. Poate fi o clasă, un modul, un microserviciu sau un tabel de bază de date.</p>
+      </div>
+      <div class="arch-tag">unitate de design</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">L</div>
+      <div class="arch-info">
+        <h4>Limită</h4>
+        <p>Interfața dintre componente. Ce este expus vs. ascuns. Decizia cheie de design în orice sistem.</p>
+      </div>
+      <div class="arch-tag">interfață</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">C</div>
+      <div class="arch-info">
+        <h4>Cuplaj</h4>
+        <p>Cât de mult trebuie să știe o componentă despre alta pentru a-și face treaba. Cuplaj scăzut = mai ușor de schimbat fiecare componentă independent.</p>
+      </div>
+      <div class="arch-tag">forța dependenței</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">C</div>
+      <div class="arch-info">
+        <h4>Coeziune</h4>
+        <p>Cât de strâns legate sunt responsabilitățile dintr-o singură componentă. Coeziune ridicată = componenta are un scop clar și focalizat.</p>
+      </div>
+      <div class="arch-tag">focalizare internă</div>
+    </div>
+  </div>
+
+  <p>Obiectivul în design-ul sistemelor este constant: <strong>coeziune ridicată, cuplaj scăzut</strong>. Fiecare componentă ar trebui să facă un singur lucru bine (coeziune ridicată) și să știe cât mai puțin posibil despre celelalte componente (cuplaj scăzut).</p>
+
+  <h2>Cuplajul: dușmanul schimbării</h2>
+  <p>Cuplajul este cel care face ca o schimbare „simplă" să strice ceva neașteptat. Când componenta A trebuie să știe despre interioarele componentei B, o schimbare în B forțează o schimbare în A. Dacă C depinde de A, efectul de undă continuă. Cuplajul ridicat transformă un sistem într-o „minge mare de noroi" în care atingerea oricărei părți este riscantă.</p>
+
+  <p>Tipuri de cuplaj, de la cel mai rău la acceptabil:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Tip</th><th>Ce înseamnă</th><th>Exemplu</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Cuplaj de conținut</strong></td>
+        <td>Componenta A modifică direct interioarele componentei B</td>
+        <td>Scriere directă în proprietatea privată a altei clase prin reflection</td>
+      </tr>
+      <tr>
+        <td><strong>Cuplaj comun</strong></td>
+        <td>Mai multe componente împart stare globală mutabilă</td>
+        <td><code>$_SESSION</code> global sau singleton-uri statice accesate peste tot</td>
+      </tr>
+      <tr>
+        <td><strong>Cuplaj de control</strong></td>
+        <td>A transmite un flag lui B indicându-i cum să se comporte intern</td>
+        <td><code>processOrder($order, $sendEmail = true)</code></td>
+      </tr>
+      <tr>
+        <td><strong>Cuplaj de date</strong></td>
+        <td>Componentele împart doar datele de care au nevoie, prin parametri</td>
+        <td>Transmiterea unui DTO tipat între două servicii — acceptabil</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Limite: unde se produce design-ul</h2>
+  <p>O limită este linia de demarcație între ce expune o componentă și ce ascunde. Limitele bune sunt cea mai importantă decizie de design pe care o iei — ele determină câtă parte din sistem trebuie să înțelegi pentru a schimba oricare parte.</p>
+
+  <div class="callout">
+    <div class="callout-label">Regula limitelor</div>
+    O limită bine trasată înseamnă: pentru a schimba ce este înăuntru, trebuie să înțelegi doar ce este înăuntru. Schimbările interne nu forțează schimbări în exterior, atâta timp cât limita (interfața) rămâne aceeași.
+  </div>
+
+  <p>În aplicațiile web, limitele apar de obicei la:</p>
+  <ul>
+    <li><strong>Stratul HTTP</strong> — forma request/response este contractul dintre client și server</li>
+    <li><strong>Repository</strong> — contractul dintre logica de business și stocare</li>
+    <li><strong>Evenimente de domeniu</strong> — contractul dintre acțiunea care are loc și tot ce reacționează la ea</li>
+    <li><strong>Adaptori pentru servicii externe</strong> — contractul dintre sistemul tău și API-urile terțe</li>
+  </ul>
+
+  <h2>Descompunerea: cum să desfaci un sistem</h2>
+  <p>Descompunerea este abilitatea de a împărți un sistem în componente la granularitatea potrivită — nu prea grosier (o clasă Dumnezeu), nu prea fin (o clasă per getter). Descompunerea corectă grupează lucrurile care se schimbă împreună și separă lucrurile care se schimbă independent.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>Identifică vectorii de schimbare.</strong> Care părți din acest sistem sunt cel mai probabil să se schimbe? Un gateway de plată se poate schimba; conceptul de bază de „comandă" este stabil. Ține lucrurile volatile izolate.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>Grupează după stakeholder.</strong> Care părți ale sistemului sunt deținute de aceeași echipă sau conduse de aceeași funcție de business? Acelea aparțin aceluiași modul.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Denumește cusăturile.</strong> O cusătură este un loc unde două părți ale sistemului se ating. La fiecare cusătură, decide: care este informația minimă care trebuie să traverseze această limită?</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><strong>Definește contractul la fiecare cusătură.</strong> Scrie interfața înainte de implementare. Interfața este design-ul; implementarea este execuția.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Un exemplu concret: checkout e-commerce</h2>
+
+  <pre><code>// Descompunere proastă — toată lumea știe despre toată lumea
+class CheckoutController {
+    public function handle(Request $request): Response {
+        // validează input-ul direct aici
+        // interoghează baza de date pentru stocul produselor direct aici
+        // percepe cardul folosind Stripe SDK direct aici
+        // trimite e-mail prin SMTP direct aici
+        // scrie logul de audit direct aici
+    }
+}
+
+// Descompunere bună — fiecare limită este explicită
+class CheckoutController {
+    public function __construct(
+        private CheckoutService $checkout,   // orchestrează cazul de utilizare
+        private CartValidator   $validator,  // limita de validare
+    ) {}
+
+    public function handle(Request $request): Response {
+        $cart = $this->validator->validate($request->all());
+        $this->checkout->process($cart);
+        return redirect()->route('checkout.confirmed');
+    }
+}
+
+// CheckoutService cunoaște doar abstracțiunile la limita sa:
+class CheckoutService {
+    public function __construct(
+        private InventoryRepository $inventory,  // limita de stocare
+        private PaymentGateway      $payment,    // limita serviciului extern
+        private OrderEventDispatcher $events,    // limita evenimentelor
+    ) {}
+}</code></pre>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Desenează limitele sistemului tău</div>
+    <ol>
+      <li>Alege o funcționalitate din proiectul tău actual care acoperă mai mult de un fișier.</li>
+      <li>Listează fiecare componentă implicată (controller, serviciu, repository, API extern etc.).</li>
+      <li>Pentru fiecare pereche de componente adiacente, notează: ce date traversează limita dintre ele?</li>
+      <li>Identifică perechea cel mai strâns cuplată: care două componente știu cel mai mult despre interioarele celeilalte?</li>
+      <li>Schițează cum ar arăta o limită mai curată între ele — ce interfață ar reduce cuplajul?</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://martinfowler.com/bliki/BoundedContext.html" target="_blank">BoundedContext — Martin Fowler</a>. Intrarea din bliki-ul lui Fowler despre conceptul Bounded Context din Domain-Driven Design — numele formal pentru ideea „limita între lucrurile care se schimbă împreună" din această lecție. Scurtă, precisă, merită citită de două ori.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este obiectivul de design pentru cuplaj și coeziune?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cuplaj ridicat pentru ca componentele să poată împărți stare, coeziune scăzută pentru flexibilitate</button></li>
+        <li><button data-correct="false">Cuplaj scăzut și coeziune scăzută pentru a menține fiecare componentă minimă ca dimensiune</button></li>
+        <li><button data-correct="true">Coeziune ridicată în interiorul fiecărei componente, cuplaj scăzut între componente</button></li>
+        <li><button data-correct="false">Cuplaj ridicat la stratul bazei de date, cuplaj scăzut la stratul controllerului</button></li>
+      </ul>
+      <div class="quiz-feedback">Coeziunea ridicată înseamnă că fiecare componentă are un scop clar, focalizat (tot ce e înăuntru aparține împreună). Cuplajul scăzut înseamnă că componentele știu cât mai puțin unele despre altele. Împreună produc sisteme în care fiecare componentă se poate schimba independent.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care tip de cuplaj este cel mai periculos?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cuplaj de date — componentele împart date prin parametri de funcție</button></li>
+        <li><button data-correct="false">Cuplaj de control — un flag boolean controlează comportamentul în altă componentă</button></li>
+        <li><button data-correct="true">Cuplaj de conținut — o componentă modifică direct interioarele alteia</button></li>
+        <li><button data-correct="false">Cuplaj temporal — două componente trebuie să se execute într-o ordine specifică</button></li>
+      </ul>
+      <div class="quiz-feedback">Cuplajul de conținut este cel mai periculos deoarece elimină complet limita — o componentă ajunge în interioarele private ale alteia. Orice schimbare internă în a doua componentă o strică imediat pe prima, fără nicio interfață care să absoarbă schimbarea.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce este o „cusătură" în contextul descompunerii sistemelor?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un join de baze de date care conectează două tabele din aceeași schemă</button></li>
+        <li><button data-correct="false">O linie de cod unde un bug este cel mai probabil să fie introdus</button></li>
+        <li><button data-correct="true">Un loc din sistem unde două componente se ating și informația traversează o limită</button></li>
+        <li><button data-correct="false">Un punct de fuzionare în controlul versiunilor unde se combină două ramuri</button></li>
+      </ul>
+      <div class="quiz-feedback">O cusătură este locul unde se întâlnesc două părți ale sistemului. Michael Feathers a inventat termenul în „Working Effectively with Legacy Code." Cusăturile sunt locurile naturale de design în sistem — unde definești contracte și inserezi test double-uri.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce principiu ar trebui să ghideze ce lucruri sunt grupate în aceeași componentă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Lucrurile cu același număr de linii de cod aparțin unei componente</button></li>
+        <li><button data-correct="false">Lucrurile scrise de același dezvoltator aparțin unei componente</button></li>
+        <li><button data-correct="true">Lucrurile care se schimbă împreună din același motiv aparțin unei componente</button></li>
+        <li><button data-correct="false">Lucrurile care împart un tabel de baze de date aparțin întotdeauna aceleiași componente</button></li>
+      </ul>
+      <div class="quiz-feedback">„Principiul închiderii comune" (de la Robert Martin) spune: grupează lucrurile care se schimbă împreună. Dacă integrarea gateway-ului de plată și verificarea stocului se schimbă întotdeauna în același timp, ele aparțin împreună. Dacă se schimbă independent, separă-le.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">În exemplul de checkout, de ce este injectarea unui PaymentGateway ca interfață un design mai bun decât apelarea directă a Stripe SDK?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece SDK-ul Stripe nu este compatibil cu injecția de dependențe PHP</button></li>
+        <li><button data-correct="false">Deoarece interfețele rulează mai repede decât clasele concrete la runtime</button></li>
+        <li><button data-correct="true">Deoarece furnizorul de plăți se poate schimba sau înlocui în teste fără a atinge controllerul</button></li>
+        <li><button data-correct="false">Deoarece controllerul nu trebuie să știe suma totală percepută</button></li>
+      </ul>
+      <div class="quiz-feedback">Injectarea interfeței izolează controllerul de știrea ce furnizor de plăți este în uz. Trecerea de la Stripe la alt furnizor, sau substituirea unui fake în teste, necesită zero modificări ale controllerului — limita absoarbe schimbarea.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Cum se leagă bounded context din DDD de limitele modulelor dintr-o aplicație Laravel?"</em> sau <em>„Când ar trebui o limită să devină un microserviciu?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0003-yagni-kiss-dry.html">← Lecția 3: YAGNI, KISS, DRY</a>
+    <a href="0005-api-design-principles.html">Lecția 5: Principii de Design API →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

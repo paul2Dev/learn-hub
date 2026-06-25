@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 08 — Workflow Automations</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── section cards ── */
+    .tool-section {
+      border: 1.5px solid #e8e5e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+    .tool-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 1.1rem;
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e8e5e0;
+    }
+    .tool-icon {
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+    .tool-header-text h3 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin: 0 0 0.1rem;
+      color: #1e293b;
+    }
+    .tool-header-text p {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin: 0;
+    }
+    .tool-body {
+      padding: 0.9rem 1.1rem;
+    }
+    .tool-body p {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      margin: 0 0 0.75rem;
+    }
+    .tool-body p:last-child { margin-bottom: 0; }
+
+    /* ── command blocks ── */
+    pre.cmd-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 7px;
+      padding: 0.75rem 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.6rem 0;
+    }
+    .cmd-comment { color: #64748b; }
+    .cmd-key     { color: #7dd3fc; }
+    .cmd-val     { color: #86efac; }
+    .cmd-str     { color: #fbbf24; }
+
+    /* ── alias table ── */
+    .alias-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.84rem;
+      margin: 0.75rem 0;
+    }
+    .alias-table th {
+      text-align: left;
+      padding: 0.45rem 0.85rem;
+      background: #f8fafc;
+      border: 1px solid #e8e5e0;
+      font-weight: 700;
+      color: #374151;
+    }
+    .alias-table td {
+      padding: 0.42rem 0.85rem;
+      border: 1px solid #e8e5e0;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    .alias-table tr:nth-child(even) td { background: #fafaf8; }
+
+    /* ── template file block ── */
+    pre.template-block {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 0.85rem 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.79rem;
+      line-height: 1.65;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.6rem 0;
+      color: #374151;
+    }
+    .tpl-heading  { color: #1d4ed8; font-weight: 700; }
+    .tpl-checkbox { color: #059669; }
+    .tpl-comment  { color: #9ca3af; }
+
+    /* ── productivity wins list ── */
+    .wins-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.75rem 0;
+    }
+    .wins-list li {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      margin-bottom: 0.85rem;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .win-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: #7c3aed;
+      flex-shrink: 0;
+      margin-top: 0.45rem;
+    }
+
+    /* ── summary table ── */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.84rem;
+      margin: 1.25rem 0;
+    }
+    .summary-table th {
+      text-align: left;
+      padding: 0.5rem 0.9rem;
+      background: #f8fafc;
+      border: 1px solid #e8e5e0;
+      font-weight: 700;
+      color: #374151;
+    }
+    .summary-table td {
+      padding: 0.45rem 0.9rem;
+      border: 1px solid #e8e5e0;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    .summary-table tr:nth-child(even) td { background: #fafaf8; }
+    .effort-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.1rem 0.45rem;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    .effort-tag.low  { background: #dcfce7; color: #166534; }
+    .effort-tag.med  { background: #fef3c7; color: #92400e; }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 08 &middot; Git &amp; GitHub Fluency</p>
+      <h1>Workflow Automations</h1>
+      <p class="tagline">Small habits and tools that save hours every week</p>
+    </header>
+
+    <section>
+      <p>
+        You now have the full mental model: commits, branches, conflicts, rebase, Actions,
+        Webhooks, CI/CD, and PRs. This final lesson is about <strong>using all of that
+        faster</strong>. Each topic here is something you can set up in 10 minutes and
+        benefit from every day.
+      </p>
+    </section>
+
+    <!-- ── 1. GitHub CLI ── -->
+    <div class="tool-section">
+      <div class="tool-header">
+        <div class="tool-icon">&#x2318;</div>
+        <div class="tool-header-text">
+          <h3>1 &mdash; GitHub CLI (<code>gh</code>)</h3>
+          <p>Do GitHub things from your terminal — no browser required</p>
+        </div>
+      </div>
+      <div class="tool-body">
+        <p>
+          The <code>gh</code> CLI lets you create PRs, review code, check CI status, and
+          manage issues without leaving your terminal. Once you start using it, going back
+          to the browser for these tasks feels slow.
+        </p>
+<pre class="cmd-block"><span class="cmd-comment"># Install (Windows)</span>
+winget install GitHub.cli
+
+<span class="cmd-comment"># Authenticate once</span>
+gh auth login
+
+<span class="cmd-comment"># Create a PR from your current branch</span>
+gh pr create --title <span class="cmd-str">"Add login validation"</span> --body <span class="cmd-str">"Fixes #42"</span>
+
+<span class="cmd-comment"># See PR status + CI checks for current branch</span>
+gh pr status
+
+<span class="cmd-comment"># Open the PR in your browser (when you need the full view)</span>
+gh pr view --web
+
+<span class="cmd-comment"># List open PRs waiting on you to review</span>
+gh pr list --search <span class="cmd-str">"review-requested:@me"</span>
+
+<span class="cmd-comment"># Check out someone else's PR locally to test it</span>
+gh pr checkout 123</pre>
+        <p>
+          The last command — <code>gh pr checkout</code> — is especially useful during
+          reviews. Instead of pulling manually, one command puts you on their branch.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── 2. Git aliases ── -->
+    <div class="tool-section">
+      <div class="tool-header">
+        <div class="tool-icon">&#x26A1;</div>
+        <div class="tool-header-text">
+          <h3>2 &mdash; Git aliases</h3>
+          <p>Turn long commands into short ones you type every day</p>
+        </div>
+      </div>
+      <div class="tool-body">
+        <p>
+          Git aliases live in your global <code>~/.gitconfig</code>. You set them once
+          and they work in every repository forever.
+        </p>
+<pre class="cmd-block"><span class="cmd-comment"># Set aliases from the terminal</span>
+git config --global alias.st status
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.lg <span class="cmd-str">"log --oneline --graph --decorate --all"</span></pre>
+
+        <table class="alias-table">
+          <thead>
+            <tr><th>Type this</th><th>Runs this</th><th>Why it helps</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>git st</code></td>
+              <td><code>git status</code></td>
+              <td>You run this dozens of times per day</td>
+            </tr>
+            <tr>
+              <td><code>git co main</code></td>
+              <td><code>git checkout main</code></td>
+              <td>Shorter than the full command</td>
+            </tr>
+            <tr>
+              <td><code>git lg</code></td>
+              <td><code>git log --oneline --graph --decorate --all</code></td>
+              <td>Visual branch graph — use this to orient yourself</td>
+            </tr>
+            <tr>
+              <td><code>git undo</code></td>
+              <td><code>git reset HEAD~1 --soft</code></td>
+              <td>Undo the last commit but keep your changes staged</td>
+            </tr>
+          </tbody>
+        </table>
+<pre class="cmd-block"><span class="cmd-comment"># Add the undo alias</span>
+git config --global alias.undo <span class="cmd-str">"reset HEAD~1 --soft"</span></pre>
+      </div>
+    </div>
+
+    <!-- ── 3. PR and Issue templates ── -->
+    <div class="tool-section">
+      <div class="tool-header">
+        <div class="tool-icon">&#x1F4CB;</div>
+        <div class="tool-header-text">
+          <h3>3 &mdash; PR &amp; Issue templates</h3>
+          <p>Pre-fill the description box so every PR has the right structure</p>
+        </div>
+      </div>
+      <div class="tool-body">
+        <p>
+          Create the file <code>.github/PULL_REQUEST_TEMPLATE.md</code> in your repository.
+          GitHub will auto-fill the PR description box with its content every time someone
+          opens a new PR. This enforces a consistent format without reminding anyone.
+        </p>
+<pre class="template-block"><span class="tpl-heading">## What changed</span>
+<span class="tpl-comment">&lt;!-- One paragraph. What does this PR do? --&gt;</span>
+
+<span class="tpl-heading">## Why</span>
+<span class="tpl-comment">&lt;!-- Link the ticket: Fixes #123 --&gt;</span>
+
+<span class="tpl-heading">## How to test</span>
+<span class="tpl-checkbox">- [ ]</span> Step one
+<span class="tpl-checkbox">- [ ]</span> Step two
+
+<span class="tpl-heading">## Screenshots</span>
+<span class="tpl-comment">&lt;!-- For UI changes: before / after --&gt;</span></pre>
+        <p>
+          For issues, create <code>.github/ISSUE_TEMPLATE/bug_report.md</code> and
+          <code>.github/ISSUE_TEMPLATE/feature_request.md</code>. GitHub shows a choice
+          dialogue when someone clicks "New issue", and fills in the right template.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── 4. Auto-labeling ── -->
+    <div class="tool-section">
+      <div class="tool-header">
+        <div class="tool-icon">&#x1F3F7;&#xFE0F;</div>
+        <div class="tool-header-text">
+          <h3>4 &mdash; Auto-labeling PRs</h3>
+          <p>Label PRs by which files changed — zero manual work</p>
+        </div>
+      </div>
+      <div class="tool-body">
+        <p>
+          The <code>actions/labeler</code> action reads a config file and applies labels
+          to PRs based on which paths were changed. Add this once and never manually
+          label another PR.
+        </p>
+<pre class="cmd-block"><span class="cmd-comment"># .github/workflows/labeler.yml</span>
+<span class="cmd-key">name</span>: Label PR
+<span class="cmd-key">on</span>: [pull_request]
+<span class="cmd-key">jobs</span>:
+  <span class="cmd-key">label</span>:
+    <span class="cmd-key">runs-on</span>: ubuntu-latest
+    <span class="cmd-key">steps</span>:
+      - <span class="cmd-key">uses</span>: actions/labeler@v5
+        <span class="cmd-key">with</span>:
+          <span class="cmd-key">repo-token</span>: <span class="cmd-str">"${{ secrets.GITHUB_TOKEN }}"</span></pre>
+
+<pre class="cmd-block"><span class="cmd-comment"># .github/labeler.yml  &lt;-- the rules file</span>
+<span class="cmd-key">frontend</span>:
+  - <span class="cmd-val">src/components/**</span>
+  - <span class="cmd-val">src/styles/**</span>
+
+<span class="cmd-key">backend</span>:
+  - <span class="cmd-val">src/api/**</span>
+  - <span class="cmd-val">src/models/**</span>
+
+<span class="cmd-key">ci</span>:
+  - <span class="cmd-val">.github/workflows/**</span></pre>
+        <p>
+          PRs that touch only <code>src/components/</code> get the "frontend" label
+          automatically. Useful for filtering PRs, routing to the right reviewer, or
+          tracking what kind of work is being merged.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── 5. Scheduled workflows ── -->
+    <div class="tool-section">
+      <div class="tool-header">
+        <div class="tool-icon">&#x23F0;</div>
+        <div class="tool-header-text">
+          <h3>5 &mdash; Scheduled workflows</h3>
+          <p>Run jobs on a timer — no push required</p>
+        </div>
+      </div>
+      <div class="tool-body">
+        <p>
+          The <code>schedule</code> trigger runs a workflow on a cron schedule, like a
+          server cron job but managed in your repository.
+        </p>
+<pre class="cmd-block"><span class="cmd-key">on</span>:
+  <span class="cmd-key">schedule</span>:
+    - <span class="cmd-key">cron</span>: <span class="cmd-str">'0 9 * * 1'</span>   <span class="cmd-comment"># every Monday at 09:00 UTC</span></pre>
+
+        <p>Common uses:</p>
+        <ul class="wins-list">
+          <li>
+            <div class="win-dot"></div>
+            <span><strong>Dependency audit</strong> — run <code>npm audit</code> or <code>pip-audit</code> every night and open an issue if vulnerabilities are found.</span>
+          </li>
+          <li>
+            <div class="win-dot"></div>
+            <span><strong>Stale PR/issue bot</strong> — comment on issues that have had no activity for 30 days and close them after 60.</span>
+          </li>
+          <li>
+            <div class="win-dot"></div>
+            <span><strong>Weekly report</strong> — query the GitHub API for merged PRs, format a summary, and post it to a Slack channel every Monday morning.</span>
+          </li>
+          <li>
+            <div class="win-dot"></div>
+            <span><strong>Database backup</strong> — trigger a backup script on a schedule and upload the result to S3.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── 6. git stash ── -->
+    <div class="tool-section">
+      <div class="tool-header">
+        <div class="tool-icon">&#x1F4E6;</div>
+        <div class="tool-header-text">
+          <h3>6 &mdash; <code>git stash</code></h3>
+          <p>Park unfinished work and come back to it later</p>
+        </div>
+      </div>
+      <div class="tool-body">
+        <p>
+          You are halfway through a feature when a colleague asks you to review their PR
+          urgently. You cannot commit half-done work. <code>git stash</code> saves your
+          changes to a temporary shelf so your working directory is clean.
+        </p>
+<pre class="cmd-block"><span class="cmd-comment"># Save current changes to the stash</span>
+git stash
+
+<span class="cmd-comment"># Now switch branches, review the PR, come back</span>
+git checkout main
+<span class="cmd-comment"># ... do whatever you need ...</span>
+git checkout feature/my-work
+
+<span class="cmd-comment"># Bring your stashed changes back</span>
+git stash pop
+
+<span class="cmd-comment"># See all stashes if you have more than one</span>
+git stash list
+
+<span class="cmd-comment"># Give a stash a name so you can find it later</span>
+git stash push -m <span class="cmd-str">"half-done login refactor"</span></pre>
+        <p>
+          <code>git stash pop</code> applies the most recent stash and removes it from
+          the list. Use <code>git stash apply</code> if you want to keep it in the list
+          (useful if you want to apply the same changes to multiple branches).
+        </p>
+      </div>
+    </div>
+
+    <section>
+      <h2>What to set up first — a priority list</h2>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Automation</th>
+            <th>Setup time</th>
+            <th>Daily benefit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Git aliases (<code>git st</code>, <code>git lg</code>, <code>git undo</code>)</td>
+            <td><span class="effort-tag low">5 min</span></td>
+            <td>Faster every single command you type</td>
+          </tr>
+          <tr>
+            <td>GitHub CLI (<code>gh</code>)</td>
+            <td><span class="effort-tag low">10 min</span></td>
+            <td>Open PRs, check status, review — from the terminal</td>
+          </tr>
+          <tr>
+            <td>PR template (<code>PULL_REQUEST_TEMPLATE.md</code>)</td>
+            <td><span class="effort-tag low">10 min</span></td>
+            <td>Every PR on your team becomes easier to review</td>
+          </tr>
+          <tr>
+            <td>Auto-labeler workflow</td>
+            <td><span class="effort-tag med">20 min</span></td>
+            <td>PRs get categorised automatically — no manual labeling</td>
+          </tr>
+          <tr>
+            <td>Scheduled dependency audit</td>
+            <td><span class="effort-tag med">30 min</span></td>
+            <td>Security issues surface automatically before they become problems</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <div class="callout">
+        <p>
+          <strong>You have now covered everything in your original goal list.</strong>
+          Merge conflicts, rebase vs. merge, GitHub Actions, Webhooks, CI/CD pipelines,
+          Pull Requests, and workflow automations — all grounded in when and why, not just
+          how. The best next step is to apply these things on a real repository at work,
+          one at a time, starting with the 5-minute wins at the top of the table above.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary source ── -->
+    <section class="primary-source">
+      <h2>Primary sources</h2>
+      <p>
+        <a href="https://cli.github.com/manual/" target="_blank" rel="noopener noreferrer">
+          GitHub CLI Manual
+        </a> — full reference for every <code>gh</code> command.
+      </p>
+      <p>
+        <a href="https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository"
+           target="_blank" rel="noopener noreferrer">
+          Creating a PR Template — GitHub Docs
+        </a> — official guide with supported file locations and multiple-template setup.
+      </p>
+      <p>
+        <a href="https://git-scm.com/book/en/v2/Git-Basics-Git-Aliases" target="_blank" rel="noopener noreferrer">
+          Git Aliases — Pro Git Book
+        </a> — how aliases work and examples from the Git core team.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        If you want help writing a specific automation — a scheduled report, a custom
+        labeler rule, or a stash workflow — describe what you need and your teacher will
+        write it with you.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0007-pull-requests.html">← Lesson 07: Pull Requests</a>
+        <span style="color:#9ca3af; font-family: system-ui, sans-serif; font-size: 0.88rem;">Course complete &#x1F3C1;</span>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: '<code>git stash pop</code> does what to your stash?',
+        options: [
+          'Applies it and removes from list',
+          'Applies it and keeps in list',
+          'Removes it without applying',
+          'Creates a commit from stash'
+        ],
+        correct: 0,
+        explain:
+          '<code>git stash pop</code> applies the most recent stash to your working ' +
+          'directory and removes it from the stash list. Use <code>git stash apply</code> ' +
+          'if you want to apply the stash but keep it in the list — useful when applying ' +
+          'the same changes to multiple branches.'
+      },
+      {
+        q: 'A PR template in <code>.github/PULL_REQUEST_TEMPLATE.md</code> does what?',
+        options: [
+          'Pre-fills the PR description box',
+          'Runs validation on PR titles',
+          'Blocks PRs missing required fields',
+          'Assigns reviewers from a list'
+        ],
+        correct: 0,
+        explain:
+          'GitHub reads the template file and uses its content as the default text in ' +
+          'the PR description box when someone opens a new PR. The author can then fill ' +
+          'in or delete sections. It is a nudge, not enforcement — the author can still ' +
+          'clear it and write something else.'
+      },
+      {
+        q: 'A workflow with <code>on: schedule</code> triggers on…',
+        options: [
+          'A cron timer with no push needed',
+          'A scheduled release being published',
+          'A push to a scheduled milestone',
+          'A timed delay after every push'
+        ],
+        correct: 0,
+        explain:
+          'The <code>schedule</code> trigger uses cron syntax to run a workflow ' +
+          'at a fixed time — completely independent of any push or PR. This is how ' +
+          'you build recurring automations: nightly audits, weekly reports, ' +
+          'stale issue cleanup, and similar tasks.'
+      }
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comenzi Esențiale Claude Code — Referință</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    th { font-family: system-ui, -apple-system, sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border); text-align: left; }
+    td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 0.82rem; white-space: nowrap; color: var(--accent); }
+    .section-label { font-family: system-ui, -apple-system, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 2rem 0 0.6rem; }
+  </style>
+</head>
+<body>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Referință</p>
+  <h1>Comenzi Esențiale Claude Code</h1>
+  <p class="tagline">Cheat sheet complet pentru utilizare zilnică — CLI, slash commands și patterns.</p>
+
+  <section>
+    <p class="section-label">CLI — Pornire</p>
+    <table>
+      <thead><tr><th>Comandă</th><th>Ce face</th></tr></thead>
+      <tbody>
+        <tr><td>claude</td><td>Pornește o sesiune interactivă în directorul curent</td></tr>
+        <tr><td>claude "prompt"</td><td>Execută un prompt one-shot și iese</td></tr>
+        <tr><td>claude --version</td><td>Afișează versiunea instalată</td></tr>
+        <tr><td>claude --help</td><td>Listează toate flag-urile disponibile</td></tr>
+        <tr><td>claude -p "prompt"</td><td>Mod non-interactiv (ideal pentru scripturi)</td></tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Slash Commands (în sesiunea interactivă)</p>
+    <table>
+      <thead><tr><th>Comandă</th><th>Ce face</th></tr></thead>
+      <tbody>
+        <tr><td>/help</td><td>Afișează toate comenzile disponibile</td></tr>
+        <tr><td>/clear</td><td>Golește conversația curentă, pornești fresh</td></tr>
+        <tr><td>/compact</td><td>Comprimă istoricul conversației (eliberează context)</td></tr>
+        <tr><td>/cost</td><td>Afișează tokene consumate în sesiunea curentă</td></tr>
+        <tr><td>/status</td><td>Starea autentificării și a configurației</td></tr>
+        <tr><td>/exit</td><td>Închide sesiunea (alternativ: Ctrl+C)</td></tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Patterns de prompting — Explorare</p>
+    <table>
+      <thead><tr><th>Pattern</th><th>Când îl folosești</th></tr></thead>
+      <tbody>
+        <tr><td>"Explică-mi structura acestui proiect"</td><td>Prima zi pe un proiect nou</td></tr>
+        <tr><td>"Cum funcționează [funcție/modul]?"</td><td>Înțelegerea codului necunoscut</td></tr>
+        <tr><td>"Găsește toate locurile unde se apelează [X]"</td><td>Impact analysis înainte de refactorizare</td></tr>
+        <tr><td>"Există cod duplicat în proiect?"</td><td>Audit de calitate a codului</td></tr>
+        <tr><td>"Creează un CLAUDE.md pentru acest proiect"</td><td>Configurare inițială a proiectului</td></tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Patterns de prompting — Implementare</p>
+    <table>
+      <thead><tr><th>Pattern</th><th>Când îl folosești</th></tr></thead>
+      <tbody>
+        <tr><td>"Adaugă [feature] în [fișier], urmând structura din [exemplu]"</td><td>Implementare consistentă cu stilul existent</td></tr>
+        <tr><td>"Implementează [feature] care să facă X, Y, Z"</td><td>Features cu cerințe clare</td></tr>
+        <tr><td>"Refactorizează [funcție] pentru a fi mai [eficientă/clară/testabilă]"</td><td>Îmbunătățire cod existent</td></tr>
+        <tr><td>"Scrie teste pentru [funcție/endpoint]"</td><td>Test-driven sau acoperire de teste</td></tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Patterns de prompting — Debugging</p>
+    <table>
+      <thead><tr><th>Pattern</th><th>Când îl folosești</th></tr></thead>
+      <tbody>
+        <tr><td>"Primesc această eroare: [stack trace]. Ajută-mă să o rezolv."</td><td>Erori cu stack trace clar</td></tr>
+        <tr><td>"Rulează testele și repară ce eșuează"</td><td>Sesiune de fix tests</td></tr>
+        <tr><td>"Funcția X returnează [Y] dar ar trebui să returneze [Z] pentru input [W]"</td><td>Buguri de logică fără erori</td></tr>
+        <tr><td>"Ce s-a schimbat în ultimele N commit-uri în [modul]?"</td><td>Bug apărut recent, cauza necunoscută</td></tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Patterns de prompting — Git</p>
+    <table>
+      <thead><tr><th>Pattern</th><th>Când îl folosești</th></tr></thead>
+      <tbody>
+        <tr><td>"Fă commit cu modificările curente"</td><td>Salvarea progresului cu mesaj descriptiv</td></tr>
+        <tr><td>"Creează un PR pentru branch-ul curent față de main"</td><td>Finalizare feature, gata de review</td></tr>
+        <tr><td>"Ce am schimbat față de main?"</td><td>Revizie înainte de PR</td></tr>
+        <tr><td>"Rezolvă conflictele de merge păstrând logica din branch-ul meu"</td><td>Merge conflicts</td></tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">Fișiere de configurare</p>
+    <table>
+      <thead><tr><th>Locație</th><th>Scop</th></tr></thead>
+      <tbody>
+        <tr><td>~/.claude/CLAUDE.md</td><td>Instrucțiuni globale, preferințele tale personale</td></tr>
+        <tr><td>/proiect/CLAUDE.md</td><td>Context specific proiectului</td></tr>
+        <tr><td>/proiect/src/CLAUDE.md</td><td>Context specific unui submodul</td></tr>
+        <tr><td>~/.claude/settings.json</td><td>Configurare avansată (permisiuni, modele, etc.)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <nav class="lesson-nav">
+    <a href="../index.html">← Catalog</a>
+    <a class="nav-next" href="scurtaturi-vs-code.html">Scurtături VS Code →</a>
+  </nav>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5 — Principii de Design API | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 5 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Principii de Design API</h1>
+  <p>Cum să proiectezi API-uri HTTP care să-și onoreze contractul, să supraviețuiască schimbărilor și să fie ușor de folosit corect de clienți.</p>
+
+  <h2>Un API este o promisiune</h2>
+  <p>Un API nu este doar un set de endpoint-uri — este un <em>contract</em> între sistemul tău și fiecare client care depinde de el. Odată publicat, modificările care sparg compatibilitatea strica clienții. De aceea design-ul API este o disciplină inginerească, nu doar un exercițiu de denumire: design-ul prost te blochează; design-ul bun îți oferă spațiu să evoluezi.</p>
+
+  <div class="callout">
+    <div class="callout-label">Constrângerea de bază</div>
+    Orice client care funcționează în prezent cu API-ul tău trebuie să continue să funcționeze după orice actualizare pe care o trimiți. Această constrângere ar trebui să ghideze fiecare decizie de design.
+  </div>
+
+  <h2>Fundamentele REST (ce contează cu adevărat)</h2>
+  <p>REST este larg înțeles greșit. Aspectele care contează pentru design-ul practic al API:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">R</div>
+      <div class="arch-info">
+        <h4>Resurse, nu acțiuni</h4>
+        <p>URL-urile identifică <em>lucruri</em>, nu <em>operații</em>. <code>/orders</code>, nu <code>/createOrder</code> sau <code>/getOrders</code>.</p>
+      </div>
+      <div class="arch-tag">design URL</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">V</div>
+      <div class="arch-info">
+        <h4>Verbele poartă semantică</h4>
+        <p>Metodele HTTP nu sunt decorative. GET este sigur și idempotent. POST creează. PUT înlocuiește. PATCH actualizează. DELETE elimină.</p>
+      </div>
+      <div class="arch-tag">semantica metodelor</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">S</div>
+      <div class="arch-info">
+        <h4>Codurile de stare sunt semantice</h4>
+        <p>200 înseamnă succes. 201 înseamnă creat. 400 înseamnă eroare client. 404 înseamnă negăsit. 500 înseamnă eroare server. Nu returna niciodată 200 cu <code>{"error": "not found"}</code> în body.</p>
+      </div>
+      <div class="arch-tag">coduri de stare</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">S</div>
+      <div class="arch-info">
+        <h4>Lipsa stării (Stateless)</h4>
+        <p>Fiecare request trebuie să conțină toate informațiile necesare pentru a fi procesat. Serverul nu stochează starea sesiunii clientului între request-uri.</p>
+      </div>
+      <div class="arch-tag">stateless</div>
+    </div>
+  </div>
+
+  <h2>Structura URL</h2>
+  <pre><code># Colecțiile și elementele urmează un tipar consistent
+GET    /orders          → listează toate comenzile
+POST   /orders          → creează o comandă nouă
+GET    /orders/{id}     → obține o comandă specifică
+PUT    /orders/{id}     → înlocuiește o comandă specifică
+PATCH  /orders/{id}     → actualizează parțial o comandă specifică
+DELETE /orders/{id}     → șterge o comandă specifică
+
+# Resurse imbricate — doar un nivel adânc
+GET    /orders/{id}/items    → elementele aparținând unei comenzi
+POST   /orders/{id}/items    → adaugă un element la o comandă
+
+# Acțiuni care nu se potrivesc CRUD — folosește sub-resurse
+POST   /orders/{id}/cancel   → anulează (nu DELETE — anularea este o tranziție de stare)
+POST   /orders/{id}/refund   → inițiază o rambursare</code></pre>
+
+  <h2>Compatibilitatea inversă: regula non-negociabilă</h2>
+  <p>Adăugarea la un API este sigură. Eliminarea sau modificarea este o schimbare care sparge compatibilitatea. Aceasta este regula pe care fiecare designer de API trebuie să o interiorizeze:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Tip de schimbare</th><th>Sigur?</th><th>De ce</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Adaugă un câmp opțional nou în response</td>
+        <td>✓ Sigur</td>
+        <td>Clienții existenți ignoră câmpurile necunoscute</td>
+      </tr>
+      <tr>
+        <td>Adaugă un parametru de request opțional nou</td>
+        <td>✓ Sigur</td>
+        <td>Clienții existenți nu îl trimit; este ignorat</td>
+      </tr>
+      <tr>
+        <td>Adaugă un endpoint nou</td>
+        <td>✓ Sigur</td>
+        <td>Clienții existenți nu îl apelează</td>
+      </tr>
+      <tr>
+        <td>Redenumește un câmp în response</td>
+        <td>✗ Sparge compatibilitatea</td>
+        <td>Clienții existenți caută numele vechi al câmpului</td>
+      </tr>
+      <tr>
+        <td>Schimbă tipul de date al unui câmp</td>
+        <td>✗ Sparge compatibilitatea</td>
+        <td>Clienții existenți așteaptă tipul original</td>
+      </tr>
+      <tr>
+        <td>Elimină un câmp din response</td>
+        <td>✗ Sparge compatibilitatea</td>
+        <td>Clienții existenți depind de prezența lui</td>
+      </tr>
+      <tr>
+        <td>Face un câmp anterior opțional să devină obligatoriu</td>
+        <td>✗ Sparge compatibilitatea</td>
+        <td>Clienții existenți nu îl trimit</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Versionare</h2>
+  <p>Când trebuie să faci o schimbare care sparge compatibilitatea, versionează API-ul. Convenția practică pentru API-urile web:</p>
+  <pre><code># Versionare prin URL — explicită, cacheable, ușor de înțeles
+/api/v1/orders
+/api/v2/orders
+
+# Menține v1 funcțional în timp ce clienții migrează la v2
+# Depreciează v1 cu o dată de sunset în documentație și headerele response
+Deprecation: Sat, 01 Jan 2027 00:00:00 GMT
+Sunset: Sat, 01 Jan 2027 00:00:00 GMT</code></pre>
+
+  <h2>Response-uri de eroare</h2>
+  <p>Response-urile de eroare fac parte din contractul API-ului tău. Clienții scriu cod împotriva formatului tău de eroare. Fă-l consistent și ușor de procesat de mașini:</p>
+
+  <pre><code>// Format de eroare consistent — RFC 7807 "Problem Details" este un standard bun
+{
+  "type":    "https://api.yourapp.com/errors/validation-error",
+  "title":   "Validare eșuată",
+  "status":  422,
+  "detail":  "Request-ul nu a putut fi procesat.",
+  "errors": {
+    "email": ["Câmpul email este obligatoriu."],
+    "amount": ["Suma trebuie să fie mai mare decât 0."]
+  }
+}
+// Niciodată: {"success": false, "msg": "input incorect"}</code></pre>
+
+  <h2>Design API generat de AI: ce să verifici</h2>
+  <p>AI produce frecvent design-uri API cu aceste probleme:</p>
+  <ul>
+    <li>URL-uri bazate pe acțiuni (<code>/getUserById</code> în loc de <code>/users/{id}</code>)</li>
+    <li>Utilizare inconsistentă a metodelor HTTP (request-uri GET care modifică starea)</li>
+    <li>Response-uri 200 cu body-uri de eroare</li>
+    <li>Nicio strategie de versionare — presupune că API-ul nu se va schimba niciodată</li>
+    <li>Denumire inconsistentă a câmpurilor (<code>userId</code> la un endpoint, <code>user_id</code> la altul)</li>
+  </ul>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Revizuiește un API proiectat de AI</div>
+    <ol>
+      <li>Cere unui AI să proiecteze un REST API pentru o aplicație de blog (postări, comentarii, autori).</li>
+      <li>Verifică URL-urile: sunt bazate pe resurse sau pe acțiuni?</li>
+      <li>Verifică metodele HTTP: GET modifică ceva? POST returnează resursa creată?</li>
+      <li>Verifică codurile de stare: are fiecare response de eroare un cod non-200 corespunzător?</li>
+      <li>Verifică consistența: convenția de denumire este uniformă în toate endpoint-urile?</li>
+      <li>Rescrie orice încălcări găsești.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://github.com/microsoft/api-guidelines/blob/vNext/azure/Guidelines.md" target="_blank">Microsoft REST API Guidelines</a>. Convenții testate în bătălie de la un producător major de API-uri publice. Acoperă versionarea, denumirea, formatele de eroare, paginarea și mai mult. Folosește-l ca referință, nu ca biblie — aplică ce se potrivește contextului tău.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce design de URL urmează convențiile de resurse REST?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>POST /createOrder</code> cu datele comenzii în body</button></li>
+        <li><button data-correct="true"><code>POST /orders</code> cu datele comenzii în body</button></li>
+        <li><button data-correct="false"><code>GET /orders/create</code> cu datele comenzii în body</button></li>
+        <li><button data-correct="false"><code>POST /order/new</code> cu datele comenzii în body</button></li>
+      </ul>
+      <div class="quiz-feedback">URL-urile REST denumesc resurse (substantive), nu acțiuni (verbe). <code>POST /orders</code> spune „creează un lucru nou în colecția de comenzi" folosind verbul HTTP pentru a exprima acțiunea. <code>/createOrder</code> este stilul RPC, nu REST.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care dintre aceste schimbări ale API sparge compatibilitatea?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Adăugarea unui câmp <code>metadata</code> opțional nou în fiecare response</button></li>
+        <li><button data-correct="false">Adăugarea unui nou endpoint GET la <code>/orders/{id}/timeline</code></button></li>
+        <li><button data-correct="true">Redenumirea câmpului <code>user_id</code> în <code>userId</code> în body-ul response</button></li>
+        <li><button data-correct="false">Adăugarea unui nou parametru de interogare opțional <code>?include=items</code></button></li>
+      </ul>
+      <div class="quiz-feedback">Redenumirea unui câmp sparge compatibilitatea deoarece clienții existenți citesc <code>response.user_id</code> — după redenumire, acesta returnează <code>undefined</code>. Adăugarea câmpurilor opționale, a noilor endpoint-uri sau a noilor parametri opționali sunt toate aditive și compatibile cu versiunile anterioare.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce este greșit la returnarea HTTP 200 cu <code>{"error": "not found"}</code> în body?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Body-ul JSON ar trebui să folosească <code>"status": "error"</code> nu cuvântul „error" ca cheie</button></li>
+        <li><button data-correct="false">Codul 200 nu poate fi folosit cu body-uri JSON în HTTP/1.1</button></li>
+        <li><button data-correct="true">Clienții și infrastructura se bazează pe codurile de stare HTTP pentru a detecta erorile — ascunderea erorilor în body-uri 200 sparge acest contract</button></li>
+        <li><button data-correct="false">Șirul „not found" ar trebui să fie un număr de cod de eroare, nu text</button></li>
+      </ul>
+      <div class="quiz-feedback">Infrastructura HTTP — load balancere, instrumente de monitorizare, logică de retry, logging — citește codurile de stare pentru a distinge succesul de eșec. Returnarea 200 pentru o eroare înseamnă că toată această infrastructură o tratează ca succes, ascunzând eșecul de fiecare strat, cu excepția clientului care parsează body-ul.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce este <code>POST /orders/{id}/cancel</code> mai bun decât <code>DELETE /orders/{id}</code> pentru anularea unei comenzi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">DELETE nu este permis pe URL-uri cu parametri de cale în REST</button></li>
+        <li><button data-correct="false">Request-urile POST sunt mai rapide decât DELETE în cei mai mulți clienți HTTP</button></li>
+        <li><button data-correct="true">Anularea este o tranziție de stare, nu o eliminare — înregistrarea comenzii încă există și are nevoie de audit trail</button></li>
+        <li><button data-correct="false">DELETE nu poate accepta un body de request, deci motivul anulării nu poate fi transmis</button></li>
+      </ul>
+      <div class="quiz-feedback">DELETE înseamnă „elimină această resursă." Anularea unei comenzi îi schimbă statusul dar o păstrează în baza de date pentru istoric și conformitate. Modelarea ca <code>POST /orders/{id}/cancel</code> face intenția explicită și păstrează înregistrarea.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care este abordarea corectă când o schimbare a API care sparge compatibilitatea este inevitabilă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Actualizarea tuturor clienților simultan într-un deployment coordonat</button></li>
+        <li><button data-correct="false">Adăugarea unui flag la endpoint-ul vechi pentru a opta pentru noul comportament</button></li>
+        <li><button data-correct="true">Introducerea unei versiuni noi (v2), rularea ambelor în paralel, apoi deprecierea v1 cu o dată de sunset</button></li>
+        <li><button data-correct="false">Documentarea schimbării și solicitarea clienților să actualizeze în 24 de ore</button></li>
+      </ul>
+      <div class="quiz-feedback">Versionarea este soluția standard pentru schimbările inevitabile care sparg compatibilitatea. Rulezi v1 și v2 în paralel, oferi clienților o fereastră de migrare cu o dată de sunset documentată și dezafectezi v1 numai după închiderea ferestrei.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Cum gestionez versionarea API într-un proiect Laravel?"</em> sau <em>„Care este diferența dintre REST și GraphQL din perspectiva contractului?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0004-systems-thinking.html">← Lecția 4: Gândire Sistemică</a>
+    <a href="0006-requirements-engineering.html">Lecția 6: Ingineria Cerințelor →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

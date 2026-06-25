@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8: MCP Servers — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 8 din 8</span>
+    <span class="tag">~25 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>MCP Servers</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Extinde harness-ul cu tool-uri personalizate — conectează baze de date, API-uri interne și orice altceva are nevoie modelul tău.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: CE ESTE MCP ══════ -->
+  <h2>Ce este MCP?</h2>
+
+  <p>
+    <strong>Model Context Protocol (MCP)</strong> este un standard deschis, creat de Anthropic,
+    pentru conectarea agenților AI la tool-uri și surse de date externe.
+    Un <strong>server MCP</strong> este orice proces care implementează acest protocol —
+    expune unul sau mai multe tool-uri printr-o schemă JSON definită, iar harness-ul le înregistrează
+    alături de tool-urile built-in astfel încât modelul să le poată apela în mod transparent.
+  </p>
+
+  <p>
+    Din perspectiva modelului, nu există nicio diferență între apelarea tool-ului built-in <code>Read</code>
+    și apelarea tool-ului tău MCP personalizat <code>query_database</code>.
+    Ambele apar în tool registry; ambele trec prin permission layer.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce MCP în loc de hooks?</div>
+    Hooks-urile interceptează apelurile de tool existente. MCP <em>adaugă tool-uri noi</em> pe care modelul le poate apela.
+    Hook: "loghează fiecare apel Bash." MCP: "oferă modelului un nou tool pentru a interoga Postgres direct."
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: TIPURI DE TRANSPORT ══════ -->
+  <h2>Tipuri de transport</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>stdio (cel mai comun)</h4>
+        <p>Harness-ul lansează serverul tău ca proces copil și comunică prin stdin/stdout. Simplu, rapid și local. Nu este necesară o rețea.</p>
+      </div>
+      <div class="arch-tag">recomandat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>SSE (Server-Sent Events)</h4>
+        <p>Serverul tău rulează independent și harness-ul se conectează prin HTTP. Folosit pentru servere remote sau tooling partajat de echipă.</p>
+      </div>
+      <div class="arch-tag">remote / partajat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>HTTP (Streamable)</h4>
+        <p>Transport mai nou cu suport complet de streaming. Cel mai bun pentru tool-uri cu throughput mare care returnează rezultate voluminoase.</p>
+      </div>
+      <div class="arch-tag">avansat</div>
+    </div>
+  </div>
+
+  <p>
+    Începe cu <code>stdio</code>. Nu necesită gestionarea serverului — harness-ul pornește și oprește
+    procesul automat.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 3: ÎNREGISTRARE ══════ -->
+  <h2>Înregistrarea unui server MCP</h2>
+
+  <p>
+    Serverele MCP sunt înregistrate în <code>settings.json</code> sub <code>"mcpServers"</code>:
+  </p>
+
+  <pre><code>{
+  "mcpServers": {
+    "my-tools": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/my-mcp-server/index.js"],
+      "env": {
+        "DATABASE_URL": "postgres://localhost:5432/mydb"
+      }
+    },
+    "remote-api": {
+      "type": "sse",
+      "url": "https://tools.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer $MY_API_TOKEN"
+      }
+    }
+  }
+}</code></pre>
+
+  <p>Câmpuri cheie:</p>
+  <ul>
+    <li><code>"type"</code> — <code>"stdio"</code>, <code>"sse"</code> sau <code>"http"</code></li>
+    <li><code>"command"</code> + <code>"args"</code> — pentru stdio: comanda de lansare a serverului</li>
+    <li><code>"env"</code> — variabile de mediu injectate în procesul serverului</li>
+    <li><code>"url"</code> — pentru SSE/HTTP: endpoint-ul serverului</li>
+  </ul>
+
+
+  <!-- ══════ SECȚIUNEA 4: SCHEMA TOOL-ULUI ══════ -->
+  <h2>Cum sunt definite tool-urile</h2>
+
+  <p>
+    Fiecare tool expus de serverul tău MCP este descris printr-o schemă JSON care îi spune modelului:
+    cum se numește tool-ul, ce face și ce inputuri acceptă.
+  </p>
+
+  <pre><code>{
+  "name": "query_database",
+  "description": "Execută o interogare SQL SELECT read-only față de baza de date a aplicației. Returnează rânduri ca array JSON.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "O instrucțiune SQL SELECT validă. Numai SELECT este permis."
+      },
+      "limit": {
+        "type": "number",
+        "description": "Numărul maxim de rânduri de returnat. Implicit 100.",
+        "default": 100
+      }
+    },
+    "required": ["query"]
+  }
+}</code></pre>
+
+  <p>
+    Descrierea este critică — modelul o folosește pentru a decide când să apeleze tool-ul tău.
+    Scrie-o din perspectiva modelului: <em>ce voi obține dacă apelezi asta?</em>
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 5: SERVER MINIMAL ══════ -->
+  <h2>Un server MCP minimal</h2>
+
+  <p>
+    Iată cel mai mic server MCP complet în Node.js — un tool care returnează ora curentă:
+  </p>
+
+  <pre><code>// mcp-time-server/index.js
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+const server = new McpServer({ name: "time-server", version: "1.0.0" });
+
+server.tool(
+  "get_current_time",
+  "Returnează ora curentă UTC ca șir ISO 8601.",
+  { timezone: z.string().optional().describe("Numele fusului orar IANA, ex. 'Europe/Bucharest'") },
+  async ({ timezone }) => {
+    const date = new Date();
+    const display = timezone
+      ? date.toLocaleString("ro-RO", { timeZone: timezone })
+      : date.toISOString();
+    return { content: [{ type: "text", text: display }] };
+  }
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);</code></pre>
+
+  <pre><code>// package.json
+{
+  "name": "mcp-time-server",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.0.0"
+  }
+}</code></pre>
+
+  <p>Înregistrează-l în <code>settings.json</code>:</p>
+
+  <pre><code>{
+  "mcpServers": {
+    "time": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./mcp-time-server/index.js"]
+    }
+  }
+}</code></pre>
+
+  <p>
+    Acum poți întreba Claude: <em>"Ce oră este în București?"</em>
+    și va apela <code>get_current_time({ timezone: "Europe/Bucharest" })</code>.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 6: DEBUGGING ══════ -->
+  <h2>Debugging la serverele MCP</h2>
+
+  <p>Când un server MCP nu se încarcă sau un tool eșuează, verifică acestea în ordine:</p>
+
+  <ol>
+    <li><strong>Stderr-ul serverului</strong> — Serverele MCP scriu erorile pe stderr. Verifică panoul de output al Claude Code.</li>
+    <li><strong>Pornirea</strong> — testează serverul în izolare: <code>echo '{}' | node index.js</code></li>
+    <li><strong>Schema</strong> — modelul nu va apela un tool cu o descriere vagă sau câmpuri <code>required</code> lipsă</li>
+    <li><strong>Permissions</strong> — tool-urile MCP sunt supuse acelorași reguli allow/deny ca tool-urile built-in. Adaugă <code>"mcp__my-tools__query_database"</code> la lista ta allow dacă este necesar.</li>
+  </ol>
+
+  <div class="callout">
+    <div class="callout-label">MCP Inspector</div>
+    Anthropic oferă un tool oficial <strong>MCP Inspector</strong> pentru testarea interactivă a serverelor:
+    <code>npx @modelcontextprotocol/inspector node index.js</code>.
+    Îți permite să apelezi tool-uri și să inspectezi răspunsurile fără a rula o sesiune Claude completă.
+  </div>
+
+
+  <!-- ══════ PRACTIC ══════ -->
+  <h2>Practic: construiește și conectează un tool</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Primul tău tool MCP</div>
+    <ol>
+      <li>
+        Creează directorul serverului și instalează SDK-ul:
+        <pre><code>mkdir mcp-demo && cd mcp-demo
+npm init -y
+npm install @modelcontextprotocol/sdk zod</code></pre>
+      </li>
+      <li>
+        Creează <code>index.js</code> cu codul serverului de timp din secțiunea de mai sus.
+        Actualizează <code>package.json</code> cu <code>"type": "module"</code>.
+      </li>
+      <li>
+        Testează-l cu MCP Inspector:
+        <pre><code>npx @modelcontextprotocol/inspector node index.js</code></pre>
+        Apelează <code>get_current_time</code> cu <code>{"timezone": "UTC"}</code> pentru a verifica că răspunde.
+      </li>
+      <li>
+        Înregistrează-l în <code>.claude/settings.json</code> și repornește Claude Code.
+      </li>
+      <li>
+        Întreabă Claude: <em>"Ce oră este în Tokyo?"</em>
+        Ar trebui să apeleze tool-ul tău cu <code>timezone: "Asia/Tokyo"</code>.
+      </li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Extensie — Adaugă un tool de numărat fișiere</div>
+    <p style="font-size:0.9rem;margin-bottom:0.8rem;">
+      Adaugă un al doilea tool la același server care numără fișierele care se potrivesc cu un pattern glob:
+    </p>
+    <pre><code>server.tool(
+  "count_files",
+  "Numără fișierele care se potrivesc cu un pattern glob în directorul curent.",
+  { pattern: z.string().describe("Pattern glob, ex. '**/*.ts'") },
+  async ({ pattern }) => {
+    const { glob } = await import("glob");
+    const files = await glob(pattern);
+    return {
+      content: [{
+        type: "text",
+        text: `${files.length} fișier(e) se potrivesc cu '${pattern}'`
+      }]
+    };
+  }
+);</code></pre>
+    <p style="font-size:0.9rem;">
+      Instalează <code>glob</code> (<code>npm install glob</code>), apoi testează cu:
+      <em>"Câte fișiere TypeScript sunt în acest proiect?"</em>
+    </p>
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://modelcontextprotocol.io/docs/concepts/servers" target="_blank">
+        MCP Concepts: Servers — modelcontextprotocol.io
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Specificația canonică pentru structura serverului MCP, schemele de tool-uri, tipurile de transport
+        și ciclul de viață al mesajelor. Citește secțiunea "Tools" înainte de a-ți scrie propriile tool-uri.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Din perspectiva modelului, cum diferă un tool MCP de un tool built-in ca <code>Read</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Tool-urile MCP sunt mai lente — modelul așteaptă serverul extern</button></li>
+        <li><button data-correct="false">Modelului i se spune care tool-uri sunt MCP vs. built-in</button></li>
+        <li><button data-correct="true">Nu diferă — ambele apar identic în tool registry</button></li>
+        <li><button data-correct="false">Tool-urile MCP ocolesc permission layer-ul</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Harness-ul normalizează toate tool-urile — built-in și MCP — în același
+        registry. Modelul vede numele, descrierea și schema tool-ului și îl apelează
+        fără să știe (sau să-i pese) dacă este un built-in sau un server extern.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce tip de transport este recomandat pentru serverele MCP locale, private?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">SSE — cel mai larg suportat</button></li>
+        <li><button data-correct="false">HTTP — performanță mai bună</button></li>
+        <li><button data-correct="true">stdio — cel mai simplu, nu necesită gestionarea rețelei</button></li>
+        <li><button data-correct="false">WebSocket — pentru comunicare bidirecțională în timp real</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cu <code>stdio</code>, harness-ul lansează și gestionează
+        procesul serverului automat. Niciun port, niciun firewall, niciun daemon de menținut.
+        Folosește SSE sau HTTP când ai nevoie ca serverul să fie partajat între mașini sau echipe.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce este câmpul <code>description</code> din schema unui tool atât de important?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Este afișat utilizatorului în UI</button></li>
+        <li><button data-correct="true">Modelul îl folosește pentru a decide când să apeleze tool-ul</button></li>
+        <li><button data-correct="false">Este necesar pentru validare — harness-ul respinge tool-urile fără el</button></li>
+        <li><button data-correct="false">Este logat în scopuri de audit</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modelul nu are altă modalitate de a ști ce face un tool.
+        O descriere slabă duce la faptul că tool-ul nu este niciodată apelat (modelul nu recunoaște cazul de utilizare)
+        sau este apelat incorect (modelul înțelege greșit contractul).
+        Scrie descrierile din perspectiva modelului: <em>ce voi obține dacă apelezi asta?</em>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Un tool MCP pe care l-ai adăugat nu este apelat de model. Ce ar trebui să verifici mai întâi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Dacă modelul suportă MCP</button></li>
+        <li><button data-correct="false">Versiunea de Node.js de pe mașina ta</button></li>
+        <li><button data-correct="true">Dacă serverul pornește corect și ce arată stderr-ul</button></li>
+        <li><button data-correct="false">Dacă trebuie să repornești computerul</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Majoritatea problemelor MCP sunt eșecuri la pornirea serverului — o dependență lipsă,
+        o cale greșită sau o eroare de sintaxă. Verifică mai întâi outputul stderr în panoul de output al Claude Code.
+        Dacă serverul nu pornește, tool-ul nu se înregistrează niciodată și modelul nu îl poate apela.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Tool-urile MCP trec prin permission layer înainte de execuție?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu — tool-urile MCP sunt de încredere implicit și ocolesc permisiunile</button></li>
+        <li><button data-correct="false">Numai dacă tool-ul modifică fișiere</button></li>
+        <li><button data-correct="true">Da — toate apelurile de tool trec prin permission layer</button></li>
+        <li><button data-correct="false">Numai dacă este configurat explicit în setările mcpServers</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Tool-urile MCP sunt supuse acelorași reguli de permisiune ca built-in-urile.
+        Le poți permite sau bloca folosind pattern-ul <code>"mcp__server-name__tool-name"</code>
+        în configurarea permisiunilor. Asta îți permite să adaugi un tool MCP puternic menținând în același timp
+        restricții asupra operațiunilor pe care le poate efectua.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Vrei ajutor la scrierea unei scheme de tool pentru un API specific? Nu știi cum să gestionezi autentificarea
+    într-un server MCP? Întreabă-mă — te pot ajuta să proiectezi schema și logica serverului.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0007-permissions.html">← Lecția 7: Permissions</a>
+    <span class="current">Sfârșitul cursului ✓</span>
+  </div>
+
+  <div style="margin-top:2.5rem;padding:1.4rem 1.6rem;background:var(--code-bg);border-radius:9px;border:1px solid var(--border);">
+    <p style="margin:0;font-size:0.93rem;">
+      <strong>Curs finalizat.</strong> Ai parcurs toate cele opt straturi ale harness-ului Claude Code:
+      arhitectura, hooks, skills, agenți, scheduling, memorie, permisiuni și servere MCP.
+      Cel mai bun pas următor este să construiești ceva real — alege unul dintre exercițiile practice din orice lecție
+      și extinde-l într-un tool pe care îl folosești zilnic.
+    </p>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../index.html">Indexul cursului</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

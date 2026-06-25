@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-term {
+      margin: 2rem 0 0;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .glossary-term:first-of-type { border-top: none; }
+    .glossary-term dt {
+      font-weight: bold; font-size: 1.05rem; margin-bottom: 0.2rem;
+    }
+    .glossary-term .term-code {
+      font-family: var(--mono); font-size: 0.82rem;
+      color: var(--accent); margin-left: 0.4rem;
+    }
+    .glossary-term dd {
+      margin-left: 0; color: var(--text); font-size: 0.93rem; line-height: 1.6;
+    }
+    .glossary-term .lesson-ref {
+      font-size: 0.78rem; color: var(--muted); font-family: var(--mono); margin-top: 0.3rem;
+    }
+    .alpha-section { margin-top: 3rem; }
+    .alpha-section h2 { font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Referință</span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Glosar</h1>
+  <p>Termenii cheie folosiți în cadrul cursului Principii de Inginerie. Fiecare termen trimite la lecția în care este introdus în profunzime.</p>
+
+  <div class="alpha-section">
+    <h2>A</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Criterii de acceptanță <span class="term-code">cerințe</span></dt>
+        <dd>Afirmații specifice și testabile care definesc când o funcționalitate este completă. Fiecare criteriu trebuie să fie binar: sistemul fie face asta, fie nu. Instrumentul principal pentru a face cerințele evaluabile.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0006-requirements-engineering.html">Lecția 6: Ingineria Cerințelor</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Control de acces <span class="term-code">securitate</span></dt>
+        <dd>Mecanismul care impune cine poate face ce. Necesită atât autentificare (identitate) cât și autorizare (permisiune). Categoria #1 OWASP — cel mai frecvent încălcată prin verificarea autentificării dar nu a ownership-ului.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0009-security-by-design.html">Lecția 9: Securitate prin Design</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Autentificare <span class="term-code">securitate</span></dt>
+        <dd>Confirmarea identității — „ești cine spui că ești?" De obicei implementată cu token-uri, sesiuni sau OAuth. Distinctă de autorizare.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0009-security-by-design.html">Lecția 9: Securitate prin Design</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Autorizare <span class="term-code">securitate</span></dt>
+        <dd>Confirmarea permisiunii — „ai voie să faci asta?" Verificată întotdeauna după autentificare. Include verificări de ownership (deține acest utilizator această resursă?).</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0009-security-by-design.html">Lecția 9: Securitate prin Design</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>C</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Coeziune <span class="term-code">sisteme</span></dt>
+        <dd>Cât de strâns legate sunt responsabilitățile dintr-o singură componentă. Coeziunea ridicată înseamnă că componenta are un scop clar, focalizat — tot ce este înăuntru aparține împreună. Pereche cu cuplaj scăzut.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0004-systems-thinking.html">Lecția 4: Gândire Sistemică</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Compatibilitate inversă <span class="term-code">api</span></dt>
+        <dd>Garanția că clienții existenți ai unui API continuă să funcționeze după o schimbare. Schimbările aditive (câmpuri opționale noi, endpoint-uri noi) sunt compatibile cu versiunile anterioare. Redenumirea, eliminarea sau schimbarea tipurilor sunt schimbări care sparg compatibilitatea.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0005-api-design-principles.html">Lecția 5: Design API</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Cuplaj <span class="term-code">sisteme</span></dt>
+        <dd>Cât de mult trebuie să știe o componentă despre alta. Cuplajul scăzut înseamnă că componentele se pot schimba independent. Cuplajul ridicat înseamnă că o schimbare în A forțează o schimbare în B, care poate forța o schimbare în C.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0004-systems-thinking.html">Lecția 4: Gândire Sistemică</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>D</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Apărare în profunzime <span class="term-code">securitate</span></dt>
+        <dd>Existența mai multor straturi de securitate independente (rețea, aplicație, date, infrastructură) astfel încât un eșec într-unul să nu compromită întregul sistem.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0009-security-by-design.html">Lecția 9: Securitate prin Design</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Principiul Inversiunii Dependențelor (DIP) <span class="term-code">solid</span></dt>
+        <dd>Modulele de nivel înalt și modulele de nivel scăzut ar trebui să depindă amândouă de abstracțiuni (interfețe), nu unele de altele. Permite testabilitatea permițând înlocuirea dependențelor concrete cu test double-uri.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0002-solid-principles.html">Lecția 2: Principiile SOLID</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Datorie tehnică <span class="term-code">mentenanță</span></dt>
+        <dd>Costul implicat al alegerii unei soluții rapide acum în loc de o abordare mai bună care ar dura mai mult. Ca datoria financiară, se compune: plătești „dobândă" — dezvoltare mai lentă, risc mai mare de bug-uri — până când refactorizezi. Datoria deliberată prudentă (documentată, rambursare planificată) este singurul tip acceptabil.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0007-technical-debt.html">Lecția 7: Datorie Tehnică</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>DRY (Don't Repeat Yourself) <span class="term-code">simplitate</span></dt>
+        <dd>Fiecare bucată de cunoaștere trebuie să aibă o singură reprezentare neambiguă și autoritativă într-un sistem. Vizează duplicarea cunoașterii, nu duplicarea liniilor. Două funcții cu aspect similar pot reprezenta cunoaștere diferită și ar trebui să rămână separate.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0003-yagni-kiss-dry.html">Lecția 3: YAGNI, KISS, DRY</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>E</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Enumerare utilizatori <span class="term-code">securitate</span></dt>
+        <dd>O vulnerabilitate de securitate în care un atacator poate determina dacă un e-mail sau un nume de utilizator dat este înregistrat prin observarea unor răspunsuri diferite la input-uri valide vs. invalide. Prevenită prin returnarea unor răspunsuri identice indiferent dacă input-ul este înregistrat sau nu.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0006-requirements-engineering.html">Lecția 6: Ingineria Cerințelor</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>I</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>IDOR (Insecure Direct Object Reference) <span class="term-code">securitate</span></dt>
+        <dd>O vulnerabilitate de control al accesului: un endpoint folosește un ID furnizat de utilizator pentru a prelua o resursă fără a verifica că utilizatorul curent deține sau are permisiunea de a o accesa. Utilizatorul autentificat A poate accesa datele utilizatorului B furnizând ID-ul lui B.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0009-security-by-design.html">Lecția 9: Securitate prin Design</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Principiul Segregării Interfețelor (ISP) <span class="term-code">solid</span></dt>
+        <dd>Clienții nu ar trebui să fie forțați să depindă de interfețe pe care nu le folosesc. Împarte interfețele grase în interfețe de rol focalizate. Semnal de încălcare: clase care implementează o interfață dar stub-uiesc mai multe metode ca „not implemented".</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0002-solid-principles.html">Lecția 2: Principiile SOLID</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>K</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>KISS (Keep It Simple, Stupid) <span class="term-code">simplitate</span></dt>
+        <dd>Preferă cea mai simplă soluție care rezolvă corect problema. Complexitatea trebuie să se justifice. Întrebarea KISS: „care este cel mai simplu lucru care ar putea funcționa?" Pornește de acolo; adaugă complexitate numai când versiunea simplă nu poate demonstrabil să îndeplinească cerința.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0003-yagni-kiss-dry.html">Lecția 3: YAGNI, KISS, DRY</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Cusătură <span class="term-code">sisteme</span></dt>
+        <dd>Un loc din sistem unde două componente se ating și informația traversează o limită. Inventat de Michael Feathers. Cusăturile sunt punctele naturale de design: unde definești contracte și unde inserezi test double-uri.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0004-systems-thinking.html">Lecția 4: Gândire Sistemică</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>L</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Limită <span class="term-code">sisteme</span></dt>
+        <dd>Interfața dintre două componente — ce este expus vs. ascuns. O limită bine trasată înseamnă că schimbările în interiorul unei componente nu forțează schimbări ale apelantilor săi, atâta timp cât interfața rămâne stabilă.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0004-systems-thinking.html">Lecția 4: Gândire Sistemică</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Principiul Substituției Liskov (LSP) <span class="term-code">solid</span></dt>
+        <dd>Subtipurile trebuie să fie substituibile pentru tipurile lor de bază: oriunde folosești părintele, un copil ar trebui să funcționeze corect. Încălcare: o subclasă care aruncă excepție acolo unde părintele returna, sau returnează un tip incompatibil.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0002-solid-principles.html">Lecția 2: Principiile SOLID</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>N</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Cerință non-funcțională <span class="term-code">cerințe</span></dt>
+        <dd>O cerință despre cât de bine face un sistem ceva, nu doar ce face. Include performanță, securitate, scalabilitate, fiabilitate. AI omite aproape întotdeauna acestea dacă nu sunt solicitate explicit.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0006-requirements-engineering.html">Lecția 6: Ingineria Cerințelor</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>O</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Principiul Deschis/Închis (OCP) <span class="term-code">solid</span></dt>
+        <dd>O clasă ar trebui să fie deschisă pentru extensie dar închisă pentru modificare. Odată ce o clasă este testată și funcțională, comportamentul nou ar trebui să poată fi adăugat fără a edita codul existent. Realizat prin interfețe și injecție de dependențe.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0002-solid-principles.html">Lecția 2: Principiile SOLID</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>OWASP Top 10 <span class="term-code">securitate</span></dt>
+        <dd>Cea mai autoritativă listă de riscuri critice de securitate a aplicațiilor web, menținută de Open Web Application Security Project. Categoria #1 din 2021 este Controlul de Acces Defect.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0009-security-by-design.html">Lecția 9: Securitate prin Design</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>P</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Piramida de testare <span class="term-code">testare</span></dt>
+        <dd>Un model pentru alocarea efortului de testare: multe teste unitare (rapide, focalizate) la bază; teste de integrare moderate la mijloc; puține teste end-to-end la vârf (lente, costisitoare). Forma reflectă unde să investești cel mai mult efort.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0008-testing-strategy.html">Lecția 8: Strategia de Testare</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>R</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>REST <span class="term-code">api</span></dt>
+        <dd>Representational State Transfer. Un stil arhitectural pentru API-urile HTTP. Constrângeri cheie: URL-urile denumesc resurse (nu acțiuni); metodele HTTP poartă semantică (GET/POST/PUT/PATCH/DELETE); codurile de stare sunt semantice; fiecare request este stateless.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0005-api-design-principles.html">Lecția 5: Design API</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>Testare bazată pe risc <span class="term-code">testare</span></dt>
+        <dd>Prioritizarea efortului de testare proporțional cu costul eșecului. Autentificarea, plățile și gestionarea PII sunt critice; textul UI și CRUD-ul simplu sunt prioritate scăzută. Întrebarea este „ce se strică dacă acest cod este greșit?" nu „ce procent din linii sunt acoperite?"</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0008-testing-strategy.html">Lecția 8: Strategia de Testare</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>S</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>Principiul Responsabilității Unice (SRP) <span class="term-code">solid</span></dt>
+        <dd>O clasă ar trebui să aibă un singur motiv de schimbare — adică să servească un singur grup de stakeholderi. Semnal de încălcare: o clasă sau funcție al cărei nume conține „și" sau „plus".</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0002-solid-principles.html">Lecția 2: Principiile SOLID</a></div>
+      </div>
+      <div class="glossary-term">
+        <dt>SOLID <span class="term-code">design</span></dt>
+        <dd>Cinci principii de design orientat pe obiecte: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion. Împreună ghidează design-ul componentelor spre cod ușor de schimbat fără a-l strica.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0002-solid-principles.html">Lecția 2: Principiile SOLID</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <div class="alpha-section">
+    <h2>Y</h2>
+    <dl>
+      <div class="glossary-term">
+        <dt>YAGNI (You Aren't Gonna Need It) <span class="term-code">simplitate</span></dt>
+        <dd>Nu implementa ceva până când nu ai cu adevărat nevoie de el. Șterge funcționalitățile speculative. Deosebit de important cu AI, care generează complexitate fără costuri aparente — dar plătești costul complet de mentenanță indiferent dacă speculația se dovedește corectă sau nu.</dd>
+        <div class="lesson-ref">→ <a href="../lessons/0003-yagni-kiss-dry.html">Lecția 3: YAGNI, KISS, DRY</a></div>
+      </div>
+    </dl>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="../index.html">← Index curs</a>
+    <span class="current">Glosar</span>
+  </nav>
+
+</div>
+</body>
+</html>

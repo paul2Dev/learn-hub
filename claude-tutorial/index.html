@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Code Tutorial — paul2dev</title>
+  <style>
+    :root {
+      --bg:      #fafaf8;
+      --text:    #1a1a1a;
+      --muted:   #6b7280;
+      --border:  #e8e5e0;
+      --accent:  #7c3aed;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.78;
+      color: var(--text);
+      background: var(--bg);
+      padding: 2.5rem 1.25rem 5rem;
+    }
+
+    .site-header {
+      max-width: 660px;
+      margin: 0 auto 2.5rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .site-meta {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .site-header h1 {
+      font-size: 2.1rem;
+      line-height: 1.18;
+      font-weight: 700;
+      margin-bottom: 0.45rem;
+    }
+    .site-subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .site-body {
+      max-width: 660px;
+      margin: 0 auto;
+    }
+    .site-body h2 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      margin-bottom: 0.75rem;
+    }
+
+    .lesson-list {
+      list-style: none;
+      padding: 0;
+      margin: 1.25em 0 2.5em;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lesson-item a {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 14px 18px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+    .lesson-item a:hover {
+      border-color: var(--accent);
+      background: #f5f3ff;
+    }
+    .lesson-num {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+      padding-top: 3px;
+    }
+    .lesson-title {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.97rem;
+      font-weight: 700;
+    }
+    .lesson-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-family: system-ui, -apple-system, sans-serif;
+      margin-top: 2px;
+    }
+    .lesson-info { flex: 1; }
+
+    .ref-list {
+      list-style: none;
+      padding: 0;
+      margin: 1em 0 2.5em;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ref-list a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: var(--accent);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .ref-list a:hover { text-decoration: underline; }
+
+    .site-footer {
+      margin-top: 2.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .site-footer strong { color: var(--text); }
+
+    @media (max-width: 520px) {
+      body { font-size: 16px; padding: 1.5rem 1rem 4rem; }
+      .site-header h1 { font-size: 1.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div style="max-width:660px;margin:0 auto 1rem;padding-top:1.5rem;">
+  <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="site-header">
+  <p class="site-meta">paul2dev · Claude Code Tutorial</p>
+  <h1>Claude Code pentru Programatori</h1>
+  <p class="site-subtitle">De la instalare la productivitate reală — 12 lecții practice pentru programatorul care vrea să lucreze mai rapid cu Claude Code și extensia VS Code</p>
+</div>
+
+<div class="site-body">
+
+  <h2>Lecții</h2>
+  <ul class="lesson-list">
+    <li class="lesson-item">
+      <a href="lessons/0001-instalare-si-autentificare.html">
+        <span class="lesson-num">01</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Instalare și Autentificare</div>
+          <div class="lesson-desc">Node.js, npm install, prima comandă — de la zero la funcțional în 5 minute</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0002-mental-model.html">
+        <span class="lesson-num">02</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Mental Model — Cum Gândește Claude Code</div>
+          <div class="lesson-desc">De ce Claude Code diferă de un chatbot și cum să gândești cu el, nu despre el</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0003-explorarea-codului.html">
+        <span class="lesson-num">03</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Explorarea și Înțelegerea Codului</div>
+          <div class="lesson-desc">Navighează codebase-uri noi rapid și configurează CLAUDE.md</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0004-editare-si-implementare.html">
+        <span class="lesson-num">04</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Editare și Implementare Features</div>
+          <div class="lesson-desc">Cum Claude Code modifică fișiere, permission model și review înainte de accept</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0005-debugging.html">
+        <span class="lesson-num">05</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Debugging cu Claude Code</div>
+          <div class="lesson-desc">Stack traces, teste care eșuează și patterns pentru a găsi bug-uri rapid</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0006-git-workflow.html">
+        <span class="lesson-num">06</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Git Workflow Integrat</div>
+          <div class="lesson-desc">Commit, PR, diff — fluxul complet git ghidat de Claude Code</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0007-extensia-vs-code.html">
+        <span class="lesson-num">07</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Extensia VS Code</div>
+          <div class="lesson-desc">Instalare, panoul Claude Code, selecție cod ca context, scurtături esențiale</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0008-productivitate-zilnica.html">
+        <span class="lesson-num">08</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Productivitate Zilnică</div>
+          <div class="lesson-desc">CLAUDE.md avansat, slash commands, obiceiuri și ce NU să ceri lui Claude Code</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0009-skills.html">
+        <span class="lesson-num">09</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Claude Skills — Slash Commands Personalizate</div>
+          <div class="lesson-desc">Creează propriile comenzi /skill pentru orice workflow repetitiv — de ce, când și cum</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0010-hooks.html">
+        <span class="lesson-num">10</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Claude Hooks — Automatizare la Nivel de Sistem</div>
+          <div class="lesson-desc">Comenzi shell declanșate automat de acțiunile lui Claude — format, teste, notificări, garduri de siguranță</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0011-agenti.html">
+        <span class="lesson-num">11</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Claude Agents — Instanțe Specializate în Paralel</div>
+          <div class="lesson-desc">Agenți cu contexte izolate, worktrees, paralelism și agenți personalizați pentru task-uri complexe</div>
+        </div>
+      </a>
+    </li>
+    <li class="lesson-item">
+      <a href="lessons/0012-agentic-workflow.html">
+        <span class="lesson-num">12</span>
+        <div class="lesson-info">
+          <div class="lesson-title">Agentic Workflow — Cum Lucrează Claude Autonom</div>
+          <div class="lesson-desc">Bucla percepe-planifică-acționează-observă, permission model, prompts eficiente și cum controlezi un workflow lung</div>
+        </div>
+      </a>
+    </li>
+  </ul>
+
+  <h2>Referințe rapide</h2>
+  <ul class="ref-list">
+    <li><a href="reference/comenzi-esentiale.html">→ Comenzi esențiale Claude Code</a></li>
+    <li><a href="reference/scurtaturi-vs-code.html">→ Scurtături VS Code Extension</a></li>
+  </ul>
+
+  <div class="site-footer">
+    <strong>Ai întrebări?</strong> Deschide o sesiune Claude Code și întreabă direct — el este profesorul tău.
+  </div>
+
+</div>
+</body>
+</html>

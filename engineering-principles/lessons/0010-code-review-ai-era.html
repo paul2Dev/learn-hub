@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 10 — Code Review în Era AI | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 10 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Code Review în Era AI</h1>
+  <p>Cum să evaluezi sistematic codul generat de AI — și de ce abilitatea de code review este acum una dintre cele mai importante pe care le poate avea un dezvoltator.</p>
+
+  <h2>Revizuirea este ultima linie de apărare</h2>
+  <p>Într-un flux de lucru tradițional de dezvoltare, autorul codului l-a și proiectat, s-a luptat cu el și îi înțelege compromisurile. În dezvoltarea asistată de AI, autorul este un model de limbaj care nu are nicio înțelegere a sistemului tău, nicio conștientizare a cerințelor tale de securitate și niciun interes în consecințele că a greșit.</p>
+
+  <p>Asta face code review cea mai critică activitate inginerească din fluxul tău de lucru — nu o formalitate, ci principala poartă de calitate între output-ul AI și producție.</p>
+
+  <h2>Ce să cauți: o revizuire stratificată</h2>
+  <p>Code review-ul eficient al codului AI funcționează în straturi — de la imaginea de ansamblu în jos la detalii. Revizuirea detaliilor mai întâi este o capcană: ai putea aproba o funcție bine scrisă care rezolvă problema greșită.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>Rezolvă problema corectă?</strong> Verifică output-ul față de specificația ta. Implementează ce s-a cerut sau o interpretare plauzibilă dar incorectă?</p>
+        <div class="layer-tag">conformitate specificație</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>Design-ul este corect?</strong> Verifică limitele, cuplajul, SRP. Introduce o clasă Dumnezeu? Cuplează lucruri care ar trebui să fie independente?</p>
+        <div class="layer-tag">arhitectură</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Este sigur?</strong> Rulează checklist-ul de securitate din Lecția 9. Există verificări de ownership? Validare la limită? Fără risc de SQL injection?</p>
+        <div class="layer-tag">securitate</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><strong>Este YAGNI/KISS/DRY?</strong> Identifică complexitatea speculativă, supra-abstracția și duplicarea cunoașterii.</p>
+        <div class="layer-tag">simplitate</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><strong>Sunt gestionate cazurile limită?</strong> Ce se întâmplă pe input gol, zero, null, stare invalidă, acces concurent?</p>
+        <div class="layer-tag">cazuri limită</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <p><strong>Este testabil și testat?</strong> Poți injecta dependențe? Testele sunt bazate pe contract sau pe implementare?</p>
+        <div class="layer-tag">testabilitate</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Checklist-ul de revizuire AI</h2>
+  <p>Păstrează această listă în fluxul tău de revizuire. Comprimă lecțiile din acest curs într-un checklist practic:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Categorie</th><th>Verificare</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Specificație</strong></td>
+        <td>Implementează exact criteriile de acceptanță?</td>
+      </tr>
+      <tr>
+        <td><strong>Control acces</strong></td>
+        <td>Fiecare acces la resursă verifică atât autentificarea cât și ownership-ul?</td>
+      </tr>
+      <tr>
+        <td><strong>Validare input</strong></td>
+        <td>Tot input-ul extern validat la limita sistemului?</td>
+      </tr>
+      <tr>
+        <td><strong>SRP</strong></td>
+        <td>Fiecare clasă/funcție are un singur motiv de schimbare?</td>
+      </tr>
+      <tr>
+        <td><strong>DIP</strong></td>
+        <td>Fără <code>new ConcreteClass()</code> în interiorul logicii de business?</td>
+      </tr>
+      <tr>
+        <td><strong>YAGNI</strong></td>
+        <td>Fără abstracțiuni speculative sau configurare nefolosită?</td>
+      </tr>
+      <tr>
+        <td><strong>Gestionarea erorilor</strong></td>
+        <td>Ce se întâmplă când dependențele eșuează? Eșecurile gestionate elegant?</td>
+      </tr>
+      <tr>
+        <td><strong>Contract API</strong></td>
+        <td>Metode HTTP corecte, coduri de stare, denumire consistentă a câmpurilor?</td>
+      </tr>
+      <tr>
+        <td><strong>Teste</strong></td>
+        <td>Teste există pentru cazul fericit și cazurile limită critice?</td>
+      </tr>
+      <tr>
+        <td><strong>Datorie</strong></td>
+        <td>Orice scurtături documentate cu un TODO și un plan?</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Cum dai feedback AI-ului</h2>
+  <p>Când output-ul AI eșuează o verificare de revizuire, cel mai eficient răspuns nu este să îl corectezi singur — ci să îi spui AI-ului ce principiu a încălcat și să ceri o revizuire. Asta te menține în rolul arhitectural și produce output mai bun decât patch-uirea manuală:</p>
+
+  <pre><code>// În loc să îl corectezi singur în tăcere:
+// „Controllerul generat are o vulnerabilitate IDOR —
+//  preia $order = Order::findOrFail($id) fără a verifica
+//  că utilizatorul autentificat deține acea comandă.
+//  Te rog revizuiește pentru a adăuga o verificare de ownership sau folosește o policy Laravel."
+
+// În loc să accepți complexitate speculativă:
+// „Tiparului factory pe care l-ai adăugat este YAGNI — specificația necesită
+//  doar un gateway de plată. Te rog înlocuiește-l cu o clasă directă StripeGateway
+//  până când avem cu adevărat nevoie de mai multe gateway-uri."</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Numește principiul, nu doar simptomul</div>
+    Când îi spui AI-ului „asta încalcă Principiul Responsabilității Unice deoarece X," revizia este de obicei mai bună decât când spui „împarte asta în două clase." Numind principiul îi dai AI-ului raționamentul de care are nevoie pentru a face compromisurile corecte în output-ul revizuit.
+  </div>
+
+  <h2>Construirea intuiției tale de revizuire</h2>
+  <p>Principiile de inginerie devin intuiție revizuibilă în timp. Un inginer senior nu parcurge conștient un checklist la fiecare PR — observă mirosul. Acea intuiție se construiește prin:</p>
+
+  <ul>
+    <li><strong>Practică deliberată:</strong> revizuirea codului cu un checklist până când verificările devin automate</li>
+    <li><strong>Post-mortem-uri:</strong> când un bug ajunge în producție, urmărește-l înapoi la ce principiu l-a încălcat codul</li>
+    <li><strong>Citirea revizuirilor altora:</strong> comentariile bune de code review de la ingineri experimentați sunt o lecție magistrală de principii aplicate</li>
+  </ul>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Simulare completă de revizuire</div>
+    <ol>
+      <li>Alege o funcționalitate generată recent de AI în codebase-ul tău, sau cere AI-ului să genereze una nouă: „Construiește un endpoint Laravel API pentru crearea unei comenzi noi pentru un utilizator autentificat."</li>
+      <li>Aplică revizuirea stratificată în ordine: specificație → design → securitate → simplitate → cazuri limită → testabilitate.</li>
+      <li>Pentru fiecare încălcare găsită, scrie feedback-ul pe care l-ai da AI-ului (numește principiul, explică de ce).</li>
+      <li>Dă feedback-ul AI-ului și compară revizia cu originalul.</li>
+      <li>Numără: câte verificări au eșuat în prima versiune? Câte în versiunea revizuită?</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://google.github.io/eng-practices/review/" target="_blank">Google Engineering Practices: Code Review</a>. Ghidul intern de code review al Google, făcut public. Acoperă ce să cauți, cum să oferi feedback acționabil și cum să echilibrezi temeinicia cu viteza. Scris inițial pentru revizuire umană — aplică aceeași rigoare output-ului AI.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">În revizuirea stratificată, ce ar trebui să verifici MAI ÎNTÂI?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Securitate — verifică imediat vulnerabilitățile IDOR și injecție</button></li>
+        <li><button data-correct="false">Stilul codului — asigură că convențiile de denumire și formatarea sunt consistente</button></li>
+        <li><button data-correct="true">Conformitate specificație — verifică că output-ul rezolvă problema corectă</button></li>
+        <li><button data-correct="false">Acoperire teste — confirmă că fiecare funcție are un test unitar corespunzător</button></li>
+      </ul>
+      <div class="quiz-feedback">Revizuirea detaliilor mai întâi este cea mai frecventă capcană de revizuire. Dacă output-ul rezolvă problema greșită, calitatea implementării sale este irelevantă. Pornește cu conformitatea specificației — implementează asta ce s-a cerut cu adevărat? — înainte de a verifica cât de bine o implementează.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce rolul de code review este mai critic în dezvoltarea asistată de AI decât în dezvoltarea tradițională?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece AI produce mai multe linii de cod pe oră decât un dezvoltator uman</button></li>
+        <li><button data-correct="false">Deoarece codul AI este mai greu de citit din cauza formatării inconsistente</button></li>
+        <li><button data-correct="true">Deoarece AI nu are conștientizare a cerințelor sistemului tău, a modelului de securitate sau a constrângerilor de design</button></li>
+        <li><button data-correct="false">Deoarece AI nu poate genera teste, deci revizuirea trebuie să substituie testarea</button></li>
+      </ul>
+      <div class="quiz-feedback">Un autor uman a proiectat codul și îi înțelege compromisurile. AI a produs cod care corespunde unui tipar fără a înțelege cerințele tale specifice de securitate, modelul de date sau constrângerile arhitecturale. Revizuirea este mecanismul principal care acoperă acest decalaj.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care este cel mai eficient mod de a gestiona un output AI care are o încălcare a controlului de acces?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Corecteaz-o singur și continuă pentru a evita pierderea timpului cu revizia AI</button></li>
+        <li><button data-correct="false">Respinge întregul output și scrie funcționalitatea de la zero singur</button></li>
+        <li><button data-correct="true">Spune AI-ului ce principiu a încălcat și de ce, apoi cere o revizuire</button></li>
+        <li><button data-correct="false">Acceptă output-ul și adaugă un comentariu explicând vulnerabilitatea</button></li>
+      </ul>
+      <div class="quiz-feedback">Numind principiul („aceasta este o încălcare IDOR — ai nevoie de o verificare de ownership aici deoarece…") produce revizii AI mai bune decât feedback-ul la nivel de simptom („adaugă un where clause pentru ID-ul utilizatorului"). De asemenea te menține în rolul de arhitect în loc să recurgi la patch-uire manuală.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este cel mai bun mod de a construi intuiția de revizuire inginerească în timp?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Memorarea tuturor regulilor OWASP și SOLID din documentația oficială</button></li>
+        <li><button data-correct="false">Cererea AI-ului să revizuiască codul în locul tău pentru a economisi timp</button></li>
+        <li><button data-correct="true">Practică deliberată cu un checklist, plus post-mortem-uri care urmăresc bug-urile înapoi la principiile încălcate</button></li>
+        <li><button data-correct="false">Revizuirea doar a propriului cod, deoarece înțelegi intenția din spatele lui</button></li>
+      </ul>
+      <div class="quiz-feedback">Intuiția se construiește prin practică deliberată — aplicând principiile conștient până devin automate — și prin post-mortem-uri care conectează bug-urile din producție înapoi la principiul ingineresc pe care l-au încălcat. Acestea creează recunoașterea de tipare pe care inginerii experimentați o numesc „miros".</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Revizuiești cod generat de AI și găsești o clasă factory pentru gateway-uri de plată când este necesar doar un singur gateway. Ce element din checklist prinde asta?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">DIP — factory-ul depinde de o implementare concretă de gateway</button></li>
+        <li><button data-correct="false">SRP — factory-ul este responsabil pentru prea multe tipuri diferite de gateway</button></li>
+        <li><button data-correct="true">YAGNI — factory-ul a fost construit pentru o cerință ipotetică viitoare</button></li>
+        <li><button data-correct="false">Contract API — factory-ul expune internalele gateway-ului prin stratul HTTP</button></li>
+      </ul>
+      <div class="quiz-feedback">Un factory pentru un singur gateway este o încălcare YAGNI — complexitate speculativă construită pentru o cerință viitoare care nu a fost specificată. Soluția este să înlocuiești factory-ul cu o clasă directă până când ai cu adevărat două gateway-uri care justifică abstracția.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Ai finalizat toate cele 10 lecții. Întrebări bune de pus în continuare: <em>„Pe ce principiu ar trebui să mă concentrez să îl practic mai întâi?"</em> sau <em>„Poți să-mi dai un PR real de revizuit folosind acest checklist?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0009-security-by-design.html">← Lecția 9: Securitate prin Design</a>
+    <a href="../index.html">↑ Index curs</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

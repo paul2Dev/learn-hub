@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>12 · Agentic Workflow — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 12 din 12</p>
+  <h1>Agentic Workflow — Cum Lucrează Claude Autonom</h1>
+  <p class="tagline">De la un singur prompt la zeci de pași autonomi — cum funcționează bucla percepe-planifică-acționează și cum să o ghidezi corect.</p>
+
+  <section>
+    <h2>Ce este un Agentic Workflow?</h2>
+    <p>Un agentic workflow este modul în care Claude rezolvă task-uri complexe <strong>autonom, în mai mulți pași</strong>, fără să ceară confirmare la fiecare acțiune. Claude citește fișiere, editează cod, rulează comenzi, observă rezultatele și iterează — singur — până ajunge la obiectiv.</p>
+    <p>Diferența față de o conversație normală:</p>
+    <ul>
+      <li><strong>Conversație normală</strong> — Tu scrii un prompt, Claude răspunde, tu citești, tu decizi pasul următor.</li>
+      <li><strong>Agentic workflow</strong> — Tu descrii obiectivul, Claude planifică și execută toți pașii, folosind unelte reale (citire fișiere, editare cod, rulare comenzi), până ajunge la rezultat sau are nevoie de clarificări.</li>
+    </ul>
+    <div class="callout">
+      <p><strong>Exemplu concret:</strong> <em>"Adaugă autentificare JWT la API-ul meu Express"</em> — Claude citește structura proiectului, găsește rutele existente, instalează pachetele necesare, scrie middleware-ul, actualizează rutele, adaugă teste. Zeci de pași, un singur prompt.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bucla Agentic: Percepe → Planifică → Acționează → Observă</h2>
+    <p>Orice agentic workflow urmează aceeași buclă internă, repetată până la finalizare:</p>
+    <ol class="steps">
+      <li>
+        <div><strong>Percepe</strong> — Claude citește fișiere, explorează structura proiectului, înțelege contextul curent. Folosește unelte ca Read, Glob, Grep pentru a-și construi o imagine completă.</div>
+      </li>
+      <li>
+        <div><strong>Planifică</strong> — Pe baza contextului, Claude decide ce acțiuni trebuie făcute și în ce ordine. Planul poate fi implicit (în gând) sau explicit (scris ca o listă de pași înainte de execuție).</div>
+      </li>
+      <li>
+        <div><strong>Acționează</strong> — Claude execută un pas: editează un fișier, rulează o comandă, face un request. Fiecare acțiune folosește un tool specific cu parametri precisi.</div>
+      </li>
+      <li>
+        <div><strong>Observă</strong> — Claude citește rezultatul acțiunii: output-ul comenzii, conținutul fișierului editat, eroarea returnată. Dacă rezultatul nu e cel așteptat, ajustează planul și reia bucla.</div>
+      </li>
+    </ol>
+    <p>Această buclă se repetă de câte ori e nevoie — de la 3 iterații pentru un bug fix simplu, la 50+ pentru o funcționalitate complexă.</p>
+  </section>
+
+  <section>
+    <h2>Uneltele cu care Claude acționează</h2>
+    <p>În fiecare pas de tip "Acționează", Claude folosește una din uneltele disponibile:</p>
+    <ul>
+      <li><strong>Read / Glob / Grep</strong> — Citire fișiere, căutare pattern-uri, localizare simboluri. Pasul de percepție.</li>
+      <li><strong>Edit / Write</strong> — Modificare sau creare fișiere. Acțiunea principală pentru cod.</li>
+      <li><strong>Bash</strong> — Execuție comenzi shell: rulare teste, instalare pachete, build, git. Cel mai puternic și cel mai riscant tool.</li>
+      <li><strong>WebFetch / WebSearch</strong> — Accesare documentație sau căutare pe web (când e disponibil).</li>
+    </ul>
+    <div class="callout callout--warning">
+      <p><strong>Permisiuni:</strong> Uneltele distructive (Bash cu comenzi care modifică sisteme, Edit pe fișiere critice) necesită aprobare explicită dacă nu ai setat permisiuni automate. Claude te va întreba înainte de fiecare acțiune nesigură.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Permission Model — Ce Aprobă Automat, Ce Cere Confirmare</h2>
+    <p>Claude Code are un sistem de permisiuni cu două niveluri:</p>
+    <ul>
+      <li><strong>Permisiuni automate (citire)</strong> — Read, Glob, Grep rulează fără să ceară confirmare. Cititul e întotdeauna sigur.</li>
+      <li><strong>Permisiuni cu aprobare (scriere/execuție)</strong> — Edit, Write, Bash cer confirmare la prima utilizare sau pentru comenzi considerate riscante.</li>
+    </ul>
+    <p>Poți controla granularitatea în <code>.claude/settings.json</code>:</p>
+    <pre><code>{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run lint)",
+      "Edit(*)"
+    ],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push*)"
+    ]
+  }
+}</code></pre>
+    <p><code>allow</code> — rulează automat fără confirmare. <code>deny</code> — blocat complet, Claude nu poate executa. Tot ce nu e în nicio listă → cere confirmare manuală.</p>
+    <div class="callout callout--tip">
+      <p><strong>Modul autonom complet:</strong> Flag-ul <code>--dangerously-skip-permissions</code> dezactivează toate confirmările. Folosește-l doar în medii izolate (containere, CI) unde ai control total și nu există risc de date loss.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cum să scrii prompts pentru agentic workflows</h2>
+    <p>Un prompt bun pentru un workflow autonom are trei elemente:</p>
+    <ol>
+      <li><strong>Obiectiv clar</strong> — Ce trebuie să existe la final, nu cum să ajungă acolo.</li>
+      <li><strong>Constrângeri explicite</strong> — Ce să nu atingă, ce convenții să respecte, ce să evite.</li>
+      <li><strong>Criterii de succes</strong> — Cum știe Claude că a terminat corect.</li>
+    </ol>
+    <pre><code># Prompt slab — obiectiv vag, fără constrângeri
+&gt; Adaugă validare la formulare.
+
+# Prompt bun — obiectiv clar + constrângeri + criterii
+&gt; Adaugă validare server-side pentru toate endpoint-urile POST
+  din src/api/. Folosește biblioteca Joi deja instalată.
+  Nu modifica fișierele de test existente.
+  Când termini, rulează npm test — trebuie să treacă toate testele.</code></pre>
+    <p>Cu al doilea prompt, Claude știe exact ce să facă, ce să evite și cum să verifice că a terminat corect.</p>
+  </section>
+
+  <section>
+    <h2>Planul explicit înainte de execuție</h2>
+    <p>Pentru task-uri complexe sau riscante, cere lui Claude să prezinte planul înainte să execute. Previi surprize și corectezi direcția fără să fi cheltuit timp pe execuție greșită:</p>
+    <pre><code>&gt; Înainte să modifici orice fișier, descrie-mi planul complet
+  pentru a migra autentificarea de la sesiuni la JWT.
+  Listează fișierele afectate și ordinea modificărilor.
+
+# Claude prezintă planul
+# Tu revizuiești, corectezi dacă e nevoie
+# Apoi:
+&gt; Planul arată bine, execută-l.</code></pre>
+    <div class="callout callout--tip">
+      <p><strong>Alternativ:</strong> Folosește skill-ul <code>/plan</code> sau agentul Plan care e specializat exact pentru asta — returnează planul fără să execute nimic.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Întreruperea și corectarea unui workflow în curs</h2>
+    <p>Poți interveni oricând în mijlocul unui workflow autonom:</p>
+    <ul>
+      <li><kbd>Esc</kbd> — Oprește acțiunea curentă imediat. Claude se oprește și așteaptă instrucțiuni.</li>
+      <li><strong>Mesaj de corecție</strong> — Trimiți un mesaj nou cu direcție corectată. Claude integrează feedback-ul și continuă.</li>
+    </ul>
+    <pre><code># Claude e la mijlocul unui refactor
+# Observi că a ales o abordare greșită
+[Esc]
+&gt; Oprește-te. Abordarea cu HOCs nu e ce vreau — folosește hooks.
+  Reia de la fișierul src/components/Auth.js cu abordarea corectă.</code></pre>
+    <p>Claude nu "uită" ce a făcut deja — îți va spune ce fișiere a modificat până acum și va integra corecția ta în continuare.</p>
+    <div class="callout callout--warning">
+      <p><strong>Fă commit înainte de orice workflow lung.</strong> Dacă workflow-ul produce rezultate nedorite, <code>git reset --hard HEAD</code> te aduce înapoi la starea curată în câteva secunde. Fără commit, undo-ul e manual și dureros.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Când Claude se oprește și cere input</h2>
+    <p>Chiar și în modul autonom, Claude se oprește când:</p>
+    <ul>
+      <li>Întâlnește o <strong>decizie ambiguă</strong> — două abordări posibile cu trade-off-uri semnificative (ex: SQL vs. NoSQL pentru un nou modul).</li>
+      <li>Detectează un <strong>risc de date loss</strong> — ștergere de fișiere, drop de tabele, modificări ireversibile.</li>
+      <li>Primește o <strong>eroare neașteptată</strong> pe care nu o poate rezolva singur după 2-3 iterații.</li>
+      <li>Task-ul necesită <strong>informații pe care nu le are</strong> — credențiale, URL-uri de API, specificații de business.</li>
+    </ul>
+    <p>Când Claude se oprește și întreabă, răspunsul tău reintră în buclă și workflow-ul continuă.</p>
+  </section>
+
+  <section>
+    <h2>Verificare la final — nu presupune, confirmă</h2>
+    <p>La finalul unui workflow lung, cere întotdeauna o verificare explicită înainte să considerai task-ul terminat:</p>
+    <pre><code>&gt; Acum că ai terminat implementarea, rulează toate testele
+  și spune-mi dacă există și alte fișiere care ar trebui
+  actualizate dar pe care nu le-ai atins încă.</code></pre>
+    <p>Această întrebare prinde frecvent:</p>
+    <ul>
+      <li>Documentație sau tipuri TypeScript care nu au fost actualizate</li>
+      <li>Alte module care importă ce ai modificat și trebuie ajustate</li>
+      <li>Fișiere de configurare (env.example, docker-compose) care reflectă vechea arhitectură</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Rețeta completă pentru un workflow reușit</h2>
+    <pre><code># 1. Checkpoint git înainte de orice
+git add -A && git commit -m "checkpoint: before [task name]"
+
+# 2. Cere planul, verifică-l
+&gt; Înainte să modifici ceva, prezintă planul pentru [task].
+
+# 3. Aprobă planul și lansează execuția
+&gt; Planul e ok. Execută-l.
+
+# 4. Monitorizează — intervine cu Esc dacă ceva e greșit
+
+# 5. Verificare la final
+&gt; Rulează testele. Există și altceva de actualizat?
+
+# 6. Review diff și commit
+git diff
+git add [fișierele relevante]
+git commit -m "feat: [ce s-a implementat]"</code></pre>
+    <p>Acest flux — checkpoint, plan, execuție, verificare, commit — transformă un task complex de ore într-un workflow controlat de minute.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-12"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/how-claude-code-works" target="_blank" rel="noopener">How Claude Code Works — documentație oficială Anthropic</a><br/>
+    Explicația completă a modelului de execuție agentic, permission model și cum Claude folosește uneltele disponibile.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai terminat tutorialul complet!</strong><br/>
+    Acum testează în proiectul tău real: <em>"Înainte să modifici ceva, prezintă-mi planul pentru a adăuga [un feature concret]."</em> Primul tău agentic workflow controlat.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0011-agenti.html">← Lecția 11: Agenți</a>
+    <a class="nav-next" href="../index.html">← Înapoi la catalog</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-12', [
+  {
+    q: 'Care este ordinea corectă a buclei agentic?',
+    options: [
+      'Acționează → Percepe → Observă → Planifică',
+      'Planifică → Acționează → Percepe → Observă',
+      'Percepe → Planifică → Acționează → Observă',
+      'Observă → Planifică → Percepe → Acționează'
+    ],
+    correct: 2,
+    explain: 'Percepe (citește contextul) → Planifică (decide pașii) → Acționează (execută un pas cu un tool) → Observă (citește rezultatul) → reia bucla dacă e necesar. Ordinea contează: nu poți planifica fără să percepi, nu poți observa fără să acționezi.'
+  },
+  {
+    q: 'De ce trebuie să faci commit înainte de a lansa un agentic workflow lung?',
+    options: [
+      'Claude nu poate funcționa fără un commit recent în git history',
+      'Commit-ul crește viteza de execuție a workflow-ului',
+      'Ai un checkpoint sigur — dacă rezultatul e nedorit, git reset --hard te aduce înapoi instant',
+      'Este o cerință de licență a Claude Code'
+    ],
+    correct: 2,
+    explain: 'Un commit înainte de workflow = checkpoint de siguranță. Dacă Claude produce ceva greșit după 20 de pași, git reset --hard HEAD te readuce la starea curată în secunde. Fără commit, undo-ul e manual și dureros.'
+  },
+  {
+    q: 'Ce se întâmplă când apeși Esc în mijlocul unui agentic workflow?',
+    options: [
+      'Claude anulează toate modificările făcute până acum',
+      'Claude se oprește din acțiunea curentă și așteaptă instrucțiuni de la tine',
+      'Sesiunea Claude Code se închide complet',
+      'Claude salvează workflow-ul și îl reia automat la următoarea sesiune'
+    ],
+    correct: 1,
+    explain: 'Esc oprește acțiunea curentă — Claude se "îngheață" și așteaptă input de la tine. Modificările deja făcute rămân. Poți corecta direcția și Claude integrează feedback-ul tău și continuă din acel punct.'
+  }
+]);
+</script>
+</body>
+</html>

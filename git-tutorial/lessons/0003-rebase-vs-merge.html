@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 03 — Rebase vs. Merge</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── comparison table ── */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.88rem;
+      margin: 1.5rem 0;
+    }
+    .compare-table th {
+      text-align: left;
+      padding: 0.55rem 0.85rem;
+      background: #f2efe9;
+      border: 1px solid #e8e5e0;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .compare-table td {
+      padding: 0.55rem 0.85rem;
+      border: 1px solid #e8e5e0;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    .compare-table tr:nth-child(even) td { background: #fafaf8; }
+    .compare-table .col-label { color: #6b7280; font-style: italic; }
+    .col-merge  { color: #059669; font-weight: 600; }
+    .col-rebase { color: #7c3aed; font-weight: 600; }
+
+    /* ── golden rule box ── */
+    .rule-golden {
+      background: #fff7ed;
+      border: 2px solid #f97316;
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
+      margin: 1.5rem 0;
+    }
+    .rule-golden .rule-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #c2410c;
+      margin-bottom: 0.4rem;
+    }
+    .rule-golden p {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0;
+      color: #9a3412;
+    }
+
+    /* ── decision rule box ── */
+    .rule-decision {
+      background: #f5f3ff;
+      border: 1px solid #c4b5fd;
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
+      margin: 1.5rem 0;
+    }
+    .rule-decision .rule-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #5b21b6;
+      margin-bottom: 0.6rem;
+    }
+    .rule-decision ul {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+    .rule-decision li {
+      margin-bottom: 0.35rem;
+      font-size: 0.98rem;
+    }
+    .rule-decision .rule-tagline {
+      font-style: italic;
+      font-weight: 700;
+      margin-top: 0.75rem;
+      margin-bottom: 0;
+      color: #5b21b6;
+    }
+
+    /* ── result diagram panels ── */
+    .result-panel {
+      border: 1px solid #e8e5e0;
+      border-radius: 8px;
+      padding: 1rem 1.25rem 0.75rem;
+      margin: 1.25rem 0;
+    }
+    .result-panel .result-label {
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 03 &middot; Git &amp; GitHub Fluency</p>
+      <h1>Rebase vs. Merge</h1>
+      <p class="tagline">When to use each — and the one rule that protects your team</p>
+    </header>
+
+    <section>
+      <h2>Why this lesson matters</h2>
+      <p>
+        Both <code>git rebase</code> and <code>git merge</code> take changes from one branch
+        and incorporate them into another. They produce very different results. The wrong choice
+        can rewrite history that your teammates depend on. By the end of this lesson you will
+        have a simple rule that tells you which to reach for every time — no more guessing.
+      </p>
+    </section>
+
+    <section>
+      <h2>The starting point</h2>
+      <p>
+        Both operations begin from the same situation: two branches have diverged from a common
+        ancestor. Here <code>main</code> moved to C while <code>feature</code> went to D then E,
+        both branching off commit B.
+      </p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 420 100" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Starting state: main at C, feature at E, both from common ancestor B">
+          <defs>
+            <marker id="s-gray" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#9ca3af"/>
+            </marker>
+            <marker id="s-green" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#059669"/>
+            </marker>
+            <marker id="s-violet" markerWidth="8" markerHeight="6"
+                    refX="8" refY="3" orient="auto">
+              <polygon points="0,0 8,3 0,6" fill="#7c3aed"/>
+            </marker>
+          </defs>
+          <!-- A → B -->
+          <line x1="57" y1="50" x2="103" y2="50"
+                stroke="#9ca3af" stroke-width="2" marker-end="url(#s-gray)"/>
+          <!-- B → C diagonal up -->
+          <line x1="134" y1="45" x2="213" y2="22"
+                stroke="#059669" stroke-width="2" marker-end="url(#s-green)"/>
+          <!-- B → D diagonal down -->
+          <line x1="134" y1="56" x2="206" y2="78"
+                stroke="#7c3aed" stroke-width="2" marker-end="url(#s-violet)"/>
+          <!-- D → E -->
+          <line x1="228" y1="83" x2="298" y2="83"
+                stroke="#7c3aed" stroke-width="2" marker-end="url(#s-violet)"/>
+          <!-- C → main badge -->
+          <line x1="241" y1="18" x2="246" y2="18"
+                stroke="#059669" stroke-width="2" marker-end="url(#s-green)"/>
+          <!-- E → feature badge -->
+          <line x1="316" y1="83" x2="321" y2="83"
+                stroke="#7c3aed" stroke-width="2" marker-end="url(#s-violet)"/>
+          <!-- HEAD → feature (vertical) -->
+          <line x1="356" y1="56" x2="356" y2="68"
+                stroke="#b45309" stroke-width="2">
+            <title>HEAD points to feature</title>
+          </line>
+          <polygon points="352,68 360,68 356,75" fill="#b45309"/>
+
+          <!-- Commits -->
+          <circle cx="40"  cy="50" r="17" fill="#4338ca"/>
+          <text x="40"  y="56" text-anchor="middle" fill="white"
+                font-size="14" font-weight="bold" font-family="'Courier New', monospace">A</text>
+          <circle cx="120" cy="50" r="17" fill="#4338ca"/>
+          <text x="120" y="56" text-anchor="middle" fill="white"
+                font-size="14" font-weight="bold" font-family="'Courier New', monospace">B</text>
+          <circle cx="228" cy="18" r="17" fill="#4338ca"/>
+          <text x="228" y="24" text-anchor="middle" fill="white"
+                font-size="14" font-weight="bold" font-family="'Courier New', monospace">C</text>
+          <circle cx="213" cy="83" r="17" fill="#4338ca"/>
+          <text x="213" y="89" text-anchor="middle" fill="white"
+                font-size="14" font-weight="bold" font-family="'Courier New', monospace">D</text>
+          <circle cx="300" cy="83" r="17" fill="#4338ca"/>
+          <text x="300" y="89" text-anchor="middle" fill="white"
+                font-size="14" font-weight="bold" font-family="'Courier New', monospace">E</text>
+
+          <!-- main badge -->
+          <rect x="248" y="6" width="52" height="24" rx="12" fill="#059669"/>
+          <text x="274" y="22" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="12" font-weight="600">main</text>
+
+          <!-- feature badge -->
+          <rect x="323" y="71" width="68" height="24" rx="12" fill="#7c3aed"/>
+          <text x="357" y="87" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="12" font-weight="600">feature</text>
+
+          <!-- HEAD badge -->
+          <rect x="330" y="40" width="52" height="22" rx="11" fill="#b45309"/>
+          <text x="356" y="55" text-anchor="middle" fill="white"
+                font-family="system-ui, sans-serif" font-size="11" font-weight="600">HEAD</text>
+        </svg>
+        <p class="diagram-caption">
+          B is the common ancestor. <code>main</code> has commit C. <code>feature</code> has commits D and E.
+          You are on <code>feature</code> (HEAD).
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Option A: git merge</h2>
+      <p>
+        <code>git merge</code> creates a new commit — a <strong>merge commit</strong> — that joins
+        the two branch tips. It has <em>two parents</em>: the tip of your current branch and the
+        tip of the branch you are merging. Both branches, and all their history, are preserved
+        exactly as they happened.
+      </p>
+
+      <div class="result-panel">
+        <p class="result-label">$ git checkout main &nbsp;&nbsp; $ git merge feature</p>
+        <div class="diagram-wrap" style="margin:0.5rem 0 0.25rem">
+          <svg viewBox="0 0 415 130" xmlns="http://www.w3.org/2000/svg" role="img"
+               aria-label="After merge: commit M joins C and E, main points to M">
+            <defs>
+              <marker id="m-gray" markerWidth="8" markerHeight="6"
+                      refX="8" refY="3" orient="auto">
+                <polygon points="0,0 8,3 0,6" fill="#9ca3af"/>
+              </marker>
+              <marker id="m-green" markerWidth="8" markerHeight="6"
+                      refX="8" refY="3" orient="auto">
+                <polygon points="0,0 8,3 0,6" fill="#059669"/>
+              </marker>
+              <marker id="m-violet" markerWidth="8" markerHeight="6"
+                      refX="8" refY="3" orient="auto">
+                <polygon points="0,0 8,3 0,6" fill="#7c3aed"/>
+              </marker>
+            </defs>
+            <!-- A → B -->
+            <line x1="47" y1="65" x2="83" y2="65"
+                  stroke="#9ca3af" stroke-width="2" marker-end="url(#m-gray)"/>
+            <!-- B → C -->
+            <line x1="116" y1="59" x2="184" y2="31"
+                  stroke="#059669" stroke-width="2" marker-end="url(#m-green)"/>
+            <!-- B → D -->
+            <line x1="115" y1="73" x2="160" y2="97"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#m-violet)"/>
+            <!-- D → E -->
+            <line x1="192" y1="105" x2="248" y2="105"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#m-violet)"/>
+            <!-- C → M -->
+            <line x1="216" y1="30" x2="309" y2="59"
+                  stroke="#059669" stroke-width="2" marker-end="url(#m-green)"/>
+            <!-- E → M -->
+            <line x1="279" y1="97" x2="315" y2="73"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#m-violet)"/>
+            <!-- M → main badge -->
+            <line x1="347" y1="65" x2="352" y2="65"
+                  stroke="#059669" stroke-width="2" marker-end="url(#m-green)"/>
+            <!-- E → feature badge (still here) -->
+            <line x1="282" y1="105" x2="287" y2="105"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#m-violet)"/>
+
+            <!-- Commits -->
+            <circle cx="30"  cy="65" r="17" fill="#4338ca"/>
+            <text x="30"  y="71" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">A</text>
+            <circle cx="100" cy="65" r="17" fill="#4338ca"/>
+            <text x="100" y="71" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">B</text>
+            <circle cx="200" cy="25" r="17" fill="#4338ca"/>
+            <text x="200" y="31" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">C</text>
+            <circle cx="175" cy="105" r="17" fill="#4338ca"/>
+            <text x="175" y="111" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">D</text>
+            <circle cx="265" cy="105" r="17" fill="#4338ca"/>
+            <text x="265" y="111" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">E</text>
+            <!-- M: merge commit, distinct color -->
+            <circle cx="330" cy="65" r="17" fill="#1e293b"/>
+            <text x="330" y="71" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">M</text>
+
+            <!-- main badge (now at M) -->
+            <rect x="354" y="53" width="54" height="24" rx="12" fill="#059669"/>
+            <text x="381" y="69" text-anchor="middle" fill="white"
+                  font-family="system-ui, sans-serif" font-size="12" font-weight="600">main</text>
+
+            <!-- feature badge (still at E) -->
+            <rect x="289" y="93" width="68" height="24" rx="12" fill="#7c3aed"/>
+            <text x="323" y="109" text-anchor="middle" fill="white"
+                  font-family="system-ui, sans-serif" font-size="12" font-weight="600">feature</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          Merge commit <strong>M</strong> (dark) has two parents: C and E. History shows the branching
+          exactly as it happened. <code>feature</code> still points to E — unchanged.
+        </p>
+      </div>
+
+      <p><strong>Prefer merge when:</strong></p>
+      <ul>
+        <li>Bringing a completed feature into a shared branch (the PR merge button does this)</li>
+        <li>You want history to show exactly when and where branches diverged and rejoined</li>
+        <li>Others are also committing to the target branch</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Option B: git rebase</h2>
+      <p>
+        <code>git rebase</code> takes your commits and <strong>replays</strong> them on top of a
+        new base. Git creates brand-new commits — D&prime; and E&prime; — that contain the same
+        code changes as D and E, but with new hashes and a new parent (C instead of B).
+        The result looks as if you had started <code>feature</code> from C all along.
+      </p>
+
+      <div class="result-panel">
+        <p class="result-label">$ git checkout feature &nbsp;&nbsp; $ git rebase main</p>
+        <div class="diagram-wrap" style="margin:0.5rem 0 0.25rem">
+          <svg viewBox="0 0 448 100" xmlns="http://www.w3.org/2000/svg" role="img"
+               aria-label="After rebase: D-prime and E-prime replayed on top of C, linear history">
+            <defs>
+              <marker id="r-gray" markerWidth="8" markerHeight="6"
+                      refX="8" refY="3" orient="auto">
+                <polygon points="0,0 8,3 0,6" fill="#9ca3af"/>
+              </marker>
+              <marker id="r-green" markerWidth="8" markerHeight="6"
+                      refX="8" refY="3" orient="auto">
+                <polygon points="0,0 8,3 0,6" fill="#059669"/>
+              </marker>
+              <marker id="r-violet" markerWidth="8" markerHeight="6"
+                      refX="8" refY="3" orient="auto">
+                <polygon points="0,0 8,3 0,6" fill="#7c3aed"/>
+              </marker>
+            </defs>
+            <!-- Linear chain arrows -->
+            <line x1="47" y1="44" x2="78" y2="44"
+                  stroke="#9ca3af" stroke-width="2" marker-end="url(#r-gray)"/>
+            <line x1="112" y1="44" x2="148" y2="44"
+                  stroke="#9ca3af" stroke-width="2" marker-end="url(#r-gray)"/>
+            <!-- C → D' (green to purple — new replayed commits on top of C) -->
+            <line x1="182" y1="44" x2="238" y2="44"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#r-violet)"/>
+            <!-- D' → E' -->
+            <line x1="272" y1="44" x2="323" y2="44"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#r-violet)"/>
+            <!-- C → main badge (vertical, pointing down) -->
+            <line x1="165" y1="62" x2="165" y2="70"
+                  stroke="#059669" stroke-width="2" marker-end="url(#r-green)"/>
+            <!-- E' → feature badge -->
+            <line x1="357" y1="44" x2="362" y2="44"
+                  stroke="#7c3aed" stroke-width="2" marker-end="url(#r-violet)"/>
+
+            <!-- Commits: A, B, C (shared history) -->
+            <circle cx="30"  cy="44" r="17" fill="#4338ca"/>
+            <text x="30"  y="50" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">A</text>
+            <circle cx="95"  cy="44" r="17" fill="#4338ca"/>
+            <text x="95"  y="50" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">B</text>
+            <circle cx="165" cy="44" r="17" fill="#4338ca"/>
+            <text x="165" y="50" text-anchor="middle" fill="white"
+                  font-size="14" font-weight="bold" font-family="'Courier New', monospace">C</text>
+
+            <!-- D' and E': replayed commits (purple outline to show they are new) -->
+            <circle cx="255" cy="44" r="17" fill="#4338ca" stroke="#7c3aed" stroke-width="3"/>
+            <text x="255" y="50" text-anchor="middle" fill="white"
+                  font-size="12" font-weight="bold" font-family="'Courier New', monospace">D&#x2032;</text>
+            <circle cx="340" cy="44" r="17" fill="#4338ca" stroke="#7c3aed" stroke-width="3"/>
+            <text x="340" y="50" text-anchor="middle" fill="white"
+                  font-size="12" font-weight="bold" font-family="'Courier New', monospace">E&#x2032;</text>
+
+            <!-- main badge (below C) -->
+            <rect x="133" y="72" width="64" height="22" rx="11" fill="#059669"/>
+            <text x="165" y="87" text-anchor="middle" fill="white"
+                  font-family="system-ui, sans-serif" font-size="12" font-weight="600">main</text>
+
+            <!-- feature badge (to the right of E') -->
+            <rect x="364" y="32" width="70" height="24" rx="12" fill="#7c3aed"/>
+            <text x="399" y="48" text-anchor="middle" fill="white"
+                  font-family="system-ui, sans-serif" font-size="12" font-weight="600">feature</text>
+          </svg>
+        </div>
+        <p class="diagram-caption">
+          D&prime; and E&prime; (purple outline) are <em>new commits</em> — same code changes as D and E,
+          but new hashes and a new parent (C). <code>main</code> is unchanged at C.
+          History is now perfectly linear.
+        </p>
+      </div>
+
+      <p><strong>Prefer rebase when:</strong></p>
+      <ul>
+        <li>Incorporating the latest <code>main</code> changes into <em>your own</em> feature branch</li>
+        <li>You want a clean, linear history that is easy to review in a PR</li>
+        <li>Only you are using the branch — nobody else has pulled it</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Side by side</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th class="col-label">Property</th>
+            <th><span class="col-merge">git merge</span></th>
+            <th><span class="col-rebase">git rebase</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">What it creates</td>
+            <td>A merge commit with two parents</td>
+            <td>New replayed commits (new hashes)</td>
+          </tr>
+          <tr>
+            <td class="col-label">History shape</td>
+            <td>Non-linear — branching is visible</td>
+            <td>Linear — looks sequential</td>
+          </tr>
+          <tr>
+            <td class="col-label">Rewrites history?</td>
+            <td>No — safe on shared branches</td>
+            <td>Yes — unsafe on shared branches</td>
+          </tr>
+          <tr>
+            <td class="col-label">Best used for</td>
+            <td>Integrating completed features via PR</td>
+            <td>Updating your private feature branch</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Conflicts during a rebase</h2>
+      <p>
+        Rebase replays commits one at a time, so you may hit a conflict on each replayed commit.
+        The resolution is the same as a merge conflict (edit the file, remove the markers), but
+        the command to continue is different:
+      </p>
+      <pre>git add app.js             # mark the file as resolved
+git rebase --continue      # continue replaying the next commit</pre>
+      <p>
+        You may need to do this more than once if multiple commits in your branch touch the
+        same lines. To abandon the entire rebase and go back to how things were:
+      </p>
+      <pre>git rebase --abort</pre>
+    </section>
+
+    <section>
+      <h2>The rules</h2>
+
+      <div class="rule-golden">
+        <p class="rule-label">The golden rule</p>
+        <p>Never rebase commits that others have already pulled.</p>
+      </div>
+      <p>
+        When you rebase, the original commits (D, E) are replaced by new ones (D&prime;, E&prime;)
+        with different hashes. If a teammate already built on top of the originals, their history
+        breaks when they try to merge or pull. This is the one rule that makes rebase safe.
+      </p>
+
+      <div class="rule-decision">
+        <p class="rule-label">The decision rule</p>
+        <ul>
+          <li><strong>Private feature branch</strong> (only you use it): <code>git rebase main</code> to stay current</li>
+          <li><strong>Integrating into a shared branch</strong>: <code>git merge</code> — or let the PR do it</li>
+        </ul>
+        <p class="rule-tagline">Rebase privately. Merge publicly.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>How most teams use both</h2>
+      <p>
+        Here is the workflow that puts both commands in the right places. Notice rebase is
+        only ever used on a branch that only you have:
+      </p>
+      <pre>
+# 1. Start your feature branch off main
+git checkout -b feature/new-login
+
+# 2. Do your work
+git commit -m "Add login form"
+git commit -m "Add validation"
+
+# 3. Main has new commits. Update your branch cleanly:
+git fetch origin
+git rebase origin/main         # safe: only you have this branch
+
+# 4. If a conflict appears during rebase:
+git add auth.js
+git rebase --continue          # not git commit — continue the replay
+
+# 5. Push your clean, rebased branch
+git push origin feature/new-login
+
+# 6. Open a Pull Request on GitHub
+#    When approved, click Merge — GitHub creates the merge commit</pre>
+
+      <div class="callout">
+        <p>
+          <strong>Why rebase in step 3 and not merge?</strong> If you used
+          <code>git merge origin/main</code> here, your PR would show unnecessary
+          merge commits that make the review harder to read. Rebasing keeps your
+          PR diff clean — just the commits for your feature, nothing else.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary sources ── -->
+    <section class="primary-source">
+      <h2>Primary sources</h2>
+      <p>
+        Read
+        <a href="https://www.atlassian.com/git/tutorials/merging-vs-rebasing"
+           target="_blank" rel="noopener noreferrer">
+          Atlassian: Merging vs. Rebasing
+        </a>
+        — the clearest diagram-led explanation of the two workflows, including
+        the golden rule. Then read
+        <a href="https://git-scm.com/book/en/v2/Git-Branching-Rebasing"
+           target="_blank" rel="noopener noreferrer">
+          Pro Git Chapter 3.6 — Rebasing
+        </a>
+        for the authoritative deep-dive with worked examples.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        Unsure which to use in your specific situation? Describe the scenario in the chat
+        and your teacher will tell you exactly which command to reach for and why.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0002-merge-conflicts.html">← Lesson 02: Merge Conflicts</a>
+        <a class="nav-next" href="0004-github-actions.html">Lesson 04: GitHub Actions →</a>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'After a <code>git rebase</code>, the rebased commits have…',
+        options: [
+          'New hashes, same code changes',
+          'Two parents, like a merge commit',
+          'Identical hashes to the originals',
+          'No parent commit at all'
+        ],
+        correct: 0,
+        explain:
+          'Rebase creates brand-new commits — same diffs, but new SHA-1 hashes and a new ' +
+          'parent. This is why rebasing rewrites history: the original commits are replaced, ' +
+          'not moved.'
+      },
+      {
+        q: 'The golden rule says: never rebase commits that…',
+        options: [
+          'Others have already pulled down',
+          'Were created more than one week ago',
+          'Are already merged into main branch',
+          'Have no associated pull request yet'
+        ],
+        correct: 0,
+        explain:
+          'If someone else pulled your original commits and built on top of them, rewriting ' +
+          'those commits will break their history. Safe rebase = only you have the branch.'
+      },
+      {
+        q: 'Your coworker is actively building on your <code>feature</code> branch. You should NOT…',
+        options: [
+          'Rebase feature on top of main',
+          'Merge main into the feature branch',
+          'Open a pull request from feature',
+          'Push further commits to feature branch'
+        ],
+        correct: 0,
+        explain:
+          'Your coworker has already pulled <code>feature</code>. Rebasing would replace D ' +
+          'and E with D&prime; and E&prime;, leaving your coworker\'s local copy pointing to ' +
+          'commits that no longer exist on the remote. Use <code>git merge main</code> instead.'
+      }
+    ]);
+  </script>
+</body>
+</html>

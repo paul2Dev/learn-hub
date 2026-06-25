@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2 — Principiile SOLID | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 2 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Principiile SOLID</h1>
+  <p>Cinci euristici care ghidează design-ul claselor și modulelor spre cod ușor de modificat fără a-l strica.</p>
+
+  <h2>De ce contează SOLID în era AI</h2>
+  <p>AI va scrie cod care funcționează. SOLID este checklist-ul tău pentru a întreba: <em>va mai funcționa acest cod când cerințele se schimbă?</em> Cea mai mare parte din durerea de mentenanță vine nu din bug-uri în codul original, ci din schimbări care se propagă neașteptat prin componente strâns cuplate. SOLID este disciplina care previne această propagare.</p>
+
+  <h2>S — Principiul Responsabilității Unice</h2>
+
+  <div class="principle">
+    <div class="principle-header">
+      <span class="principle-letter">S</span>
+      <span class="principle-name">O clasă ar trebui să aibă un singur motiv de schimbare.</span>
+    </div>
+    <div class="principle-body">
+      <p>„Motiv de schimbare" înseamnă un grup de stakeholderi ale căror cerințe ar putea forța o modificare. O clasă care gestionează logica de business <em>și</em> formatarea e-mailului <em>și</em> persistența în baza de date are trei motive de schimbare — câte unul pentru fiecare preocupare.</p>
+      <p><strong>Semnal de încălcare:</strong> o clasă sau funcție al cărei nume conține „și" sau „plus" (ex. <code>UserRegistrationAndEmailService</code>).</p>
+    </div>
+  </div>
+
+  <pre><code>// Încalcă SRP — două responsabilități într-o singură clasă
+class OrderService {
+    public function processPayment(Order $order): void { ... }
+    public function sendConfirmationEmail(Order $order): void { ... }
+}
+
+// Respectă SRP — fiecare clasă are un singur motiv de schimbare
+class PaymentProcessor {
+    public function process(Order $order): void { ... }
+}
+
+class OrderMailer {
+    public function sendConfirmation(Order $order): void { ... }
+}</code></pre>
+
+  <h2>O — Principiul Deschis/Închis</h2>
+
+  <div class="principle">
+    <div class="principle-header">
+      <span class="principle-letter">O</span>
+      <span class="principle-name">Deschis pentru extensie, închis pentru modificare.</span>
+    </div>
+    <div class="principle-body">
+      <p>Odată ce o clasă este testată și funcțională, ar trebui să poți adăuga comportament nou fără a-i edita codul existent. În practică, asta înseamnă design cu interfețe și injecție de dependențe, astfel încât implementările noi să poată fi introduse fără a atinge originalul.</p>
+      <p><strong>Semnal de încălcare:</strong> un lanț <code>switch</code> sau <code>if/elseif</code> lung care trebuie să crească de fiecare dată când se adaugă un tip nou.</p>
+    </div>
+  </div>
+
+  <pre><code>// Încalcă OCP — adăugarea unei noi metode de plată necesită editarea acestei clase
+class PaymentProcessor {
+    public function process(string $method, float $amount): void {
+        if ($method === 'stripe')  { /* logica stripe */ }
+        if ($method === 'paypal')  { /* logica paypal */ }
+        // Adăugarea 'apple_pay' înseamnă modificarea acestui fișier
+    }
+}
+
+// Respectă OCP — adaugă o nouă metodă de plată adăugând o clasă nouă
+interface PaymentGateway {
+    public function charge(float $amount): void;
+}
+class StripeGateway implements PaymentGateway { ... }
+class PaypalGateway implements PaymentGateway { ... }
+// Gateway nou = clasă nouă, nicio schimbare în codul existent</code></pre>
+
+  <h2>L — Principiul Substituției Liskov</h2>
+
+  <div class="principle">
+    <div class="principle-header">
+      <span class="principle-letter">L</span>
+      <span class="principle-name">Subtipurile trebuie să fie substituibile pentru tipurile lor de bază.</span>
+    </div>
+    <div class="principle-body">
+      <p>Dacă clasa <code>B</code> extinde clasa <code>A</code>, oriunde folosești <code>A</code> trebuie să funcționeze corect cu <code>B</code> substituit — același comportament, același contract, nicio surpriză. O <code>ReadOnlyCollection</code> care extinde <code>Collection</code> dar aruncă excepție la <code>add()</code> încalcă LSP.</p>
+      <p><strong>Semnal de încălcare:</strong> o subclasă care suprascrie o metodă pentru a arunca o excepție sau returnează ceva ce părintele nu ar returna niciodată.</p>
+    </div>
+  </div>
+
+  <h2>I — Principiul Segregării Interfețelor</h2>
+
+  <div class="principle">
+    <div class="principle-header">
+      <span class="principle-letter">I</span>
+      <span class="principle-name">Clienții nu ar trebui să depindă de interfețe pe care nu le folosesc.</span>
+    </div>
+    <div class="principle-body">
+      <p>O interfață grasă care grupează metode necorelate forțează fiecare implementator să furnizeze implementări stub de care nu are nevoie. Împarte interfețele grase în interfețe de rol focalizate, astfel încât fiecare client să depindă doar de ce folosește efectiv.</p>
+      <p><strong>Semnal de încălcare:</strong> clase care implementează o interfață dar lasă mai multe metode ca <code>throw new NotImplementedException()</code>.</p>
+    </div>
+  </div>
+
+  <pre><code>// Interfață grasă — încalcă ISP
+interface Worker {
+    public function work(): void;
+    public function eat(): void;   // roboții nu mănâncă
+    public function sleep(): void; // roboții nu dorm
+}
+
+// Segregată — respectă ISP
+interface Workable { public function work(): void; }
+interface Feedable { public function eat(): void; }
+interface Restable { public function sleep(): void; }
+
+class Human implements Workable, Feedable, Restable { ... }
+class Robot implements Workable { ... }  // doar ce are nevoie</code></pre>
+
+  <h2>D — Principiul Inversiunii Dependențelor</h2>
+
+  <div class="principle">
+    <div class="principle-header">
+      <span class="principle-letter">D</span>
+      <span class="principle-name">Depinde de abstracțiuni, nu de implementări concrete.</span>
+    </div>
+    <div class="principle-body">
+      <p>Modulele de nivel înalt (logica de business) nu ar trebui să importe direct modulele de nivel scăzut (drivere de baze de date, clienți HTTP, servicii de email). Ambele ar trebui să depindă de o interfață. Asta face testarea ușoară: înlocuiești baza de date reală cu un test double fără a schimba logica de business.</p>
+      <p><strong>Semnal de încălcare:</strong> cuvântul cheie <code>new</code> în interiorul unei clase de logică de business pentru a instanția o dependență de infrastructură concretă.</p>
+    </div>
+  </div>
+
+  <pre><code>// Încalcă DIP — OrderService este legat fix de MySQLOrderRepository
+class OrderService {
+    private MySQLOrderRepository $repo;
+
+    public function __construct() {
+        $this->repo = new MySQLOrderRepository(); // dependență concretă
+    }
+}
+
+// Respectă DIP — depinde de o interfață, clasa concretă injectată din exterior
+class OrderService {
+    public function __construct(private OrderRepository $repo) {}
+    // OrderRepository este o interfață; injectezi MySQL, SQLite sau fake în teste
+}</code></pre>
+
+  <h2>SOLID în code review</h2>
+  <p>Când revizuiești cod generat de AI, parcurge SOLID ca un checklist. Cele mai frecvente încălcări din output-ul AI sunt SRP (funcții care fac prea mult) și D (dependențe concrete hard-codate în constructori). Fă-ți un obicei să întrebi: <em>ce se întâmplă cu această clasă dacă cerințele se schimbă?</em></p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Audit SOLID pe output AI</div>
+    <ol>
+      <li>Cere unui AI să genereze o clasă <code>UserService</code> care înregistrează utilizatori, trimite e-mailuri de bun venit și loghează acțiunea.</li>
+      <li>Identifică ce principii SOLID încalcă (vor fi cel puțin două).</li>
+      <li>Refactorizează — separă responsabilitățile și injectează dependențele — până când satisface toate cele cinci principii.</li>
+      <li>Notează câte clase ai avut nevoie față de originalul AI.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design" target="_blank">SOLID: The First Five Principles of Object-Oriented Design — DigitalOcean</a>. Parcurgere clară, bazată pe exemple, a tuturor celor cinci principii cu diagrame. Citește alături de exemplele de cod din această lecție.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">O clasă care gestionează autentificarea utilizatorilor ȘI trimite e-mailuri de bun venit ȘI loghează evenimente de audit încalcă ce principiu?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Open/Closed — nu poate fi extinsă fără modificare</button></li>
+        <li><button data-correct="true">Single Responsibility — are trei motive separate de schimbare</button></li>
+        <li><button data-correct="false">Liskov Substitution — nu poate fi subclasată în siguranță</button></li>
+        <li><button data-correct="false">Dependency Inversion — depinde de implementări concrete</button></li>
+      </ul>
+      <div class="quiz-feedback">SRP spune că o clasă ar trebui să aibă un singur motiv de schimbare — adică un singur grup de stakeholderi care conduce schimbările. Logica de autentificare, șabloanele de e-mail și logarea auditului sunt controlate de echipe diferite cu ritmuri de schimbare diferite, astfel că gruparea lor într-o clasă creează trei motive de schimbare.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care tipar de cod este semnalul clasic al unei încălcări Open/Closed?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">O clasă cu mai mult de zece metode private în interior</button></li>
+        <li><button data-correct="false">O interfață cu mai mult de cinci definiții de metode listate</button></li>
+        <li><button data-correct="true">O instrucțiune switch care trebuie să crească de fiecare dată când se adaugă un tip nou</button></li>
+        <li><button data-correct="false">Un constructor care acceptă mai mult de trei parametri</button></li>
+      </ul>
+      <div class="quiz-feedback">Un lanț switch/if-elseif în creștere este încălcarea clasică OCP: adăugarea unui caz nou necesită modificarea codului existent, testat, în loc să adaugi o clasă nouă care să se integreze într-o interfață existentă.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce înseamnă pentru un subtip să satisfacă Principiul Substituției Liskov?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Subtipul trebuie să suprascrie fiecare metodă definită în clasa părinte</button></li>
+        <li><button data-correct="false">Subtipul trebuie să fie mai mic în memorie decât clasa sa părinte</button></li>
+        <li><button data-correct="true">Codul care folosește tipul părinte trebuie să funcționeze corect când subtipul este substituit</button></li>
+        <li><button data-correct="false">Subtipul trebuie să moștenească de la exact un singur părinte, fără moștenire multiplă</button></li>
+      </ul>
+      <div class="quiz-feedback">LSP este despre substituibilitate comportamentală. Dacă înlocuiești cu un subtip și apelantii se strică — deoarece aruncă excepție acolo unde părintele returna, sau returnează forme diferite — ai o încălcare LSP. Exemplul clasic este o ReadOnlyList care extinde List dar aruncă excepție la add().</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce Inversiunea Dependențelor face codul mai ușor de testat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece testele pot ocoli interfața și apela metodele private direct</button></li>
+        <li><button data-correct="true">Deoarece dependența concretă poate fi înlocuită cu un test double fără a schimba logica de business</button></li>
+        <li><button data-correct="false">Deoarece inversarea dependențelor face funcțiile să ruleze mai repede în modul de testare</button></li>
+        <li><button data-correct="false">Deoarece framework-urile de injecție a dependențelor gestionează automat configurarea testelor</button></li>
+      </ul>
+      <div class="quiz-feedback">Când logica de business depinde de o interfață în loc de o clasă concretă, poți injecta un fake (repository în memorie, mailer mock, client HTTP stub) fără a schimba nicio linie din logica de business. Aceasta este câștigul principal de testabilitate al DIP.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care două încălcări SOLID sunt cele mai frecvente în codul generat de AI?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Încălcările Liskov Substitution și Interface Segregation</button></li>
+        <li><button data-correct="false">Cel mai des, încălcările Open/Closed și Liskov Substitution</button></li>
+        <li><button data-correct="true">Cel mai des, încălcările Single Responsibility și Dependency Inversion</button></li>
+        <li><button data-correct="false">Cel mai des, încălcările Interface Segregation și Open/Closed</button></li>
+      </ul>
+      <div class="quiz-feedback">AI tinde să producă clase de servicii monolitice care gestionează multe preocupări (SRP) și hard-codează dependențe concrete cu cuvântul cheie new în constructori (DIP). Acestea sunt cele două tipare de verificat primele când revizuiești output-ul AI.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Arată-mi o încălcare LSP într-un model Laravel real."</em> sau <em>„Cum se leagă service container-ul din Laravel de DIP?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0001-the-architects-mindset.html">← Lecția 1: Mentalitatea Arhitectului</a>
+    <a href="0003-yagni-kiss-dry.html">Lecția 3: YAGNI, KISS, DRY →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

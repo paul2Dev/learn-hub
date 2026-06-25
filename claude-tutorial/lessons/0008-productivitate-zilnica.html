@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>08 · Productivitate Zilnică — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 8 din 12</p>
+  <h1>Productivitate Zilnică</h1>
+  <p class="tagline">Obiceiuri, slash commands, CLAUDE.md avansat și ce NU să ceri lui Claude Code — tot ce te face mai rapid în ziua de zi.</p>
+
+  <section>
+    <h2>Slash commands esențiale</h2>
+    <p>Din orice sesiune interactivă, ai aceste comenzi disponibile:</p>
+    <ul>
+      <li><code>/help</code> — Lista completă de comenzi disponibile</li>
+      <li><code>/clear</code> — Golește conversația curentă și pornești fresh</li>
+      <li><code>/compact</code> — Comprimă conversația când contextul se umple</li>
+      <li><code>/cost</code> — Afișează câte tokene a folosit sesiunea curentă</li>
+      <li><code>/status</code> — Starea autentificării și a permisiunilor</li>
+      <li><code>/exit</code> — Închide sesiunea</li>
+    </ul>
+    <div class="callout callout--tip">
+      <p><strong>Obicei bun:</strong> Verifică <code>/cost</code> la finalul sesiunilor lungi. Te ajută să înțelegi ce tipuri de sarcini consumă mai mult context și să optimizezi.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>CLAUDE.md avansat — Instrucțiuni permanente</h2>
+    <p>Dincolo de comenzile de rulare, poți include în <code>CLAUDE.md</code> instrucțiuni de comportament:</p>
+    <pre><code># CLAUDE.md
+
+## Stil de cod
+- Folosește arrow functions, nu function declarations
+- Toate funcțiile async trebuie să aibă error handling cu try/catch
+- Importurile sunt ordonate: built-ins → third-party → locale
+
+## Commit messages
+- Format: `type(scope): descriere scurtă` (Conventional Commits)
+- Types: feat, fix, docs, refactor, test, chore
+
+## Când faci review de cod
+- Prioritizează securitatea și performanța față de stilul de cod
+- Menționează și ce e bine, nu doar ce e greșit
+
+## Nu face niciodată
+- Nu adăuga comentarii pentru cod evident
+- Nu crea fișiere de documentație dacă nu ți se cere explicit
+- Nu face push fără să îmi confirmi</code></pre>
+  </section>
+
+  <section>
+    <h2>CLAUDE.md global — Preferințele tale personale</h2>
+    <p>Creează <code>~/.claude/CLAUDE.md</code> pentru instrucțiuni care se aplică tuturor proiectelor tale:</p>
+    <pre><code># ~/.claude/CLAUDE.md
+
+Sunt programator cu experiență în Laravel și Vue.js.
+Răspunsurile tehnice pot presupune cunoaștere solidă de PHP și JavaScript.
+
+Preferințe:
+- Răspunsuri scurte și directe, nu explicații lungi pentru lucruri evidente
+- Exemple de cod concrete, nu pseudocod
+- Când nu ești sigur, spune-mi — nu inventa</code></pre>
+  </section>
+
+  <section>
+    <h2>Obiceiuri care multiplică productivitatea</h2>
+    <ul>
+      <li><strong>Sesiuni scurte și focusate</strong> — O sarcină pe sesiune. Termini, faci commit, sesiune nouă.</li>
+      <li><strong>Fii specific</strong> — "Adaugă validare pentru câmpul email în src/validators/user.js" bate "adaugă validare".</li>
+      <li><strong>Arată un exemplu</strong> — "Urmează structura din controllers/auth.js" evită surprizele de stil.</li>
+      <li><strong>Folosește git agresiv</strong> — Commit înainte de orice sesiune de modificări mari. Rollback e gratuit dacă ai commit.</li>
+      <li><strong>Iterează, nu rescrie</strong> — "Modifică X să facă Y" bate "Rescrie totul". Claude Code extinde ce există.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Ce NU să ceri lui Claude Code</h2>
+    <div class="callout callout--warning">
+      <p><strong>Limitări reale de care să ții cont:</strong></p>
+    </div>
+    <ul>
+      <li><strong>Date în timp real</strong> — Nu știe ce s-a întâmplat după data de training. Nu îl întreba de prețuri curente, știri sau stări ale unor servicii externe.</li>
+      <li><strong>Decizii de business</strong> — "Ce feature să implementăm?" e o decizie umană. El poate implementa, nu decide prioritatea.</li>
+      <li><strong>Cod fără context</strong> — "Scrie un sistem de autentificare" fără să îi dai stack-ul, convențiile și cerințele specifice produce ceva generic, nu potrivit proiectului tău.</li>
+      <li><strong>Sarcini cu acces la sisteme externe live</strong> — Nu poate accesa baza ta de date de producție, nu poate face request-uri la API-uri externe (decât dacă rulezi tu comenzile).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Fluxul zilnic recomandat</h2>
+    <pre><code>Dimineața:
+  claude
+  &gt; Ce am în branch-ul curent față de main? Rezumă task-ul.
+
+Pe parcursul zilei (o sesiune per task):
+  claude
+  &gt; Implementează [task-ul X]
+  # ... iterezi ...
+  &gt; Fă commit cu modificările
+
+La final de zi:
+  claude
+  &gt; Creează un PR pentru branch-ul curent cu descriere completă</code></pre>
+    <p>Acest ritm — sesiune scurtă per task, commit la final, PR când e gata — e modul în care Claude Code devine un înmulțitor real de productivitate, nu o distracție.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-8"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/memory" target="_blank" rel="noopener">Claude Code Memory & CLAUDE.md — documentație oficială Anthropic</a><br/>
+    Referința completă pentru configurarea memoriei proiectului și instrucțiunilor permanente.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> în proiectul tău real și spune: <em>"Creează un CLAUDE.md pentru acest proiect."</em> Primul pas spre productivitate reală.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0007-extensia-vs-code.html">← Lecția 7: VS Code Extension</a>
+    <a class="nav-next" href="0009-skills.html">Lecția 9: Skills →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-8', [
+  {
+    q: 'Ce face comanda <code>/compact</code> într-o sesiune Claude Code?',
+    options: [
+      'Șterge toate fișierele temporare create în sesiune',
+      'Comprimă conversația pentru a elibera spațiu în context window',
+      'Comprimă fișierele proiectului pentru a le face mai mici',
+      'Exportă conversația curentă într-un fișier text'
+    ],
+    correct: 1,
+    explain: '</code>/compact</code> comprimă istoricul conversației când context window-ul se umple, păstrând esența dar eliberând spațiu pentru instrucțiuni noi. Util în sesiuni lungi.'
+  },
+  {
+    q: 'Care este ritmul optim de lucru cu Claude Code?',
+    options: [
+      'O sesiune lungă pe zi pentru tot ce ai de făcut',
+      'Sesiuni scurte focusate per task, cu commit după fiecare',
+      'O sesiune pe săptămână cu toate task-urile listate la început',
+      'Sesiuni fără commit — lași Claude Code să gestioneze versiunile'
+    ],
+    correct: 1,
+    explain: 'Sesiunile scurte per task mențin contextul clar și relevant. Commit-ul după fiecare task îți dă un checkpoint sigur. Sesiunile lungi cu multe task-uri devin imprecise pe măsură ce contextul se umple.'
+  },
+  {
+    q: 'Unde pui instrucțiunile care trebuie să se aplice tuturor proiectelor tale?',
+    options: [
+      'Într-un fișier .env în rădăcina fiecărui proiect',
+      'În CLAUDE.md din rădăcina fiecărui proiect, copiat manual',
+      'În ~/.claude/CLAUDE.md — fișierul global de configurare',
+      'În settings-urile aplicației Claude Code din meniu'
+    ],
+    correct: 2,
+    explain: '~/.claude/CLAUDE.md e fișierul global, citit automat la orice sesiune, indiferent de proiect. Ideal pentru preferințele tale personale de stil, tone și comportament.'
+  }
+]);
+</script>
+</body>
+</html>
