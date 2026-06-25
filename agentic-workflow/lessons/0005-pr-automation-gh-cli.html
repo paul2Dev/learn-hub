@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5 — PR Automation cu gh CLI | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 5 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">GitHub CLI</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>PR Automation cu gh CLI</h1>
+  <p>Claude Code poate crea PR-uri cu descrieri complete — tu doar dai click pe Merge.</p>
+
+  <h2>Ce este gh CLI și de ce îl folosim</h2>
+  <p><code>gh</code> este CLI-ul oficial GitHub. Permite interacțiunea cu GitHub din terminal: creare PR-uri, adăugare labels, citire comentarii, merge. Claude Code îl folosește nativ — nu are nevoie de setup special din partea ta.</p>
+
+  <div class="callout tip">
+    <div class="callout-label">Instalare</div>
+    Dacă nu ai <code>gh</code> instalat: <code>winget install GitHub.cli</code> (Windows) sau <code>brew install gh</code> (macOS). Autentificare: <code>gh auth login</code>.
+  </div>
+
+  <h2>Anatomia unui PR bun</h2>
+  <p>Un PR util conține mai mult decât codul. Conține context pentru reviewer (uman sau AI):</p>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">📋</span>
+      <span class="tool-card-name">PR bun — structură</span>
+      <span class="tool-card-tag">template</span>
+    </div>
+    <div class="tool-card-body">
+      <p><strong>Titlu:</strong> concis, max 70 caractere, prefix tip (feat/fix/refactor)</p>
+      <p><strong>Summary:</strong> 1–3 bullet points — ce face această schimbare</p>
+      <p><strong>Test plan:</strong> ce ai verificat, cum să testeze reviewer-ul</p>
+      <p><strong>Context:</strong> de ce această abordare, tradeoff-uri, alternative considerate</p>
+    </div>
+  </div>
+
+  <h2>Claude Code creează PR-uri automat</h2>
+  <p>Claude Code știe să creeze PR-uri cu structură completă. Îi poți cere explicit sau el poate face asta ca parte din workflow:</p>
+
+  <pre><code># Cere lui Claude Code să creeze PR-ul
+"Creează un PR pentru branch-ul curent cu descriere completă"
+
+# Sau Claude Code face asta automat după /code-review
+# — el generează titlul, body-ul, și îl creează cu gh pr create</code></pre>
+
+  <p>Comanda reală pe care Claude Code o rulează:</p>
+  <pre><code>gh pr create --title "feat: add user authentication flow" --body "$(cat <<'EOF'
+## Summary
+- Adaugă endpoint POST /auth/login cu JWT
+- Implementează middleware de autentificare pentru rute protejate
+- Adaugă refresh token cu expirare 7 zile
+
+## Test plan
+- [ ] Login cu credențiale valide returnează JWT valid
+- [ ] Login cu credențiale greșite returnează 401
+- [ ] Endpoint protejat fără token returnează 403
+- [ ] Refresh token funcționează după expirare JWT
+
+🤖 Generated with Claude Code
+EOF
+)"</code></pre>
+
+  <h2>Comenzi esențiale gh CLI</h2>
+  <p>Comenzile pe care le vei folosi cel mai des:</p>
+
+  <pre><code># Listează PR-urile deschise
+gh pr list
+
+# Verifică statusul PR-ului curent
+gh pr status
+
+# Deschide PR-ul în browser
+gh pr view --web
+
+# Mergeach PR cu squash (un singur commit în main)
+gh pr merge --squash
+
+# Adaugă label pe PR
+gh pr edit --add-label "needs-review"
+
+# Citește comentariile de review pe PR
+gh api repos/{owner}/{repo}/pulls/{number}/comments
+
+# Verifică statusul check-urilor CI pe PR-ul curent
+gh pr checks</code></pre>
+
+  <h2>Workflow complet cu gh CLI</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Claude Code scrie cod pe branch nou: <code>git checkout -b feature/xyz</code></p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Claude Code rulează <code>/verify</code> și <code>/code-review</code></p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Claude Code face commit și push: <code>git push origin feature/xyz</code></p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Claude Code creează PR: <code>gh pr create --title "..." --body "..."</code></p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><strong>Tu</strong> deschizi PR-ul în GitHub, citești review-ul AI (Greptile/CodeRabbit), și dai click pe Merge</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Verificarea statusului PR din terminal</h2>
+  <p>Nu trebuie să deschizi GitHub în browser pentru a vedea ce se întâmplă cu PR-ul:</p>
+
+  <pre><code># Vezi toate check-urile CI și statusul lor
+gh pr checks
+
+# Output exemplu:
+# ✓ build         pass  1m30s
+# ✓ lint          pass  45s
+# ✗ tests         fail  2m15s  — click pentru detalii</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Claude Code și gh pr merge</div>
+    Nu instrui Claude Code să ruleze <code>gh pr merge</code> automat. Merge-ul în main este decizia ta — cel care înțelege contextul de business și a citit review-ul complet.
+  </div>
+
+  <h2>Labels utile pentru triaj rapid</h2>
+  <p>Adaugă labels ca să filtrezi rapid PR-urile în GitHub:</p>
+
+  <pre><code># Creează labels (o singură dată per repo)
+gh label create "needs-review" --color "#0052CC"
+gh label create "ready-to-merge" --color "#0E8A16"
+gh label create "work-in-progress" --color "#E4E669"
+
+# Adaugă label pe PR-ul curent
+gh pr edit --add-label "needs-review"</code></pre>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Creează primul PR automat cu gh CLI</div>
+    <ol>
+      <li>Creează un branch nou: <code>git checkout -b feature/test-gh-cli</code></li>
+      <li>Adaugă un fișier simplu: <code>echo "test" > test-gh.txt</code> și fă commit.</li>
+      <li>Push pe branch: <code>git push origin feature/test-gh-cli</code></li>
+      <li>Creează PR cu gh CLI urmând structura de mai sus (sau roagă Claude Code să creeze PR-ul).</li>
+      <li>Rulează <code>gh pr status</code> și <code>gh pr view --web</code> pentru a vedea PR-ul.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://cli.github.com/manual/" target="_blank">GitHub CLI Manual (cli.github.com)</a> — documentația completă a gh CLI, cu toate comenzile și flag-urile disponibile.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce informații esențiale ar trebui să conțină body-ul unui PR bun?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Lista completă a fișierelor modificate și numărul de linii adăugate</button></li>
+        <li><button data-correct="true">Summary cu ce face schimbarea, test plan și contextul deciziei</button></li>
+        <li><button data-correct="false">Numele autorului, data creării și numărul de commit-uri din branch</button></li>
+        <li><button data-correct="false">Link-uri la toate issue-urile deschise din repository</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Un PR bun conține context pentru reviewer: ce face, cum s-a testat, și de ce această abordare. GitHub arată automat fișierele modificate — nu trebuie listate manual.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce comandă gh CLI verifici statusul check-urilor CI ale PR-ului curent?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">gh pr status</button></li>
+        <li><button data-correct="false">gh pr view</button></li>
+        <li><button data-correct="true">gh pr checks</button></li>
+        <li><button data-correct="false">gh pr ci</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. <code>gh pr checks</code> arată statusul tuturor GitHub Actions care rulează pe PR-ul curent — build, lint, teste — cu timpul de rulare și link-uri la log-uri în caz de eșec.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce nu ar trebui să instrui Claude Code să ruleze `gh pr merge` automat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că gh pr merge necesită autentificare separată de gh auth login</button></li>
+        <li><button data-correct="false">Pentru că branch protection blochează gh pr merge din terminal</button></li>
+        <li><button data-correct="true">Pentru că merge-ul în main este decizia ta — necesită citirea review-ului complet</button></li>
+        <li><button data-correct="false">Pentru că Vercel nu detectează merge-urile făcute din terminal</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. Modelul hibrid păstrează merge-ul la om. Agentul creează PR-ul, serviciile AI fac review — tu citești tot și iei decizia. Merge-ul automat elimină această ultimă verificare.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care comandă gh CLI deschide PR-ul curent direct în browser?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">gh pr open</button></li>
+        <li><button data-correct="false">gh pr browse</button></li>
+        <li><button data-correct="true">gh pr view --web</button></li>
+        <li><button data-correct="false">gh pr show --browser</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. <code>gh pr view --web</code> deschide PR-ul curent în browser-ul implicit — util când vrei să citești comentariile de review sau să dai click pe Merge.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce face `gh pr merge --squash` față de `gh pr merge` fără flag?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Mergeach direct fără a cere confirmare, evitând promptul interactiv</button></li>
+        <li><button data-correct="true">Combină toate commit-urile din branch într-un singur commit în main</button></li>
+        <li><button data-correct="false">Squash-uiește codul modificat pentru a reduce dimensiunea repository-ului</button></li>
+        <li><button data-correct="false">Merge automat fără a rula check-urile CI dacă sunt configurate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. <code>--squash</code> combină toate commit-urile de pe branch într-un singur commit în main — rezultă un git log mai curat, unde fiecare feature este un singur commit descriptiv.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Vrei să automatizezi mai mult din procesul de creare PR sau să înțelegi când să folosești merge vs. squash vs. rebase? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0004-code-review-cu-claude.html">← Code Review cu Claude</a>
+    <a href="0006-greptile-full-codebase-review.html">Greptile — Full Codebase Review →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

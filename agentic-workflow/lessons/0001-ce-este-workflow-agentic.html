@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1 — Ce este un workflow agentic | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 1 din 10</span>
+    <span class="tag">~15 min</span>
+    <span class="tag">Fundamente</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Ce este un workflow agentic</h1>
+  <p>Fluxul complet de la idee la producție — și de ce contează ordinea pașilor.</p>
+
+  <h2>Problema workflow-ului manual</h2>
+  <p>Când scrii cod cu un agent AI (cum ar fi Claude Code) dar restul workflow-ului rămâne manual, apar trei tipuri de probleme:</p>
+  <ul>
+    <li><strong>Risc de orbire</strong> — nu știi exact ce a schimbat agentul înainte de push</li>
+    <li><strong>Review superficial</strong> — citești diff-ul singur, fără context deplin al codebase-ului</li>
+    <li><strong>Lipsa feedback loop-ului</strong> — nu ai dovadă că schimbarea funcționează înainte de merge</li>
+  </ul>
+  <p>Un <strong>workflow agentic</strong> rezolvă toate trei: agentul face treaba de rutină, tu controlezi deciziile cu impact real.</p>
+
+  <h2>Fluxul end-to-end</h2>
+  <p>Un workflow agentic matur arată astfel — fiecare pas este fie automat, fie cu aprobare explicită:</p>
+
+  <div class="pipeline">
+    <div class="pipeline-step step-yellow">
+      <div class="pipeline-badge">1</div>
+      <div class="pipeline-info">
+        <h4>Feature branch</h4>
+        <p>Claude Code creează branch nou, scrie cod, rulează <code>/verify</code></p>
+      </div>
+      <span class="pipeline-tag">automat</span>
+    </div>
+    <div class="pipeline-step step-blue">
+      <div class="pipeline-badge">2</div>
+      <div class="pipeline-info">
+        <h4>Code review local</h4>
+        <p><code>/code-review</code>, <code>/simplify</code>, <code>/security-review</code> înainte de push</p>
+      </div>
+      <span class="pipeline-tag">automat</span>
+    </div>
+    <div class="pipeline-step step-purple">
+      <div class="pipeline-badge">3</div>
+      <div class="pipeline-info">
+        <h4>PR automation</h4>
+        <p>Claude creează PR cu descriere completă via <code>gh pr create</code></p>
+      </div>
+      <span class="pipeline-tag">automat</span>
+    </div>
+    <div class="pipeline-step step-green">
+      <div class="pipeline-badge">4</div>
+      <div class="pipeline-info">
+        <h4>AI PR Review</h4>
+        <p>Greptile sau CodeRabbit revizuiesc PR-ul automat, postează comentarii</p>
+      </div>
+      <span class="pipeline-tag">automat</span>
+    </div>
+    <div class="pipeline-step step-red">
+      <div class="pipeline-badge">5</div>
+      <div class="pipeline-info">
+        <h4>Merge</h4>
+        <p>Tu decizi — citești review-ul, dai click pe Merge în GitHub</p>
+      </div>
+      <span class="pipeline-tag">tu decizi</span>
+    </div>
+    <div class="pipeline-step step-gray">
+      <div class="pipeline-badge">6</div>
+      <div class="pipeline-info">
+        <h4>Deploy automat</h4>
+        <p>Vercel detectează push pe main și deployează în producție</p>
+      </div>
+      <span class="pipeline-tag">automat</span>
+    </div>
+  </div>
+
+  <h2>Modelul hibrid — de ce nu totul automat?</h2>
+  <p>Există o tentație să automatizezi complet — inclusiv merge-ul. Aceasta este o greșeală pentru proiecte cu cod viu în producție:</p>
+
+  <div class="callout warn">
+    <div class="callout-label">Risc</div>
+    Un agent poate introduce un bug subtil care trece de toate check-urile automate dar strică UX-ul pentru utilizatori reali. Omul rămâne ultima linie de apărare.
+  </div>
+
+  <p>Modelul recomandat este <strong>hibrid</strong>: automatizezi tot ce este repetitiv și fără risc (review, formatare, descriere PR, smoke tests), și păstrezi controlul uman pe deciziile ireversibile (merge în main, deploy în producție).</p>
+
+  <h2>Cei trei actori ai workflow-ului</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">A</div>
+      <div class="flow-body">
+        <p><strong>Claude Code (local)</strong> — scrie cod, face review, creează PR. Rulează pe mașina ta.</p>
+        <span class="layer-tag">Skills: /verify · /code-review · /simplify · /security-review · gh CLI</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">B</div>
+      <div class="flow-body">
+        <p><strong>Servicii AI externe</strong> — revizuiesc PR-ul cu context full-codebase. Rulează în cloud.</p>
+        <span class="layer-tag">Tools: Greptile · CodeRabbit · Greploop</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">C</div>
+      <div class="flow-body">
+        <p><strong>GitHub Actions</strong> — verifică build, lint, teste la fiecare PR. Rulează în cloud.</p>
+        <span class="layer-tag">Declanșat de: push pe branch · PR deschis</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Ce vei construi în acest curs</h2>
+  <p>La finalul celor 10 lecții, vei avea un workflow în care:</p>
+  <ul>
+    <li>Niciun commit nu poate intra în <code>master</code> fără un PR aprobat</li>
+    <li>Fiecare PR primește automat un review AI detaliat</li>
+    <li>GitHub Actions verifică build-ul și lint-ul la fiecare PR</li>
+    <li>Claude Code face review local înainte de push</li>
+    <li>Tu decizi merge-ul — cu toate informațiile în față</li>
+  </ul>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Mapează-ți workflow-ul actual</div>
+    <ol>
+      <li>Deschide terminalul și rulează <code>git log --oneline -10</code> în proiectul tău.</li>
+      <li>Numără câte commit-uri au mers direct pe <code>master</code> fără PR.</li>
+      <li>Întreabă-te: câte dintre ele au beneficiat de review înainte de push?</li>
+      <li>Scrie pe hârtie câți pași din fluxul de mai sus îi ai deja implementați.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>Citește <a href="https://code.claude.com/docs/en/github-actions" target="_blank">Claude Code GitHub Actions Documentation</a> — documentația oficială Anthropic pentru integrarea Claude Code în CI/CD. Este sursa cea mai de încredere pentru tot ce vei construi în acest curs.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este riscul principal al unui workflow în care agentul AI poate face merge automat în main?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Agentul scrie cod mai lent fără aprobare umană</button></li>
+        <li><button data-correct="true">Un bug subtil poate ajunge în producție fără nicio verificare umană</button></li>
+        <li><button data-correct="false">GitHub nu permite merge automat din motive de securitate</button></li>
+        <li><button data-correct="false">Vercel nu poate deploya dacă nu există o aprobare manuală</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Automatizarea completă elimină ultima linie de apărare. Modelul hibrid păstrează decizia de merge la om — exact pentru a prinde ce scapă tuturor check-urilor automate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce este rolul lui Greptile sau CodeRabbit în workflow-ul agentic?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Înlocuiesc complet review-ul uman al codului</button></li>
+        <li><button data-correct="false">Rulează local pe mașina ta pentru a verifica codul</button></li>
+        <li><button data-correct="true">Revizuiesc PR-ul automat în cloud cu context full-codebase</button></li>
+        <li><button data-correct="false">Deployează codul în producție după ce PR-ul este aprobat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. Aceste servicii rulează în cloud și indexează întregul codebase — pot detecta buguri pe care un reviewer uman le-ar rata pentru că nu țin în cap toate dependențele.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care pas din fluxul de 6 pași este singurul care necesită decizie umană?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Feature branch — Claude Code creează branch-ul și scrie codul</button></li>
+        <li><button data-correct="false">Code review local — Claude Code rulează skill-urile de review</button></li>
+        <li><button data-correct="true">Merge — tu citești review-ul și dai click pe Merge în GitHub</button></li>
+        <li><button data-correct="false">Deploy automat — Vercel deployează după push pe main</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Toți ceilalți pași sunt automatizați. Merge-ul este singurul moment în care omul intervine deliberat — și de aceea contează să ai toate informațiile (review AI, CI checks) înainte de acel click.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce face GitHub Actions în workflow-ul agentic descris în această lecție?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Scrie cod și creează branch-uri noi la cerere</button></li>
+        <li><button data-correct="false">Revizuiește codul cu context full-codebase pentru buguri</button></li>
+        <li><button data-correct="false">Trimite notificări utilizatorului când un PR este deschis</button></li>
+        <li><button data-correct="true">Verifică build, lint și teste automat la fiecare PR deschis</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. GitHub Actions este stratul de CI — nu scrie cod și nu face review semantic, dar verifică că build-ul nu e rupt și că testele trec, la fiecare PR, automat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce se numește modelul recomandat „hibrid" și nu „complet automat"?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că agentul AI nu poate face push pe GitHub fără permisiune</button></li>
+        <li><button data-correct="false">Pentru că Vercel necesită confirmare manuală pentru fiecare deploy</button></li>
+        <li><button data-correct="true">Pentru că deciziile ireversibile cu impact real sunt păstrate la om</button></li>
+        <li><button data-correct="false">Pentru că GitHub Actions nu suportă rulare complet autonomă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. „Hibrid" înseamnă: tot ce este repetitiv și reversibil — automatizezi. Tot ce este ireversibil și cu impact în producție (merge, deploy) — omul decide. Costul unui click este mic; costul unui bug în producție este mare.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Ai întrebări despre fluxul descris sau despre cum se aplică la proiectul tău specific? Scrie-mi direct în Claude Code — sunt aici să clarific orice.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <span class="current">← Lecția 1 din 10</span>
+    <a href="0002-branch-protection-git-flow.html">Branch Protection + Git Flow →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

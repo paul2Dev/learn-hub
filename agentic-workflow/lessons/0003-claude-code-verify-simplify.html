@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3 — Claude Code: /verify și /simplify | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 3 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">Claude Code Skills</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Claude Code: /verify și /simplify</h1>
+  <p>Primele două skill-uri pe care le rulezi după ce codul e scris — înainte de orice push.</p>
+
+  <h2>De ce înainte de push?</h2>
+  <p>Un push rulează Vercel preview sau, mai grav, un deploy. Dacă codul nu funcționează sau e mai complex decât trebuie, ai pierdut timp și ai introdus zgomot în istoricul git. <strong>/verify</strong> și <strong>/simplify</strong> se rulează local, înainte de commit sau push, ca un filtru de calitate personal.</p>
+
+  <div class="pipeline">
+    <div class="pipeline-step step-yellow">
+      <div class="pipeline-badge">1</div>
+      <div class="pipeline-info">
+        <h4>/verify</h4>
+        <p>Rulează app-ul și observă că schimbarea funcționează în browser sau terminal</p>
+      </div>
+      <span class="pipeline-tag">înainte de commit</span>
+    </div>
+    <div class="pipeline-step step-blue">
+      <div class="pipeline-badge">2</div>
+      <div class="pipeline-info">
+        <h4>/simplify</h4>
+        <p>Revizuiește codul schimbat pentru reuse, eficiență și claritate</p>
+      </div>
+      <span class="pipeline-tag">după feature gata</span>
+    </div>
+    <div class="pipeline-step step-green">
+      <div class="pipeline-badge">3</div>
+      <div class="pipeline-info">
+        <h4>commit + push</h4>
+        <p>Acum ești sigur că codul funcționează și e curat</p>
+      </div>
+      <span class="pipeline-tag">după /verify + /simplify</span>
+    </div>
+  </div>
+
+  <h2>/verify — Rulează și observă</h2>
+  <p>Skill-ul <code>/verify</code> pornește aplicația și o folosește în mod real pentru a confirma că schimbarea funcționează. Nu este un test automat — este agentul care <em>joacă</em> rolul utilizatorului.</p>
+
+  <p>Cum se invocă:</p>
+  <pre><code>/verify</code></pre>
+
+  <p>Ce face concret:</p>
+  <ul>
+    <li>Identifică cum se lansează proiectul (caută <code>package.json</code>, <code>Makefile</code>, pattern-uri cunoscute)</li>
+    <li>Pornește serverul sau procesul</li>
+    <li>Testează <strong>golden path</strong>: calea principală pe care un utilizator ar urma-o</li>
+    <li>Testează <strong>edge cases</strong>: input gol, valori limită, erori așteptate</li>
+    <li>Raportează ce a funcționat, ce nu, și ce a observat</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-label">Când nu poate testa UI</div>
+    Dacă proiectul este o aplicație web cu UI complex și agentul nu poate deschide un browser real, el va spune explicit: „Nu pot testa UI-ul — iată ce am verificat în schimb." Nu va pretinde că a testat când nu a putut.
+  </div>
+
+  <h3>Exemplu de sesiune /verify</h3>
+  <pre><code>Tu: /verify
+
+Claude: Pornesc serverul de development...
+> npm run dev ✓ — server pornit pe localhost:3000
+
+Testez golden path (login → dashboard → creare element):
+  ✓ Login cu credențiale valide → redirect la dashboard
+  ✓ Dashboard se încarcă în ~1.2s
+  ✓ Creare element nou → apare în listă imediat
+
+Testez edge cases:
+  ✓ Login cu parolă greșită → mesaj de eroare afișat corect
+  ✗ Input cu caractere speciale (ăâîșț) → formularul trimite dar
+    serverul returnează 500 — posibilă problemă de encoding
+
+Am găsit un potențial bug: encoding UTF-8 în formularul X.</code></pre>
+
+  <h2>/simplify — Curăță codul</h2>
+  <p>Skill-ul <code>/simplify</code> revizuiește codul schimbat (nu întregul codebase) și aplică fix-uri de calitate: eliminare duplicări, simplificare logică, reuse de funcții existente, claritate.</p>
+
+  <p>Cum se invocă:</p>
+  <pre><code>/simplify</code></pre>
+
+  <p>Ce face concret:</p>
+  <ul>
+    <li>Revizuiește diff-ul curent față de branch-ul de bază</li>
+    <li>Identifică: cod duplicat, funcții prea lungi, abstractizări inutile, importuri neutilizate</li>
+    <li>Aplică fix-urile direct în working tree</li>
+    <li>Nu vânează bug-uri — pentru asta există <code>/code-review</code></li>
+  </ul>
+
+  <div class="callout">
+    <div class="callout-label">Diferența cheie</div>
+    <strong>/simplify</strong> = calitate și claritate a codului. <strong>/code-review</strong> = corectitudine și bug-uri. Le rulezi pe amândouă — în ordini diferite.
+  </div>
+
+  <h3>Ce nu face /simplify</h3>
+  <ul>
+    <li>Nu modifică cod adiacent care nu face parte din schimbarea ta</li>
+    <li>Nu refactorizează lucruri care funcționează dar nu sunt perfect de ele</li>
+    <li>Nu introduce abstractizări pentru uz viitor ipotetic</li>
+    <li>Nu adaugă comentarii de explicitare a codului evident</li>
+  </ul>
+
+  <h2>Ordinea corectă: /verify înainte de /simplify</h2>
+  <p>Rulează întotdeauna <strong>/verify înainte</strong> de /simplify. Motivul: dacă /simplify modifică codul și introduce un bug, vrei să poți identifica că bug-ul a apărut după simplificare. Dacă rulezi /verify după /simplify, nu știi dacă a funcționat înainte.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>Scrie feature-ul</strong> (Claude Code sau manual)</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>/verify</strong> — confirmă că funcționează</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>/simplify</strong> — curăță codul verificat</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><strong>/verify</strong> din nou (opțional dar recomandat) — confirmă că simplificarea nu a rupt nimic</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><strong>commit + push</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Rulează /verify și /simplify pe o schimbare reală</div>
+    <ol>
+      <li>Cere-i lui Claude Code să implementeze o schimbare mică în proiectul tău (ex: o funcție nouă, o validare).</li>
+      <li>Înainte de commit, rulează <code>/verify</code> și citește raportul complet.</li>
+      <li>Dacă /verify a trecut, rulează <code>/simplify</code>.</li>
+      <li>Rulează /verify din nou și compară cu prima rulare.</li>
+      <li>Acum fă commit — știi că codul funcționează și e curat.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>Skill-ul <a href="https://www.claudedirectory.org/for/git-workflows" target="_blank">Best Claude Code setups for git workflows (Iunie 2026)</a> — colecție curată de configurații și skill-uri pentru workflow-uri git cu Claude Code.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce rulezi /verify ÎNAINTE de /simplify și nu după?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că /simplify șterge codul de test generat de /verify</button></li>
+        <li><button data-correct="true">Pentru a ști că orice bug apărut după /simplify vine din simplificare, nu din feature</button></li>
+        <li><button data-correct="false">Pentru că /verify nu funcționează pe cod nesimplificat</button></li>
+        <li><button data-correct="false">Pentru că /simplify blochează serverul și /verify nu mai poate rula</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Ordinea creează un punct de referință clar: „a funcționat înainte de simplificare." Dacă ceva se strică după /simplify, știi exact când a apărut problema.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce face /simplify că /code-review NU face?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Identifică bug-uri logice în codul schimbat și le explică</button></li>
+        <li><button data-correct="false">Verifică vulnerabilități de securitate în dependențe</button></li>
+        <li><button data-correct="true">Aplică direct fix-uri de calitate — reuse, claritate, eliminare duplicări</button></li>
+        <li><button data-correct="false">Postează comentarii pe PR-ul deschis în GitHub</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. /simplify modifică codul — aplică fix-uri. /code-review doar raportează probleme. Ambele sunt necesare, cu scopuri diferite.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce testează /verify în afara „golden path"-ului?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Performanța — timpii de răspuns pentru fiecare endpoint</button></li>
+        <li><button data-correct="false">Securitatea — scanează pentru vulnerabilități OWASP Top 10</button></li>
+        <li><button data-correct="true">Edge cases — input gol, valori limită, erori așteptate</button></li>
+        <li><button data-correct="false">Compatibilitatea — testează în mai multe browsere simultan</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. /verify testează atât calea fericită (golden path) cât și cazurile limită (edge cases). Este agentul care joacă rolul utilizatorului — inclusiv utilizatorul care face lucruri neașteptate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce nu face /simplify chiar dacă ar putea face codul „mai bun"?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu modifică importurile din fișierele schimbate de tine</button></li>
+        <li><button data-correct="true">Nu refactorizează cod adiacent care nu face parte din schimbarea ta</button></li>
+        <li><button data-correct="false">Nu salvează modificările automat fără confirmare</button></li>
+        <li><button data-correct="false">Nu rulează teste pentru a verifica că simplificarea e corectă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. /simplify urmează principiul chirurgical: atinge doar ce ai schimbat tu. Nu „îmbunătățește" cod adiacent — asta ar fi zgomot în diff și ar face review-ul mai dificil.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Când rulezi a doua oară /verify (opțional dar recomandat)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Înainte de a scrie feature-ul, pentru a confirma starea inițială</button></li>
+        <li><button data-correct="false">După commit, pentru a verifica că istoricul git e corect</button></li>
+        <li><button data-correct="true">După /simplify, pentru a confirma că simplificarea nu a rupt nimic</button></li>
+        <li><button data-correct="false">După push, pentru a confirma că Vercel a deploiat corect</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. A doua rulare de /verify este după simplificare — confirmă că modificările de calitate nu au introdus regresia. Costul: câteva minute. Beneficiul: certitudine înainte de push.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Nu e clar cum /verify identifică cum se lansează proiectul tău specific? Sau vrei să știi ce se întâmplă dacă proiectul nu are un dev server? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0002-branch-protection-git-flow.html">← Branch Protection + Git Flow</a>
+    <a href="0004-code-review-cu-claude.html">Code Review cu Claude →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

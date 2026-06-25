@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 10 — Workflow Complet End-to-End | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 10 din 10</span>
+    <span class="tag">~30 min</span>
+    <span class="tag">Sinteză</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Workflow Complet End-to-End</h1>
+  <p>De la idee la producție — totul la un loc, ordinea corectă, cu ce să faci dacă ceva eșuează.</p>
+
+  <h2>Recapitulare: ce ai construit în 9 lecții</h2>
+
+  <div class="pipeline">
+    <div class="pipeline-step step-gray">
+      <div class="pipeline-badge">L2</div>
+      <div class="pipeline-info">
+        <h4>Branch Protection</h4>
+        <p>Master blocat — niciun push direct posibil. Fundația pentru tot restul.</p>
+      </div>
+      <span class="pipeline-tag">GitHub Settings</span>
+    </div>
+    <div class="pipeline-step step-yellow">
+      <div class="pipeline-badge">L3</div>
+      <div class="pipeline-info">
+        <h4>/verify + /simplify</h4>
+        <p>Confirmă că feature-ul funcționează și codul e curat — înainte de commit.</p>
+      </div>
+      <span class="pipeline-tag">Local · Claude Code</span>
+    </div>
+    <div class="pipeline-step step-blue">
+      <div class="pipeline-badge">L4</div>
+      <div class="pipeline-info">
+        <h4>/code-review + /security-review</h4>
+        <p>Review diff pentru buguri și vulnerabilități — înainte de push.</p>
+      </div>
+      <span class="pipeline-tag">Local · Claude Code</span>
+    </div>
+    <div class="pipeline-step step-purple">
+      <div class="pipeline-badge">L5</div>
+      <div class="pipeline-info">
+        <h4>gh pr create</h4>
+        <p>PR creat automat cu descriere completă — summary, test plan, context.</p>
+      </div>
+      <span class="pipeline-tag">gh CLI · Claude Code</span>
+    </div>
+    <div class="pipeline-step step-green">
+      <div class="pipeline-badge">L6+7</div>
+      <div class="pipeline-info">
+        <h4>Greptile + Greploop</h4>
+        <p>Review full-codebase automat + buclă de fix autonomă până la 5/5.</p>
+      </div>
+      <span class="pipeline-tag">Cloud · Greptile</span>
+    </div>
+    <div class="pipeline-step step-green">
+      <div class="pipeline-badge">L8</div>
+      <div class="pipeline-info">
+        <h4>CodeRabbit (opțional)</h4>
+        <p>Review rapid alternativ sau complementar — 30 secunde, autofix 1-click.</p>
+      </div>
+      <span class="pipeline-tag">Cloud · CodeRabbit</span>
+    </div>
+    <div class="pipeline-step step-blue">
+      <div class="pipeline-badge">L9</div>
+      <div class="pipeline-info">
+        <h4>GitHub Actions CI</h4>
+        <p>Build + lint + teste automat pe fiecare PR. Status check blocat la merge.</p>
+      </div>
+      <span class="pipeline-tag">Cloud · GitHub Actions</span>
+    </div>
+    <div class="pipeline-step step-red">
+      <div class="pipeline-badge">Tu</div>
+      <div class="pipeline-info">
+        <h4>Merge</h4>
+        <p>Citești review-urile, verifici CI checks, dai click pe Merge.</p>
+      </div>
+      <span class="pipeline-tag">Decizie umană</span>
+    </div>
+    <div class="pipeline-step step-gray">
+      <div class="pipeline-badge">V</div>
+      <div class="pipeline-info">
+        <h4>Vercel Deploy Automat</h4>
+        <p>Detectează push pe main și deployează în producție.</p>
+      </div>
+      <span class="pipeline-tag">Automat · Vercel</span>
+    </div>
+  </div>
+
+  <h2>Workflow complet — scenariu real</h2>
+  <p>Iată cum arată un feature de la idee la producție cu toate piesele la loc:</p>
+
+  <pre><code># 1. Creezi un branch nou pentru feature
+git checkout -b feature/user-notifications
+
+# 2. Ceri lui Claude Code să implementeze feature-ul
+"Implementează un sistem de notificări pentru utilizatori noi"
+
+# 3. Claude Code scrie codul și rulează automat /verify
+# — dacă găsește probleme, le repară înainte să raporteze
+
+# 4. Rulezi /simplify pentru calitate
+/simplify
+
+# 5. Rulezi /code-review înainte de push
+/code-review
+# → Găsit: lipsă validare email. Aplici fix-ul.
+
+# 6. Rulezi /security-review dacă codul atinge autentificarea
+/security-review
+# → OK, nicio vulnerabilitate detectată.
+
+# 7. Commit și push
+git add .
+git commit -m "feat: add user notification system"
+git push origin feature/user-notifications
+
+# 8. Claude Code creează PR-ul cu gh CLI
+# → PR creat: github.com/paul2Dev/project/pull/42
+
+# 9. GitHub Actions pornește automat CI
+# → Build ✓ | Lint ✓ | Tests ✓
+
+# 10. Greptile face review automat (câteva minute)
+# → Finding: NotificationService nu gestionează email invalid.
+
+# 11. Rulezi /greploop dacă vrei fix automat
+/greploop
+# → Iterație 1: aplică fix, push
+# → Iterație 2: Greptile re-revizuiește
+# → Scor 5/5 — zero comentarii. Greploop se oprește.
+
+# 12. TU deschizi PR-ul în GitHub
+gh pr view --web
+# → Citești: review Greptile OK, CI passes, diff curat
+
+# 13. TU dai click pe Merge
+# → Vercel detectează push pe main → deploy automat → producție</code></pre>
+
+  <h2>Când să sări peste pași</h2>
+  <p>Nu fiecare schimbare necesită tot workflow-ul. Iată regula simplă:</p>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Tipul schimbării</th>
+        <th>Pași obligatorii</th>
+        <th>Pași opționali</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Fix minor de typo sau stilizare</td>
+        <td>Branch + PR + CI</td>
+        <td>/verify, /code-review, Greptile</td>
+      </tr>
+      <tr>
+        <td>Bugfix simplu</td>
+        <td>Branch + /verify + /code-review + PR + CI</td>
+        <td>/security-review, /greploop</td>
+      </tr>
+      <tr>
+        <td>Feature nou</td>
+        <td>Toți pașii</td>
+        <td>Nimic — rulezi tot</td>
+      </tr>
+      <tr>
+        <td>Schimbare autentificare / date sensibile</td>
+        <td>Toți pașii + /security-review obligatoriu</td>
+        <td>Nimic — rulezi tot + security</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Checklist de merge — ce verifici înainte de click</h2>
+  <p>Înainte de fiecare merge, verifici rapid:</p>
+
+  <div class="callout tip">
+    <div class="callout-label">Checklist pre-merge</div>
+    <ul style="margin: 0.5rem 0 0 1.2rem;">
+      <li>CI trece — build, lint, teste ✓</li>
+      <li>Review Greptile/CodeRabbit — citit, finding-urile adresate</li>
+      <li>Diff citit — știi ce intră în main</li>
+      <li>Test plan din PR bifat — funcționalitatea verificată manual sau automat</li>
+    </ul>
+  </div>
+
+  <h2>Troubleshooting — situații comune</h2>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🔴</span>
+      <span class="tool-card-name">CI eșuează la build</span>
+      <span class="tool-card-tag">situație comună</span>
+    </div>
+    <div class="tool-card-body">
+      <p>Rulează <code>gh pr checks</code> pentru a vedea log-ul complet. Identifică eroarea, repară local, fă push nou. CI va re-rula automat.</p>
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🔴</span>
+      <span class="tool-card-name">Greploop nu ajunge la 5/5 după 5 iterații</span>
+      <span class="tool-card-tag">situație avansată</span>
+    </div>
+    <div class="tool-card-body">
+      <p>Citește finding-urile Greptile rămase nerezolvate. Dacă sunt false positives, marchează-le ca atare în Greptile. Dacă sunt probleme reale complexe, rezolvă-le manual — poate necesită decizie de arhitectură.</p>
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🔴</span>
+      <span class="tool-card-name">Branch protection blochează push direct pe master</span>
+      <span class="tool-card-tag">comportament așteptat</span>
+    </div>
+    <div class="tool-card-body">
+      <p>Aceasta este funcționarea corectă — nu o eroare. Creează un branch și un PR. Dacă e urgent, poți dezactiva temporar branch protection din GitHub Settings, dar revino la ea imediat după.</p>
+    </div>
+  </div>
+
+  <h2>Ce urmează după acest curs</h2>
+  <p>Workflow-ul agentic nu este static. Pe măsură ce îl folosești, vei descoperi:</p>
+  <ul>
+    <li>Ce pași poți accelera sau sări în proiectul tău specific</li>
+    <li>Ce tipuri de buguri prinde Greptile pe codebase-ul tău și cum să le anticipezi</li>
+    <li>Cum să extinzi GitHub Actions cu check-uri specifice (ex: coverage, security scanning)</li>
+    <li>Noi skill-uri Claude Code care apar constant în comunitate</li>
+  </ul>
+
+  <div class="callout">
+    <div class="callout-label">Comunitate</div>
+    Urmărește <a href="https://github.com/greptileai/skills" target="_blank">greptileai/skills</a> pe GitHub pentru skill-uri noi, și <a href="https://www.claudedirectory.org" target="_blank">claudedirectory.org</a> pentru cele mai bune configurații ale comunității.
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu Final — Rulează workflow-ul complet pe un feature real</div>
+    <ol>
+      <li>Alege un feature mic pe care vrei să-l adaugi la un proiect real al tău.</li>
+      <li>Urmează toți pașii din workflow — de la <code>git checkout -b</code> până la Merge.</li>
+      <li>Documentează cât timp a durat fiecare pas (manual vs. automat).</li>
+      <li>Identifică ce pas a adus cel mai mult valoare față de workflow-ul tău anterior.</li>
+      <li>Identifică ce pas poți optimiza în continuare.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://dev.to/whoffagents/github-actions-claude-code-i-automated-my-entire-dev-workflow-4h0h" target="_blank">GitHub Actions + Claude Code: I Automated My Entire Dev Workflow</a> — experiență practică reală cu workflow-ul agentic complet, cu exemple concrete și lecții învățate.</p>
+  </div>
+
+  <h2>Quiz Final — Workflow Complet</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este ordinea corectă a pașilor locali ÎNAINTE de push pe branch?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">commit → /verify → /code-review → push</button></li>
+        <li><button data-correct="false">/code-review → /verify → /simplify → commit → push</button></li>
+        <li><button data-correct="true">/verify → /simplify → /code-review → commit → push</button></li>
+        <li><button data-correct="false">/simplify → commit → /verify → push → /code-review</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. /verify mai întâi (confirmă că funcționează), /simplify după (curăță codul verificat), /code-review la final (review pe cod curat). Abia după toate trei — commit și push.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este singurul pas din tot workflow-ul care NECESITĂ o decizie umană?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Crearea branch-ului — trebuie ales un nume potrivit de om</button></li>
+        <li><button data-correct="false">Deschiderea PR-ului — trebuie scrisă descrierea de om</button></li>
+        <li><button data-correct="false">Configurarea GitHub Actions — fișierele YAML necesită scriere manuală</button></li>
+        <li><button data-correct="true">Merge-ul PR-ului în main — decizie ireversibilă cu impact în producție</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Toate celelalte pot fi automatizate (Claude Code creează branch-uri, scrie PR-uri, GitHub Actions rulează CI, Greptile/Greploop face review). Merge-ul rămâne la om — ultimul filtru înainte de producție.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce tool nu trebuie instalat dacă Greptile nu este pe repository?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">CodeRabbit — necesită Greptile ca dependență pentru review</button></li>
+        <li><button data-correct="false">GitHub Actions — necesită Greptile pentru status checks</button></li>
+        <li><button data-correct="true">Greploop — este un orchestrator care necesită Greptile instalat</button></li>
+        <li><button data-correct="false">gh CLI — necesită Greptile pentru a putea crea PR-uri</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Greploop nu face nimic fără Greptile — el orchestrează: declanșează review Greptile, citește feedback, aplică fix, repetă. Fără Greptile instalat, nu are cu ce interacționa.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este checklist-ul minim de verificat înainte de a da click pe Merge?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Numărul de fișiere modificate este sub 20 și commit-urile sunt atomice</button></li>
+        <li><button data-correct="false">Greploop a confirmat scor 5/5 și CodeRabbit nu a găsit nicio problemă</button></li>
+        <li><button data-correct="true">CI trece, review-urile AI citite, diff-ul citit, test plan bifat</button></li>
+        <li><button data-correct="false">Branch-ul are exact un singur commit și PR-ul are descriere completă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Cele 4 puncte de verificare: CI trece, review-urile AI adresate, diff-ul citit, test plan verificat. Nu toți pașii trebuie să fie perfect — trebuie să știi ce intră în producție.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Pentru un fix minor de typo, ce pași din workflow sunt opționali conform tabelului din această lecție?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Branch-ul și PR-ul sunt opționale — poți merge direct pe master</button></li>
+        <li><button data-correct="true">/verify, /code-review și Greptile sunt opționale — branch + PR + CI sunt obligatorii</button></li>
+        <li><button data-correct="false">GitHub Actions CI este opțional — oricum un typo nu strică build-ul</button></li>
+        <li><button data-correct="false">Merge-ul manual este opțional — poate fi automatizat pentru typos</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Chiar și pentru typos: branch + PR + CI rămân obligatorii — branch protection nu face excepții. /verify, /code-review și review-ul Greptile sunt opționale pentru schimbări triviale.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Ai terminat cursul — felicitări! Dacă ai întrebări despre cum să adaptezi workflow-ul la proiectul tău specific sau vrei să aprofundezi oricare lecție, scrie-mi în Claude Code. Sunt aici.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0009-github-actions-claude-code.html">← GitHub Actions + Claude Code</a>
+    <a href="../reference/glossary.html">Glosar →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4 — Code Review cu Claude | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 4 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">Claude Code Skills</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Code Review cu Claude</h1>
+  <p>Trei skill-uri pentru review înainte de PR: <code>/code-review</code>, <code>/security-review</code>, și <code>/code-review ultra</code> pentru review profund în cloud.</p>
+
+  <h2>De ce review local înainte de PR?</h2>
+  <p>Un PR deschis cu buguri sau vulnerabilități costă mai mult decât unul deschis după review. Review-ul local cu Claude este rapid (secunde–minute) și prins înainte ca problema să devină vizibilă pentru orice serviciu extern sau coleg.</p>
+
+  <div class="pipeline">
+    <div class="pipeline-step step-yellow">
+      <div class="pipeline-badge">1</div>
+      <div class="pipeline-info">
+        <h4>/code-review</h4>
+        <p>Review diff pentru buguri de corectitudine — rapid, înainte de push</p>
+      </div>
+      <span class="pipeline-tag">local · înainte de PR</span>
+    </div>
+    <div class="pipeline-step step-red">
+      <div class="pipeline-badge">2</div>
+      <div class="pipeline-info">
+        <h4>/security-review</h4>
+        <p>Scanează branch-ul curent pentru vulnerabilități — OWASP, injection, secrets</p>
+      </div>
+      <span class="pipeline-tag">local · pe cod sensibil</span>
+    </div>
+    <div class="pipeline-step step-purple">
+      <div class="pipeline-badge">3</div>
+      <div class="pipeline-info">
+        <h4>/code-review ultra</h4>
+        <p>Review multi-agent în cloud — cel mai profund, pentru PR-uri mari sau critice</p>
+      </div>
+      <span class="pipeline-tag">cloud · pe PR-uri importante</span>
+    </div>
+  </div>
+
+  <h2>/code-review — Review rapid al diff-ului</h2>
+  <p>Skill-ul standard de review. Analizează diff-ul față de branch-ul de bază și raportează:</p>
+  <ul>
+    <li>Buguri de corectitudine (logică greșită, null pointer, race conditions)</li>
+    <li>Oportunități de reuse și simplificare (dar nu le aplică — pentru asta e /simplify)</li>
+    <li>Probleme de eficiență evidente</li>
+  </ul>
+
+  <p>Invocă-l simplu:</p>
+  <pre><code>/code-review</code></pre>
+
+  <p>Sau cu nivel de efort specificat:</p>
+  <pre><code>/code-review low      # Câteva finding-uri, high-confidence
+/code-review medium   # Mai multe finding-uri (default)
+/code-review high     # Acoperire mai largă, poate include finding-uri incerte
+/code-review max      # Tot ce poate găsi — include finding-uri speculative</code></pre>
+
+  <h3>Flag-uri utile</h3>
+  <pre><code>/code-review --comment   # Postează finding-urile ca inline comments pe PR
+/code-review --fix       # Aplică fix-urile direct în working tree</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Când să folosești --fix</div>
+    Folosește <code>--fix</code> când ai încredere că finding-urile sunt corecte și vrei să le aplici rapid. Revizuiește întotdeauna ce a schimbat înainte de commit — chiar și un agent face greșeli.
+  </div>
+
+  <h2>/security-review — Scanare pentru vulnerabilități</h2>
+  <p>Skill-ul <code>/security-review</code> face o analiză de securitate a schimbărilor de pe branch-ul curent. Caută:</p>
+  <ul>
+    <li><strong>Injection</strong> — SQL injection, command injection, XSS</li>
+    <li><strong>Autentificare și autorizare</strong> — endpoint-uri neprotejate, logică de access control greșită</li>
+    <li><strong>Secrets expuse</strong> — credențiale hardcodate, API keys în cod</li>
+    <li><strong>Dependențe vulnerabile</strong> — pachete cu CVE-uri cunoscute</li>
+    <li><strong>OWASP Top 10</strong> — categoriile principale de vulnerabilități web</li>
+  </ul>
+
+  <p>Cum se invocă:</p>
+  <pre><code>/security-review</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Nu înlocuiește un audit complet</div>
+    /security-review este un prim filtru, nu o garanție de securitate. Pentru aplicații care gestionează date sensibile sau tranzacții financiare, un audit de securitate profesional rămâne necesar.
+  </div>
+
+  <h2>/code-review ultra — Review profund în cloud</h2>
+  <p>Cel mai puternic instrument de review din Claude Code. Lansează un review multi-agent în cloud — agenți multipli analizează codul din unghiuri diferite și sintetizează finding-urile.</p>
+
+  <pre><code>/code-review ultra          # Review branch-ul curent
+/code-review ultra 42       # Review PR #42 de pe GitHub</code></pre>
+
+  <p>Ce face diferit față de /code-review standard:</p>
+  <ul>
+    <li>Citește fișierele întregi, nu doar excerpts — nu ratează context din afara diff-ului</li>
+    <li>Agenți multipli cu perspective diferite (corectitudine, securitate, arhitectură)</li>
+    <li>Poate posta finding-urile direct ca inline comments pe PR: <code>/code-review ultra --comment</code></li>
+    <li>Durează câteva minute (față de secunde la /code-review standard)</li>
+  </ul>
+
+  <div class="callout purple">
+    <div class="callout-label">Cost și disponibilitate</div>
+    /code-review ultra este facturat și necesită un repository git. Folosit strategic pe PR-uri mari sau înainte de release-uri importante — nu pe fiecare commit.
+  </div>
+
+  <h2>Când să folosești ce</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Situație</th>
+        <th>Skill recomandat</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Fix mic, schimbare simplă</td>
+        <td><code>/code-review low</code></td>
+      </tr>
+      <tr>
+        <td>Feature nou, schimbări medii</td>
+        <td><code>/code-review</code> (medium)</td>
+      </tr>
+      <tr>
+        <td>Cod cu autentificare sau date sensibile</td>
+        <td><code>/security-review</code> în plus</td>
+      </tr>
+      <tr>
+        <td>PR mare sau înainte de release</td>
+        <td><code>/code-review ultra</code></td>
+      </tr>
+      <tr>
+        <td>Vrei să postezi finding-urile pe PR</td>
+        <td><code>/code-review --comment</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Fă review pe ultima schimbare a ta</div>
+    <ol>
+      <li>Asigură-te că ești pe un branch cu schimbări față de master: <code>git status</code></li>
+      <li>Rulează <code>/code-review</code> și citește fiecare finding cu atenție.</li>
+      <li>Identifică cel puțin un finding pe care l-ai fi ratat în review-ul manual.</li>
+      <li>Dacă ai cod care gestionează input de la utilizator, rulează și <code>/security-review</code>.</li>
+      <li>Aplicați fix-urile relevante cu <code>/code-review --fix</code> sau manual, după caz.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://systemprompt.io/guides/claude-code-github-actions" target="_blank">Set Up Claude Code GitHub Actions for PR Review and CI</a> — ghid practic pentru integrarea /code-review în pipeline-ul GitHub Actions, inclusiv cum se postează comentarii automat pe PR-uri.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce diferențiază /code-review ultra față de /code-review standard?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Rulează mai rapid datorită unui model AI mai mic și specializat</button></li>
+        <li><button data-correct="false">Verifică doar vulnerabilitățile de securitate, nu și bug-urile logice</button></li>
+        <li><button data-correct="true">Agenți multipli în cloud citesc fișierele întregi din mai multe unghiuri</button></li>
+        <li><button data-correct="false">Poate face automat merge după ce review-ul este complet</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Ultra înseamnă multi-agent în cloud + citire fișiere întregi. Nu ratează context din afara diff-ului și sintetizează perspective diferite — corectitudine, securitate, arhitectură.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce flag adaugi la /code-review dacă vrei ca finding-urile să apară ca inline comments pe PR?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">--post</button></li>
+        <li><button data-correct="false">--pr</button></li>
+        <li><button data-correct="true">--comment</button></li>
+        <li><button data-correct="false">--annotate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. <code>/code-review --comment</code> (sau <code>/code-review ultra --comment</code>) postează finding-urile direct ca inline comments pe PR-ul deschis în GitHub.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce caută /security-review dar /code-review standard nu se focusează pe asta?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Logică de business incorectă în funcțiile principale ale aplicației</button></li>
+        <li><button data-correct="true">Vulnerabilități OWASP — injection, secrets expuse, autentificare greșită</button></li>
+        <li><button data-correct="false">Performanța algoritmilor și complexitatea Big O a funcțiilor</button></li>
+        <li><button data-correct="false">Duplicări de cod și oportunități de reuse în codebase</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. /security-review are un focus explicit pe vulnerabilități de securitate: injection attacks, secrets hardcodate, endpoint-uri neprotejate, dependențe cu CVE-uri. /code-review face review general de corectitudine.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Când este recomandat să folosești /code-review max în loc de /code-review standard?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru orice fix mic sau schimbare simplă de o linie</button></li>
+        <li><button data-correct="false">Când vrei ca review-ul să ruleze mai rapid decât de obicei</button></li>
+        <li><button data-correct="true">Când vrei acoperire maximă și ești dispus să evaluezi finding-uri speculative</button></li>
+        <li><button data-correct="false">Când vrei să postezi finding-urile automat pe PR-ul GitHub</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Nivelul `max` include finding-uri pe care agentul nu e sigur 100% că sunt probleme reale. Util pentru PR-uri critice unde preferi false positives față de finding-uri ratate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce skill aplică fix-urile de calitate direct în codul tău, pe lângă raportarea lor?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">/code-review — raportează și aplică bug-fixes în același timp</button></li>
+        <li><button data-correct="false">/security-review — corectează vulnerabilitățile găsite automat</button></li>
+        <li><button data-correct="true">/simplify — aplică direct reuse, claritate și eliminare duplicări</button></li>
+        <li><button data-correct="false">/code-review ultra — aplică toate fix-urile automat după review</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. /simplify aplică. /code-review raportează (sau cu --fix aplică specific). Diferența: /simplify e pentru calitate și claritate; /code-review cu --fix e pentru buguri identificate de review.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Vrei să știi mai mult despre cum să interpretezi finding-urile de /code-review sau care finding-uri merită aplicate vs. ignorate? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0003-claude-code-verify-simplify.html">← Claude Code: /verify și /simplify</a>
+    <a href="0005-pr-automation-gh-cli.html">PR Automation cu gh CLI →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

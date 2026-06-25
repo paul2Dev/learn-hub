@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 9 — GitHub Actions + Claude Code | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 9 din 10</span>
+    <span class="tag">~25 min</span>
+    <span class="tag">CI/CD</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>GitHub Actions + Claude Code</h1>
+  <p>Automatizează build, lint și review cu <code>@claude</code> direct din PR-uri și issue-uri.</p>
+
+  <h2>Ce este GitHub Actions în context agentic</h2>
+  <p>GitHub Actions este stratul de CI al workflow-ului tău. Rulează automat la fiecare PR deschis și verifică că:</p>
+  <ul>
+    <li><strong>Build-ul</strong> nu este rupt</li>
+    <li><strong>Lint-ul</strong> trece fără erori</li>
+    <li><strong>Testele</strong> (dacă există) trec</li>
+  </ul>
+
+  <p>Separat, Claude Code are o integrare nativă cu GitHub Actions care permite invocarea agentului direct din comentarii cu <code>@claude</code>.</p>
+
+  <h2>Workflow minimal de CI — structura fișierului</h2>
+  <p>Fișierele GitHub Actions stau în <code>.github/workflows/</code> și sunt YAML:</p>
+
+  <pre><code># .github/workflows/ci.yml
+name: CI
+
+on:
+  pull_request:
+    branches: [ master, main ]
+  push:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+        if: hashFiles('**/*.test.*') != ''  # Skip dacă nu există teste</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Adaptare pentru PHP/Laravel</div>
+    Dacă proiectul tău este PHP/Laravel, înlocuiește Setup Node.js cu <code>shivammathur/setup-php@v2</code> și comenzile cu <code>composer install</code>, <code>php artisan test</code>, etc. Claude Code poate genera workflow-ul adaptat dacă îi spui tipul proiectului.
+  </div>
+
+  <h2>Integrarea Claude Code în GitHub Actions</h2>
+  <p>Claude Code are un action oficial care permite invocarea agentului din PR-uri și issue-uri cu <code>@claude</code>:</p>
+
+  <pre><code># .github/workflows/claude.yml
+name: Claude Code AI Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  claude:
+    if: contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 10"</code></pre>
+
+  <p>Odată configurat, în orice comentariu de PR sau issue poți scrie:</p>
+  <pre><code>@claude Fix the failing test in UserService.php
+@claude Explain what this function does
+@claude Implement the feature described in this issue</code></pre>
+
+  <h2>Setup: ANTHROPIC_API_KEY ca GitHub Secret</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Du-te la <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → generează o cheie nouă.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>În repository GitHub: Settings → Secrets and variables → Actions → New repository secret</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Name: <code>ANTHROPIC_API_KEY</code>, Value: cheia generată. Secret nu este vizibil după salvare.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Workflow-ul <code>claude.yml</code> referențiază secret-ul cu <code>${{ secrets.ANTHROPIC_API_KEY }}</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>HTTP Hooks — automatizare la nivel local</h2>
+  <p>Pe lângă GitHub Actions, Claude Code suportă <strong>HTTP Hooks</strong> care rulează la evenimente locale (nu în cloud). Cele mai utile:</p>
+
+  <pre><code># În .claude/settings.json (sau CLAUDE.md)
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "npm run lint --fix"
+        }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{
+          "type": "command",
+          "command": "echo 'Session ended — verify changes before push'"
+        }]
+      }
+    ]
+  }
+}</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">PostToolUse vs Stop</div>
+    <strong>PostToolUse</strong> rulează după fiecare tool call (ex: după fiecare Edit sau Write). <strong>Stop</strong> rulează când Claude Code termină sesiunea. Combinate, pot rula lint după fiecare modificare și pot posta un raport la final.
+  </div>
+
+  <h2>Activarea „Require status checks" după setup</h2>
+  <p>Odată ce CI-ul funcționează, revino la branch protection (Lecția 2) și activează opțiunea de status checks:</p>
+
+  <ol>
+    <li>Settings → Branches → Edit regula pentru <code>master</code></li>
+    <li>Bifează <strong>„Require status checks to pass before merging"</strong></li>
+    <li>Adaugă job-urile de CI: <code>build</code> (și <code>lint</code>, <code>test</code> dacă există)</li>
+  </ol>
+
+  <p>Acum merge-ul este blocat dacă build-ul eșuează — altă garanție automată.</p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Adaugă CI la proiectul tău</div>
+    <ol>
+      <li>Creează <code>.github/workflows/ci.yml</code> adaptat la tipul proiectului tău (Node, PHP, etc.).</li>
+      <li>Roagă Claude Code să genereze workflow-ul: "Generează un GitHub Actions workflow pentru proiectul meu [tip] cu build, lint și teste".</li>
+      <li>Fă push pe un branch și deschide un PR — observă că workflow-ul rulează automat.</li>
+      <li>Adaugă și <code>.github/workflows/claude.yml</code> dacă vrei să poți invoca @claude din PR-uri.</li>
+      <li>Revino la branch protection și activează „Require status checks".</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://code.claude.com/docs/en/github-actions" target="_blank">Claude Code GitHub Actions — Documentație Oficială Anthropic</a> — ghidul complet pentru integrarea Claude Code în GitHub Actions, inclusiv toate opțiunile disponibile pentru <code>claude_args</code>.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">În ce director din repository stau fișierele de configurare GitHub Actions?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">.github/ci/ — subdirector specific pentru CI workflows</button></li>
+        <li><button data-correct="false">actions/ — în rădăcina repository-ului</button></li>
+        <li><button data-correct="true">.github/workflows/ — locul standard pentru toate workflow-urile</button></li>
+        <li><button data-correct="false">.ci/github/ — conform convențiilor CI/CD moderne</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Toate fișierele YAML de GitHub Actions stau în <code>.github/workflows/</code>. GitHub detectează automat orice fișier .yml sau .yaml din acest director și îl tratează ca un workflow.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Cum invoci Claude Code din un comentariu de PR după ce ai configurat claude.yml?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">/claude fix this — cu slash command în comentariul de PR</button></li>
+        <li><button data-correct="false">claude: fix this — cu prefix colon în comentariul de PR</button></li>
+        <li><button data-correct="true">@claude fix this — cu @ mention în comentariul de PR</button></li>
+        <li><button data-correct="false">#claude fix this — cu hashtag în comentariul de PR</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Sintaxa este <code>@claude instrucțiune</code> în orice comentariu de PR sau issue. GitHub Actions detectează mention-ul și declanșează workflow-ul cu instrucțiunea ca prompt pentru agent.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Unde se salvează ANTHROPIC_API_KEY pentru a fi folosit de GitHub Actions?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">În fișierul .env din root-ul repository-ului</button></li>
+        <li><button data-correct="false">Hardcodat în fișierul claude.yml pentru simplitate</button></li>
+        <li><button data-correct="true">În Settings → Secrets and variables → Actions din GitHub</button></li>
+        <li><button data-correct="false">În CLAUDE.md ca variabilă de mediu pentru sesiunea curentă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. GitHub Secrets este locul securizat pentru credențiale sensibile. Secretele nu sunt vizibile în log-urile de Actions și nu apar în diff-ul repository-ului — spre deosebire de un fișier .env commis din greșeală.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce face hook-ul PostToolUse configurat în exemplul din această lecție?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Rulează testele automat după fiecare commit pe branch</button></li>
+        <li><button data-correct="false">Trimite un raport de sesiune la final când Claude Code se oprește</button></li>
+        <li><button data-correct="true">Rulează npm run lint --fix automat după fiecare scriere sau editare de fișier</button></li>
+        <li><button data-correct="false">Creează un commit automat după fiecare modificare de fișier</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. PostToolUse cu matcher „Write|Edit" rulează comanda configurată după fiecare tool call de tip scriere sau editare. Rezultat: lint se rulează automat la fiecare fișier modificat de agent.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce activezi „Require status checks" în branch protection DUPĂ ce CI-ul funcționează?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că GitHub blochează activarea acestei opțiuni înainte de primul rulare de CI</button></li>
+        <li><button data-correct="false">Pentru că status checks nu se pot configura fără un PR deschis activ</button></li>
+        <li><button data-correct="true">Pentru că trebuie să existe job-uri CI care să fi rulat cel puțin o dată pentru a le putea selecta</button></li>
+        <li><button data-correct="false">Pentru că Vercel blochează deploy-urile dacă status checks sunt activate prea devreme</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. GitHub poate lista job-urile de CI în opțiunile de status check doar după ce au rulat cel puțin o dată. Activezi CI-ul mai întâi, faci un PR de test, și abia apoi configurezi status checks în branch protection.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Ai un proiect PHP/Laravel și nu știi cum să adaptezi workflow-ul de CI? Sau vrei să configurezi hooks pentru un alt eveniment decât Write/Edit? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0008-coderabbit-alternativa.html">← CodeRabbit: Alternativa</a>
+    <a href="0010-workflow-complet-end-to-end.html">Workflow Complet End-to-End →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

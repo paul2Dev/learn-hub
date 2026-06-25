@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2 — Branch Protection + Git Flow | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 2 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">Fundament critic</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Branch Protection + Git Flow</h1>
+  <p>Fără branch protection, orice automatizare devine un risc. Aceasta este fundația pe care se construiește tot restul.</p>
+
+  <div class="callout warn">
+    <div class="callout-label">De ce contează acum</div>
+    Dacă nu activezi branch protection înainte de orice altceva, un agent AI poate merge direct în <code>master</code> și Vercel deployează în producție fără niciun review. Configureaz-o înainte de a trece la lecțiile 3–10.
+  </div>
+
+  <h2>Ce este branch protection</h2>
+  <p>Branch protection este o regulă pe GitHub care <strong>blochează push-urile directe</strong> pe un branch protejat (de obicei <code>master</code> sau <code>main</code>) și impune ca orice schimbare să treacă printr-un Pull Request.</p>
+
+  <p>Odată activată, chiar dacă tu sau Claude Code rulați <code>git push origin master</code>, GitHub va refuza push-ul și va returna o eroare. Singura cale de a adăuga cod în main este prin PR aprobat.</p>
+
+  <h2>Activarea branch protection pe GitHub</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Mergi la <strong>Settings → Branches</strong> în repository-ul tău GitHub.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Click pe <strong>„Add branch protection rule"</strong> și scrie <code>master</code> (sau <code>main</code>) în câmpul de pattern.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Bifează <strong>„Require a pull request before merging"</strong>. Dezactivează „Require approvals" dacă lucrezi singur.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Opțional dar recomandat: bifează <strong>„Require status checks to pass before merging"</strong> — vei configura check-urile la Lecția 9.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p>Click <strong>„Create"</strong>. Branch protection este activ imediat.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Git flow cu branch protection activ</h2>
+  <p>Odată cu branch protection activat, workflow-ul tău de zi cu zi devine:</p>
+
+  <pre><code># 1. Creează un branch nou pentru fiecare feature sau fix
+git checkout -b feature/descriere-scurta
+
+# 2. Lucrează, fă commits pe branch
+git add .
+git commit -m "feat: descriere clară a schimbării"
+
+# 3. Push pe branch (NU pe master)
+git push origin feature/descriere-scurta
+
+# 4. Deschide PR pe GitHub (sau cu gh CLI — Lecția 5)
+gh pr create --title "feat: descriere" --body "..."
+
+# 5. Merge în GitHub după review
+# (click pe Merge în UI sau: gh pr merge --squash)</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Convenție de denumire branch-uri</div>
+    Folosește prefixe clare: <code>feature/</code> pentru funcționalități noi, <code>fix/</code> pentru buguri, <code>refactor/</code> pentru refactorizări, <code>chore/</code> pentru actualizări minore. Această convenție ajută GitHub Actions să aplice reguli diferite pe tipuri diferite de branch-uri.
+  </div>
+
+  <h2>De ce Claude Code are nevoie de această disciplină</h2>
+  <p>Claude Code lucrează mai bine cu branch protection din mai multe motive:</p>
+
+  <ul>
+    <li><strong>Context clar</strong> — agentul știe că nu poate merge direct în main, deci va crea branch-uri și PR-uri</li>
+    <li><strong>Feedback loop</strong> — PR-ul devine punctul de agregare al tuturor review-urilor (AI + CI + uman)</li>
+    <li><strong>Rollback simplu</strong> — dacă ceva merge greșit, revii ușor la commit-ul anterior fără să afectezi main</li>
+    <li><strong>Audit trail</strong> — fiecare schimbare are un PR cu descriere, reviewer, și toate check-urile documentate</li>
+  </ul>
+
+  <h2>Configurare .gitconfig pentru identitate corectă</h2>
+  <p>Asigură-te că Git folosește identitatea ta în toate commit-urile:</p>
+
+  <pre><code>git config user.name "Paul2Dev"
+git config user.email "paul.maxineanu@gmail.com"</code></pre>
+
+  <p>Sau global (pentru toate repo-urile):</p>
+
+  <pre><code>git config --global user.name "Paul2Dev"
+git config --global user.email "paul.maxineanu@gmail.com"</code></pre>
+
+  <h2>Verificarea branch protection</h2>
+  <p>Testează că branch protection funcționează corect:</p>
+
+  <pre><code># Încearcă un push direct pe master — ar trebui să eșueze
+git checkout master
+echo "test" >> test.txt
+git add test.txt
+git commit -m "test: direct push"
+git push origin master
+# ❌ Expected: remote: error: GH006: Protected branch update failed</code></pre>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Activează branch protection acum</div>
+    <ol>
+      <li>Mergi la Settings → Branches în repository-ul tău GitHub.</li>
+      <li>Adaugă o regulă pentru branch-ul <code>master</code> (sau <code>main</code>).</li>
+      <li>Bifează „Require a pull request before merging".</li>
+      <li>Testează că push-ul direct pe master este blocat (comanda de mai sus).</li>
+      <li>Creează un branch <code>test/branch-protection</code>, adaugă un fișier, deschide un PR și merge-l.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>Documentația oficială GitHub: <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches" target="_blank">About protected branches</a> — descrie toate opțiunile disponibile și cum interacționează cu GitHub Actions.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce se întâmplă dacă rulezi `git push origin master` cu branch protection activ?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Push-ul reușește dar GitHub trimite o notificare de avertizare</button></li>
+        <li><button data-correct="false">Push-ul reușește dar Vercel nu deployează până la un review</button></li>
+        <li><button data-correct="true">GitHub refuză push-ul cu eroarea GH006 — Protected branch update failed</button></li>
+        <li><button data-correct="false">Push-ul intră în coada de așteptare până când cineva aprobă PR-ul</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Branch protection blochează push-ul la nivel de server — GitHub returnează o eroare și nu acceptă schimbarea. Singura cale este prin PR.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este prefixul corect pentru un branch de bugfix conform convenției din această lecție?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">bug/descriere-problemei</button></li>
+        <li><button data-correct="false">hotfix/descriere-problemei</button></li>
+        <li><button data-correct="true">fix/descriere-problemei</button></li>
+        <li><button data-correct="false">patch/descriere-problemei</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Convenția recomandată: <code>fix/</code> pentru buguri, <code>feature/</code> pentru funcționalități, <code>refactor/</code> pentru refactorizări, <code>chore/</code> pentru actualizări minore.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce branch protection ajută Claude Code să lucreze mai disciplinat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Agentul are acces la mai multe tool-uri când branch protection este activ</button></li>
+        <li><button data-correct="false">GitHub Actions rulează mai rapid cu branch protection activat</button></li>
+        <li><button data-correct="true">Agentul știe că nu poate merge direct în main și va crea branch-uri și PR-uri</button></li>
+        <li><button data-correct="false">Claude Code verifică automat branch protection înainte de fiecare commit</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. Constrângerile tehnice forțează un workflow mai bun. Un agent care știe că nu poate merge direct va structura munca în branch-uri și PR-uri — exact ce vrei.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce opțiune din branch protection vei activa la Lecția 9 pentru a face check-urile CI obligatorii?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Require signed commits — pentru verificarea identității</button></li>
+        <li><button data-correct="false">Require linear history — pentru un git log mai curat</button></li>
+        <li><button data-correct="false">Require conversation resolution — pentru comentarii de PR</button></li>
+        <li><button data-correct="true">Require status checks to pass before merging</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Această opțiune face ca merge-ul să fie blocat dacă GitHub Actions nu a trecut build-ul și lint-ul. O vei configura la Lecția 9, după ce workflow-ul de CI este creat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care este primul pas din git flow după ce activezi branch protection?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">git push origin master — pentru a sincroniza main cu remote</button></li>
+        <li><button data-correct="true">git checkout -b feature/descriere — pentru a crea un branch nou</button></li>
+        <li><button data-correct="false">gh pr create — pentru a deschide un PR pe branch-ul curent</button></li>
+        <li><button data-correct="false">git merge master — pentru a prelua ultimele schimbări din main</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Orice nouă schimbare începe cu un branch nou. Niciodată direct pe master. Branch-ul este spațiul tău de lucru izolat — fără risc pentru producție.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Ai întrebări despre configurarea branch protection sau despre git flow în contextul proiectului tău? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0001-ce-este-workflow-agentic.html">← Ce este un workflow agentic</a>
+    <a href="0003-claude-code-verify-simplify.html">Claude Code: /verify și /simplify →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

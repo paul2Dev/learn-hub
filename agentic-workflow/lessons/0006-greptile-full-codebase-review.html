@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6 — Greptile: Full Codebase Review | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 6 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">AI PR Review</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Greptile — Full Codebase Review</h1>
+  <p>Cel mai precis instrument de review AI pentru PR-uri — 82% bug catch rate prin indexarea întregului codebase.</p>
+
+  <h2>Ce este Greptile și ce îl face diferit</h2>
+  <p>Greptile este un serviciu AI de review PR care, înainte de a revizui orice PR, <strong>indexează întreg repository-ul</strong> și construiește un graf semantic al codului. Spre deosebire de alte tool-uri care văd doar diff-ul, Greptile urmărește dependențele prin tot codul.</p>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🔍</span>
+      <span class="tool-card-name">Greptile</span>
+      <span class="tool-card-tag">$30/dev/month · GitHub + GitLab</span>
+    </div>
+    <div class="tool-card-body">
+      <p><strong>Cum funcționează:</strong> Indexează tot repository-ul → construiește un cod graph → la fiecare PR face multi-hop investigation prin dependențe, git history și fișiere adiacente.</p>
+      <p><strong>Bug catch rate:</strong> 82% în benchmark-uri independente — aproape dublu față de CodeRabbit (44%).</p>
+      <p><strong>Tradeoff:</strong> Review-ul durează câteva minute (față de 30 secunde la alte tool-uri) și are mai multe false positives.</p>
+    </div>
+  </div>
+
+  <h2>De ce indexarea întregului codebase contează</h2>
+  <p>Exemplu concret: modifici o funcție <code>calculateTax()</code> în <code>utils/math.js</code>. Un reviewer care vede doar diff-ul știe că funcția s-a schimbat. Greptile știe:</p>
+  <ul>
+    <li>Câte fișiere din codebase apelează <code>calculateTax()</code></li>
+    <li>Dacă schimbarea signaturii rupe caller-ii existenți</li>
+    <li>Dacă există alt loc în cod unde logica similară este duplicată</li>
+    <li>Ce a mai schimbat această funcție în ultimele 6 luni din git history</li>
+  </ul>
+
+  <p>Acesta este <strong>multi-hop investigation</strong> — Greptile urmărește lead-urile prin fișiere, nu stă la diff.</p>
+
+  <h2>Instalare pe repository</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Mergi la <a href="https://www.greptile.com" target="_blank">greptile.com</a> și creează un cont.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Instalează Greptile GitHub App pe repository-ul tău — din dashboard-ul Greptile sau direct din GitHub Marketplace.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Greptile indexează automat codebase-ul (poate dura 5–30 minute pentru prima indexare).</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>De acum, fiecare PR deschis primește automat un review Greptile ca un comentariu de bot.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Greptile + Claude Code Plugin</h2>
+  <p>Greptile oferă și un plugin direct pentru Claude Code — poți interoga codebase-ul indexat fără să deschizi GitHub:</p>
+
+  <pre><code># Instalează plugin-ul Greptile pentru Claude Code
+# (din documentația oficială la greptile.com/docs/integrations/claude-code)
+
+# Odată instalat, poți pune întrebări despre codebase:
+"Câte locuri din codebase apelează funcția calculateTax?"
+"Care fișiere vor fi afectate dacă schimb signatura metodei X?"
+"Ce face această funcție în contextul întregii aplicații?"</code></pre>
+
+  <h2>Interpretarea unui review Greptile</h2>
+  <p>Un review Greptile arată diferit față de un comment obișnuit. Include:</p>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">📊</span>
+      <span class="tool-card-name">Structura unui review Greptile</span>
+      <span class="tool-card-tag">exemplu</span>
+    </div>
+    <div class="tool-card-body">
+      <p><strong>Call flow automat</strong> — „Cine apelează ce, în ce ordine" — vizualizare a dependențelor modificate</p>
+      <p><strong>Finding-uri cu context</strong> — Nu doar „linia 42 are o problemă" ci „linia 42 va cauza crash în <em>aceste 3 caller-i</em> din <em>aceste fișiere</em>"</p>
+      <p><strong>Severitate</strong> — Critical / Warning / Info — nu toate finding-urile sunt egale</p>
+      <p><strong>Cod specific</strong> — snippet-uri cu fix-ul propus, nu descrieri vagi</p>
+    </div>
+  </div>
+
+  <h2>Limitări Greptile de știut</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Aspect</th>
+        <th>Detaliu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Timp de review</td>
+        <td>Câteva minute per PR (nu 30 secunde) — compensat de profunzime</td>
+      </tr>
+      <tr>
+        <td>False positives</td>
+        <td>Mai multe decât alte tool-uri — verifică finding-urile critice manual</td>
+      </tr>
+      <tr>
+        <td>Platforme suportate</td>
+        <td>Doar GitHub și GitLab — nu Bitbucket sau Azure DevOps</td>
+      </tr>
+      <tr>
+        <td>Cost</td>
+        <td>$30/dev/month — open source projects: gratis</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-label">Open source = gratis</div>
+    Dacă repository-ul tău este public pe GitHub, Greptile este gratuit. Contează verificat pe <a href="https://www.greptile.com" target="_blank">greptile.com</a>.
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Instalează Greptile și observă primul review</div>
+    <ol>
+      <li>Creează cont pe <a href="https://www.greptile.com" target="_blank">greptile.com</a></li>
+      <li>Instalează GitHub App pe repository-ul tău</li>
+      <li>Deschide un PR mic (poate fi branch-ul de test din Lecția 5)</li>
+      <li>Observă comentariul automat Greptile — cât durează să apară și ce conține</li>
+      <li>Compară finding-urile Greptile cu ce ai găsit în /code-review local din Lecția 4</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://www.greptile.com/docs/introduction" target="_blank">Greptile Documentation — What is Greptile?</a> — documentația oficială cu arhitectura completă și ghidul de setup. Include și documentația pentru Claude Code plugin.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce face Greptile înainte de a putea revizui orice PR?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Descarcă și rulează testele locale pentru a verifica că build-ul trece</button></li>
+        <li><button data-correct="true">Indexează întregul repository și construiește un graf semantic al codului</button></li>
+        <li><button data-correct="false">Analizează doar fișierele modificate în ultimele 30 de zile</button></li>
+        <li><button data-correct="false">Sincronizează cu GitHub Actions pentru a lua rezultatele CI</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. Greptile indexează tot codebase-ul la instalare și îl re-indexează la fiecare push. Această indexare este ceea ce permite multi-hop investigation prin dependențe — nu poate fi făcută pe un diff izolat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este bug catch rate-ul Greptile conform benchmark-urilor independente?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">44% — identic cu alte tool-uri AI de review</button></li>
+        <li><button data-correct="false">65% — superior mediei dar sub alte tool-uri enterprise</button></li>
+        <li><button data-correct="true">82% — aproape dublu față de alternativa principală</button></li>
+        <li><button data-correct="false">95% — aproape perfect, superior oricărui review uman</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. 82% în benchmark-uri independente — aproape dublu față de CodeRabbit (44%). Tradeoff-ul: mai multe false positives și review mai lent (câteva minute față de 30 secunde).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce înseamnă „multi-hop investigation" în contextul Greptile?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Greptile face review în mai multe iterații succesive pe același PR</button></li>
+        <li><button data-correct="false">Greptile trimite codul la mai mulți agenți AI în paralel pentru review</button></li>
+        <li><button data-correct="true">Greptile urmărește dependențele prin fișiere, git history și caller-i</button></li>
+        <li><button data-correct="false">Greptile compară PR-ul cu mai multe versiuni anterioare ale codului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Multi-hop înseamnă că Greptile nu stă la diff — urmărește lead-urile. Dacă o funcție se schimbă, găsește toți caller-ii, verifică impactul, și urmărește mai departe dacă e nevoie.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este principalul tradeoff al Greptile față de tool-uri mai rapide?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu suportă Python și Java — doar JavaScript și TypeScript</button></li>
+        <li><button data-correct="false">Necesită un server local pentru a rula review-urile</button></li>
+        <li><button data-correct="true">Review durează câteva minute și are mai multe false positives</button></li>
+        <li><button data-correct="false">Nu poate posta comentarii inline pe PR — doar un summary general</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Profunzimea are un cost: review-ul durează mai mult (câteva minute față de 30 secunde) și Greptile raportează mai multe false positives. Merită verificat finding-urile critice manual.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Când este Greptile gratuit fără nicio plată lunară?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Întotdeauna — Greptile este un serviciu complet gratuit</button></li>
+        <li><button data-correct="false">Primele 30 de zile de trial, indiferent de tipul repository-ului</button></li>
+        <li><button data-correct="true">Când repository-ul este public pe GitHub (proiecte open source)</button></li>
+        <li><button data-correct="false">Când echipa are mai puțin de 3 developeri activi pe repository</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Proiectele open source (repository public) au acces gratuit la Greptile. Verifică condițiile exacte pe greptile.com — pot varia.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Vrei să înțelegi mai bine cum Greptile decide ce este un finding critic vs. un warning? Sau cum să configurezi ce tipuri de probleme să raporteze? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0005-pr-automation-gh-cli.html">← PR Automation cu gh CLI</a>
+    <a href="0007-greploop-bucla-autonoma.html">Greploop — Bucla Autonomă →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

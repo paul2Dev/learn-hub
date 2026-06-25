@@ -11,6 +11,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 | [Claude Code](claude-tutorial/) | Instalare, mental model, explorare cod, debugging, git workflow, VS Code — 12 lecții |
 | [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții |
 | [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lecții |
+| [Workflow Agentic Complet](agentic-workflow/) | /verify, /code-review, Greptile, Greploop, CodeRabbit, GitHub Actions, gh CLI — 10 lecții |
 
 ## Cum clonezi
 
@@ -37,7 +38,10 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── ai-harness/                 ← curs AI Harness
 │   ├── index.html
 │   └── lessons/
-└── engineering-principles/     ← curs Engineering Principles
+├── engineering-principles/     ← curs Engineering Principles
+│   ├── index.html
+│   └── lessons/
+└── agentic-workflow/           ← curs Workflow Agentic Complet
     ├── index.html
     └── lessons/
 ```

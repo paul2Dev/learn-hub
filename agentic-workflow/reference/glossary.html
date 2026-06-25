@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar — Workflow Agentic Complet</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-entry { margin-bottom: 2rem; }
+    .glossary-term {
+      font-family: var(--mono); font-size: 1rem; font-weight: bold;
+      color: var(--accent); display: inline-block; margin-bottom: 0.25rem;
+    }
+    .glossary-category {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--muted); font-family: var(--mono); margin-left: 0.6rem;
+    }
+    .glossary-def { font-size: 0.93rem; line-height: 1.6; margin: 0; }
+    .glossary-section { margin: 2.5rem 0 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+    .tool-matrix { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.85rem; }
+    .tool-matrix th { background: var(--code-bg); padding: 0.5rem 0.75rem; border: 1px solid var(--border); font-family: var(--mono); font-size: 0.78rem; }
+    .tool-matrix td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); vertical-align: top; }
+    .tool-matrix tr:nth-child(even) td { background: #f8f7f4; }
+    .check { color: var(--correct); font-weight: bold; }
+    .cross { color: var(--wrong); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Referință</span>
+    <span class="tag">Glosar complet</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Glosar — Workflow Agentic Complet</h1>
+  <p>Termenii, tool-urile și conceptele din tot cursul — pentru referință rapidă.</p>
+
+  <h2 class="glossary-section">A — Tool-uri Claude Code</h2>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">/verify</span>
+    <span class="glossary-category">Skill Claude Code</span>
+    <p class="glossary-def">Skill care pornește aplicația, testează golden path-ul și edge case-urile, și raportează ce funcționează și ce nu. Se rulează înainte de orice commit — mai ales după ce un agent a scris cod.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">/simplify</span>
+    <span class="glossary-category">Skill Claude Code</span>
+    <p class="glossary-def">Skill care revizuiește codul schimbat (doar diff-ul, nu tot codebase-ul) și aplică direct fix-uri de calitate: eliminare duplicări, reuse, claritate. Nu vânează buguri — pentru asta există /code-review.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">/code-review</span>
+    <span class="glossary-category">Skill Claude Code</span>
+    <p class="glossary-def">Skill de review al diff-ului curent. Raportează buguri de corectitudine, probleme de eficiență, oportunități de simplificare. Opțiuni de efort: low / medium / high / max. Flag-uri: --comment (postează pe PR), --fix (aplică fix-urile).</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">/code-review ultra</span>
+    <span class="glossary-category">Skill Claude Code · Cloud</span>
+    <p class="glossary-def">Varianta cloud multi-agent a /code-review. Citește fișierele întregi (nu doar excerpts), folosește agenți multipli cu perspective diferite. Durează câteva minute; cel mai profund review disponibil în Claude Code.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">/security-review</span>
+    <span class="glossary-category">Skill Claude Code</span>
+    <p class="glossary-def">Analiză de securitate a branch-ului curent față de main. Caută vulnerabilități OWASP Top 10, injection attacks, secrets expuse în cod, endpoint-uri neprotejate, dependențe cu CVE-uri.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">/greploop</span>
+    <span class="glossary-category">Skill Claude Code · necesită Greptile</span>
+    <p class="glossary-def">Skill open-source creat de Greptile. Automatizează bucla review-fix-push: declanșează Greptile, citește feedback, aplică fix-uri, push, repetă. Se oprește la scor 5/5 sau după 5 iterații (anti-runaway).</p>
+  </div>
+
+  <h2 class="glossary-section">B — Tool-uri Externe de Review</h2>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Greptile</span>
+    <span class="glossary-category">Serviciu Cloud · $30/dev/month</span>
+    <p class="glossary-def">Serviciu de review PR care indexează întregul codebase și construiește un graf semantic. Face multi-hop investigation la fiecare PR — urmărește dependențele prin fișiere și git history. Bug catch rate: 82%. Suportă GitHub și GitLab.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">CodeRabbit</span>
+    <span class="glossary-category">Serviciu Cloud · $24/dev/month</span>
+    <p class="glossary-def">Serviciu de review PR automat. Review în ~30 secunde, bug catch rate 46%, mai puține false positives decât Greptile. Funcționalități distinctive: Autofix 1-click, generare teste, Issue Planner. Suportă GitHub, GitLab, Azure DevOps, Bitbucket.</p>
+  </div>
+
+  <h2 class="glossary-section">C — GitHub și CI/CD</h2>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Branch Protection</span>
+    <span class="glossary-category">GitHub Settings</span>
+    <p class="glossary-def">Regulă GitHub care blochează push-urile directe pe un branch protejat (master/main) și impune că orice schimbare să treacă printr-un PR aprobat. Fundația oricărui workflow agentic serios.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">GitHub Actions</span>
+    <span class="glossary-category">CI/CD Cloud</span>
+    <p class="glossary-def">Sistem de automatizare integrat în GitHub. Rulează workflow-uri YAML la evenimente (PR deschis, push, @claude mention). Folosit pentru: build, lint, teste, și invocarea Claude Code din PR-uri.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">gh CLI</span>
+    <span class="glossary-category">Tool CLI</span>
+    <p class="glossary-def">CLI-ul oficial GitHub. Permite interacțiunea cu GitHub din terminal: creare PR-uri (gh pr create), verificare status (gh pr status), checks CI (gh pr checks), merge (gh pr merge --squash). Claude Code îl folosește nativ.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Status Check</span>
+    <span class="glossary-category">GitHub Concept</span>
+    <p class="glossary-def">Job de CI (build, lint, test) care trebuie să treacă înainte de a permite merge-ul unui PR. Se configurează în branch protection → „Require status checks to pass before merging".</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">HTTP Hooks</span>
+    <span class="glossary-category">Claude Code Config</span>
+    <p class="glossary-def">Comenzi locale care se execută la evenimente Claude Code (PostToolUse, Stop). Se configurează în .claude/settings.json. Exemple: rulare lint după fiecare Edit, raport la final de sesiune.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">ANTHROPIC_API_KEY</span>
+    <span class="glossary-category">GitHub Secret</span>
+    <p class="glossary-def">Cheia API Anthropic necesară pentru integrarea Claude Code în GitHub Actions. Se salvează ca GitHub Repository Secret (Settings → Secrets → Actions) — niciodată în cod sau fișiere commise.</p>
+  </div>
+
+  <h2 class="glossary-section">D — Concepte de Workflow</h2>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Workflow Agentic</span>
+    <span class="glossary-category">Concept</span>
+    <p class="glossary-def">Un workflow de development în care un agent AI (Claude Code) automatizează pașii repetitivi (scriere cod, review, creare PR, fix-uri), iar omul controlează deciziile ireversibile (merge în main, deploy în producție).</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Model Hibrid</span>
+    <span class="glossary-category">Concept</span>
+    <p class="glossary-def">Filozofie de workflow: automatizează tot ce este repetitiv și reversibil; păstrează controlul uman pe deciziile ireversibile cu impact real. Opusul: „complet automat" (risc) sau „complet manual" (lent).</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Multi-hop Investigation</span>
+    <span class="glossary-category">Concept Greptile</span>
+    <p class="glossary-def">Tehnica Greptile de a urmări lead-urile prin fișiere, dependențe și git history — nu stă la diff. Dacă o funcție se schimbă, Greptile găsește toți caller-ii din tot codebase-ul și verifică impactul.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Golden Path</span>
+    <span class="glossary-category">Concept /verify</span>
+    <p class="glossary-def">Calea principală pe care un utilizator real ar urma-o în aplicație. /verify testează golden path-ul înainte de edge cases — dacă golden path-ul nu funcționează, edge cases nu mai contează.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Edge Case</span>
+    <span class="glossary-category">Concept /verify</span>
+    <p class="glossary-def">Cazuri limită sau neașteptate: input gol, valori extrem de mari, caractere speciale, request fără autentificare. /verify testează edge cases după ce golden path-ul este confirmat.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">Bug Catch Rate</span>
+    <span class="glossary-category">Metrică</span>
+    <p class="glossary-def">Procentul de buguri reale dintr-un set de test pe care tool-ul le detectează. Greptile: 82%. CodeRabbit: 46%. Benchmark-uri independente 2026. Rată mai mare = mai profund, dar și mai multe false positives.</p>
+  </div>
+
+  <div class="glossary-entry">
+    <span class="glossary-term">False Positive</span>
+    <span class="glossary-category">Concept review</span>
+    <p class="glossary-def">Finding raportat de un tool de review care nu este o problemă reală. Greptile are mai multe false positives decât CodeRabbit — prețul profunzimii. Se marchează ca atare în dashboard-ul Greptile.</p>
+  </div>
+
+  <h2 class="glossary-section">E — Matrice Comparativă Tool-uri</h2>
+
+  <table class="tool-matrix">
+    <thead>
+      <tr>
+        <th>Tool</th>
+        <th>Unde rulează</th>
+        <th>Când</th>
+        <th>Bug Rate</th>
+        <th>Cost</th>
+        <th>GitHub</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>/verify</td>
+        <td>Local</td>
+        <td>Înainte de commit</td>
+        <td>—</td>
+        <td>Inclus</td>
+        <td>Nu necesită</td>
+      </tr>
+      <tr>
+        <td>/simplify</td>
+        <td>Local</td>
+        <td>După feature gata</td>
+        <td>—</td>
+        <td>Inclus</td>
+        <td>Nu necesită</td>
+      </tr>
+      <tr>
+        <td>/code-review</td>
+        <td>Local</td>
+        <td>Înainte de push</td>
+        <td>—</td>
+        <td>Inclus</td>
+        <td>Nu necesită</td>
+      </tr>
+      <tr>
+        <td>/security-review</td>
+        <td>Local</td>
+        <td>Cod sensibil</td>
+        <td>—</td>
+        <td>Inclus</td>
+        <td>Nu necesită</td>
+      </tr>
+      <tr>
+        <td>/code-review ultra</td>
+        <td>Cloud</td>
+        <td>PR-uri importante</td>
+        <td>—</td>
+        <td>Facturat</td>
+        <td>Necesită repo git</td>
+      </tr>
+      <tr>
+        <td>Greptile</td>
+        <td>Cloud</td>
+        <td>La fiecare PR</td>
+        <td>82%</td>
+        <td>$30/dev/mo</td>
+        <td>GitHub + GitLab</td>
+      </tr>
+      <tr>
+        <td>Greploop</td>
+        <td>Local+Cloud</td>
+        <td>Post-PR, autonom</td>
+        <td>—</td>
+        <td>Necesită Greptile</td>
+        <td>GitHub + GitLab + Perforce</td>
+      </tr>
+      <tr>
+        <td>CodeRabbit</td>
+        <td>Cloud</td>
+        <td>La fiecare PR</td>
+        <td>46%</td>
+        <td>$24/dev/mo</td>
+        <td>GitHub + GitLab + AzDO + BB</td>
+      </tr>
+      <tr>
+        <td>GitHub Actions</td>
+        <td>Cloud</td>
+        <td>La fiecare PR/push</td>
+        <td>—</td>
+        <td>Inclus (limite)</td>
+        <td>GitHub nativ</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Lipsește un termen sau vrei o explicație mai detaliată pentru un concept? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="../lessons/0010-workflow-complet-end-to-end.html">← Lecția 10: Workflow Complet</a>
+    <a href="../index.html">Catalog curs →</a>
+  </nav>
+
+</div>
+</body>
+</html>

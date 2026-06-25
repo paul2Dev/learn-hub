@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8 — CodeRabbit: Alternativa la Greptile | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 8 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">AI PR Review</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>CodeRabbit — Alternativa la Greptile</h1>
+  <p>Review AI rapid, cu suport pentru toate platformele și gratis pentru open source.</p>
+
+  <h2>De ce există alternativa?</h2>
+  <p>Greptile și CodeRabbit rezolvă aceeași problemă — review PR automat — dar cu filozofii diferite. Cunoașterea amândurora îți permite să alegi instrumentul potrivit sau să le combini.</p>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🐰</span>
+      <span class="tool-card-name">CodeRabbit</span>
+      <span class="tool-card-tag">$24/dev/month · GitHub + GitLab + Azure DevOps + Bitbucket</span>
+    </div>
+    <div class="tool-card-body">
+      <p><strong>Bug catch rate:</strong> 46% în benchmark-uri 2026 — mai mic decât Greptile (82%) dar mai rapid</p>
+      <p><strong>Timp de review:</strong> Câteva zeci de secunde — mult mai rapid față de câteva minute la Greptile</p>
+      <p><strong>Open source:</strong> Gratis complet pentru proiecte open source (repository public)</p>
+      <p><strong>Adopție:</strong> Peste 2 milioane de repository-uri conectate, 13 milioane PR-uri procesate</p>
+    </div>
+  </div>
+
+  <h2>Ce face CodeRabbit diferit față de Greptile</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Criteriu</th>
+        <th>CodeRabbit</th>
+        <th>Greptile</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Bug catch rate</td>
+        <td>46%</td>
+        <td>82%</td>
+      </tr>
+      <tr>
+        <td>Timp review</td>
+        <td>~30 secunde</td>
+        <td>Câteva minute</td>
+      </tr>
+      <tr>
+        <td>False positives</td>
+        <td>Mai puține</td>
+        <td>Mai multe</td>
+      </tr>
+      <tr>
+        <td>Platforme</td>
+        <td>GitHub, GitLab, Azure DevOps, Bitbucket</td>
+        <td>GitHub, GitLab</td>
+      </tr>
+      <tr>
+        <td>Open source</td>
+        <td>Gratis complet</td>
+        <td>Gratis (condiții)</td>
+      </tr>
+      <tr>
+        <td>Autofix 1-click</td>
+        <td>Da — aplică fix direct în PR</td>
+        <td>Nu — via Greploop</td>
+      </tr>
+      <tr>
+        <td>Generare teste</td>
+        <td>Da — generează unit teste</td>
+        <td>Nu</td>
+      </tr>
+      <tr>
+        <td>Issue Planner</td>
+        <td>Da — din issue → plan de cod</td>
+        <td>Nu</td>
+      </tr>
+      <tr>
+        <td>Preț (plătit)</td>
+        <td>$24/dev/month</td>
+        <td>$30/dev/month</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Funcționalitățile distinctive CodeRabbit</h2>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">⚡</span>
+      <span class="tool-card-name">Autofix 1-click</span>
+      <span class="tool-card-tag">exclusiv CodeRabbit</span>
+    </div>
+    <div class="tool-card-body">
+      <p>CodeRabbit postează comentarii de review cu un buton „Apply fix" inline. Click → fix aplicat direct pe branch, fără a deschide editorul. Util pentru erori simple de stil, typos, sau transformări mecanice.</p>
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🧪</span>
+      <span class="tool-card-name">Generare automată de teste</span>
+      <span class="tool-card-tag">exclusiv CodeRabbit</span>
+    </div>
+    <div class="tool-card-body">
+      <p>CodeRabbit generează unit teste pentru funcțiile noi sau modificate din PR. Nu înlocuiesc testele scrise de tine — sunt un punct de start pe care îl editezi după nevoie.</p>
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">📋</span>
+      <span class="tool-card-name">Issue Planner</span>
+      <span class="tool-card-tag">lansare Feb 2026</span>
+    </div>
+    <div class="tool-card-body">
+      <p>Din orice issue GitHub/GitLab/Linear/Jira, CodeRabbit generează un plan de implementare cu fișierele relevante identificate. Integrare directă cu task managers.</p>
+    </div>
+  </div>
+
+  <h2>Instalare CodeRabbit</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Mergi la <a href="https://www.coderabbit.ai" target="_blank">coderabbit.ai</a> și creează cont (poți loga cu GitHub).</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Instalează CodeRabbit GitHub App pe repository-ul tău — din dashboard sau GitHub Marketplace.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Opțional: adaugă un fișier <code>.coderabbit.yaml</code> în root pentru a personaliza comportamentul.</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>De acum, fiecare PR deschis primește automat un review CodeRabbit în ~30 secunde.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Configurare .coderabbit.yaml</h2>
+  <p>Poți personaliza ce verifică CodeRabbit în proiectul tău:</p>
+
+  <pre><code># .coderabbit.yaml — în rădăcina repository-ului
+reviews:
+  request_changes_workflow: false    # Nu bloca PR-ul automat
+  high_level_summary: true           # Generează summary la nivel înalt
+  poem: false                        # Dezactivează poetry-ul decorativ
+  review_status: true
+  collapse_walkthrough: false
+
+language: "ro"                       # Comentarii în română (dacă e suportat)
+
+instructions: |
+  Focusează-te pe:
+  - Bug-uri de corectitudine și logică
+  - Vulnerabilități de securitate (OWASP Top 10)
+  - Acoperire cu teste pentru cod nou
+  Ignoră:
+  - Stilul de formatare (avem Prettier/ESLint)
+  - Preferințe subiective de naming</code></pre>
+
+  <h2>Când să alegi CodeRabbit vs. Greptile</h2>
+  <div class="callout tip">
+    <div class="callout-label">Recomandare practică</div>
+    <p>Dacă lucrezi singur pe un proiect personal: <strong>CodeRabbit</strong> — mai rapid, mai puțin zgomot, gratis pentru open source, autofix 1-click.</p>
+    <p>Dacă lucrezi pe un codebase complex cu multe dependențe între module: <strong>Greptile</strong> — profunzimea de analiză merită așteptarea și false positive-urile în plus.</p>
+    <p>Dacă vrei ambele: le poți instala pe același repository — primești două review-uri independente.</p>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Instalează CodeRabbit și compară cu Greptile</div>
+    <ol>
+      <li>Instalează CodeRabbit pe repository-ul tău urmând pașii de mai sus.</li>
+      <li>Deschide un PR mic și observă review-ul CodeRabbit — cât durează față de Greptile?</li>
+      <li>Dacă ai ambele instalate: compară finding-urile. Ce a prins unul dar nu și celălalt?</li>
+      <li>Încearcă butonul „Apply fix" pe un finding minor — cum funcționează?</li>
+      <li>Adaugă un fișier <code>.coderabbit.yaml</code> cu instrucțiuni personalizate pentru proiectul tău.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://docs.coderabbit.ai/" target="_blank">CodeRabbit Documentation</a> — documentația oficială completă, inclusiv ghidul de configurare .coderabbit.yaml și toate funcționalitățile disponibile.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce platformă suportă CodeRabbit dar Greptile NU suportă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">GitHub — ambele tool-uri suportă GitHub</button></li>
+        <li><button data-correct="false">GitLab — ambele tool-uri suportă GitLab</button></li>
+        <li><button data-correct="true">Bitbucket și Azure DevOps — doar CodeRabbit le suportă</button></li>
+        <li><button data-correct="false">Perforce — niciun tool nu suportă Perforce din cele două</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. CodeRabbit suportă toate cele 4 platforme majore: GitHub, GitLab, Azure DevOps, Bitbucket. Greptile suportă doar GitHub și GitLab — un dezavantaj real dacă echipa ta folosește Bitbucket.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care funcționalitate CodeRabbit permite aplicarea unui fix direct din comentariul de PR?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Issue Planner — generează plan de implementare din issue</button></li>
+        <li><button data-correct="false">Test Generator — creează unit teste pentru cod modificat</button></li>
+        <li><button data-correct="true">Autofix 1-click — buton „Apply fix" inline în comentariul de review</button></li>
+        <li><button data-correct="false">Agentic Chat — dialog cu CodeRabbit despre codul din PR</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Autofix 1-click este exclusiv CodeRabbit — un buton inline în comentariul de review care aplică fix-ul direct pe branch. Util pentru transformări mecanice fără a deschide editorul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care este principalul avantaj al CodeRabbit față de Greptile?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Bug catch rate mai mare — 82% față de 46% la Greptile</button></li>
+        <li><button data-correct="false">Indexare mai profundă a întregului codebase înainte de review</button></li>
+        <li><button data-correct="true">Review mai rapid (~30 secunde) și mai puține false positives</button></li>
+        <li><button data-correct="false">Integrare nativă cu Greploop pentru bucla autonomă de fix</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. CodeRabbit câștigă la viteză (~30 secunde) și precizie (mai puține false positives). Greptile câștigă la profunzime (82% bug catch rate vs 46%). Alegerea depinde de nevoile proiectului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce fișier adaugi în root-ul repository-ului pentru a personaliza comportamentul CodeRabbit?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">.coderabbit.json</button></li>
+        <li><button data-correct="false">coderabbit.config.js</button></li>
+        <li><button data-correct="true">.coderabbit.yaml</button></li>
+        <li><button data-correct="false">.github/coderabbit.yml</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Fișierul de configurare este <code>.coderabbit.yaml</code> în rădăcina repository-ului. Permite personalizarea: focus pe anumite tipuri de probleme, instrucțiuni custom, comportament de review.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce s-ar întâmpla dacă ai instala atât Greptile cât și CodeRabbit pe același repository?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cele două tool-uri ar intra în conflict și PR-ul ar fi blocat</button></li>
+        <li><button data-correct="false">GitHub permite maxim un bot de review per PR, al doilea ar fi ignorat</button></li>
+        <li><button data-correct="true">Fiecare PR ar primi două review-uri independente cu finding-uri diferite</button></li>
+        <li><button data-correct="false">Cele două tool-uri ar combina rezultatele și ar posta un singur comment</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Poți instala ambele pe același repository — fiecare postează review-ul său independent. Primești perspectiva rapidă (CodeRabbit ~30s) și perspectiva profundă (Greptile ~5min). Unii developeri le folosesc pe amândouă complementar.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Vrei să discutăm ce e mai potrivit pentru proiectul tău specific — CodeRabbit, Greptile, sau ambele? Scrie-mi în Claude Code cu detalii despre codebase-ul tău.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0007-greploop-bucla-autonoma.html">← Greploop: Bucla Autonomă</a>
+    <a href="0009-github-actions-claude-code.html">GitHub Actions + Claude Code →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

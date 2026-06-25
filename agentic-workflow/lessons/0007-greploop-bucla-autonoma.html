@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7 — Greploop: Bucla Autonomă Review-Fix-Push | Agentic Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 7 din 10</span>
+    <span class="tag">~20 min</span>
+    <span class="tag">Automatizare avansată</span>
+    <a href="../index.html">← Catalog curs</a>
+  </div>
+
+  <h1>Greploop — Bucla Autonomă Review-Fix-Push</h1>
+  <p>Skill-ul Claude Code care iterează automat până când Greptile dă 5/5 cu zero comentarii nerezolvate.</p>
+
+  <h2>Ce este Greploop</h2>
+  <p>Greploop este un skill open-source pentru Claude Code, creat de echipa Greptile. Este un <strong>developer loop</strong> care nu se oprește până când codul tău trece review-ul complet. Automatizează complet ciclul obositor de: primești feedback → aplici fix → re-pushezi → aștepți review din nou.</p>
+
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <span class="tool-card-icon">🔄</span>
+      <span class="tool-card-name">Greploop</span>
+      <span class="tool-card-tag">Skill Claude Code · open source · necesită Greptile</span>
+    </div>
+    <div class="tool-card-body">
+      <p><strong>Ce face:</strong> Declanșează review Greptile → citește feedback → aplică fiecare fix → push → repetă</p>
+      <p><strong>Condiție de stop:</strong> Greptile dă scor 5/5 cu zero comentarii nerezolvate, sau după 5 iterații (limită anti-runaway)</p>
+      <p><strong>Platforme:</strong> GitHub, GitLab, Perforce</p>
+      <p><strong>Cerință:</strong> Greptile instalat și indexat pe repository (Lecția 6)</p>
+    </div>
+  </div>
+
+  <h2>Cum funcționează o iterație Greploop</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Greploop declanșează un review Greptile pe PR-ul curent</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Citește feedback-ul complet — toate comentariile și finding-urile</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Aplică fiecare fix în codul local — modifică fișierele</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Commit și push pe branch — Greptile re-revizuiește automat</p>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><strong>Check:</strong> scor 5/5 și zero comentarii? Stop. Altfel: înapoi la pasul 1.</p>
+        <span class="layer-tag">Maxim 5 iterații per rulare — nu poate rula la infinit</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Instalare Greploop</h2>
+  <p>Greploop se instalează ca orice skill Claude Code — ca fișier SKILL.md descoperit automat de Claude Code:</p>
+
+  <pre><code># Creează directorul de skills dacă nu există
+mkdir -p ~/.claude/skills/greploop
+
+# Descarcă skill-ul din repository-ul oficial Greptile
+# (urmează instrucțiunile de pe claudskills.com/skills/greploop/)
+
+# Sau clonează repository-ul de skills Greptile
+git clone https://github.com/greptileai/skills ~/.claude/skills/greptile-skills</code></pre>
+
+  <p>Odată instalat, Claude Code descoperă automat skill-ul și îl poți invoca cu:</p>
+
+  <pre><code>/greploop</code></pre>
+
+  <h2>Greploop în context de workflow</h2>
+  <p>Greploop nu înlocuiește tot workflow-ul — vine după ce PR-ul a fost creat:</p>
+
+  <div class="pipeline">
+    <div class="pipeline-step step-yellow">
+      <div class="pipeline-badge">1</div>
+      <div class="pipeline-info">
+        <h4>PR deschis</h4>
+        <p>Branch existent cu cod scris și review local făcut (Lecțiile 3–5)</p>
+      </div>
+      <span class="pipeline-tag">prereq</span>
+    </div>
+    <div class="pipeline-step step-blue">
+      <div class="pipeline-badge">2</div>
+      <div class="pipeline-info">
+        <h4>/greploop</h4>
+        <p>Greploop rulează bucla autonomă — poate dura 10–30 minute</p>
+      </div>
+      <span class="pipeline-tag">automat</span>
+    </div>
+    <div class="pipeline-step step-green">
+      <div class="pipeline-badge">3</div>
+      <div class="pipeline-info">
+        <h4>PR curat — 5/5</h4>
+        <p>Greptile a validat codul. Tu citești summary-ul și decizi merge-ul.</p>
+      </div>
+      <span class="pipeline-tag">tu decizi</span>
+    </div>
+  </div>
+
+  <h2>Ce face și ce nu face Greploop</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Face</th>
+        <th>Nu face</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Aplică fix-urile sugerate de Greptile</td>
+        <td>Nu face merge în main — tu decizi</td>
+      </tr>
+      <tr>
+        <td>Commit și push automat după fiecare fix</td>
+        <td>Nu rezolvă conflicte de merge</td>
+      </tr>
+      <tr>
+        <td>Iterează maxim 5 ori per rulare</td>
+        <td>Nu rulează dacă Greptile nu e instalat</td>
+      </tr>
+      <tr>
+        <td>Funcționează pe GitHub, GitLab, Perforce</td>
+        <td>Nu poate fixa buguri pe care Greptile nu le detectează</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-label">Revizuiește commit-urile Greploop</div>
+    Greploop face commit-uri automate. Înainte de a da merge, citește ce a schimbat în fiecare iterație — <code>git log --oneline</code> și <code>git diff HEAD~N</code> pentru a vedea schimbările. Un agent care aplică fix-uri poate introduce regresia dacă fix-ul e incorect.
+  </div>
+
+  <h2>Limita de 5 iterații — design deliberat</h2>
+  <p>Greploop se oprește după maxim 5 iterații chiar dacă nu a ajuns la 5/5. Aceasta este o decizie de design deliberată: dacă după 5 iterații codul tot nu trece review-ul, problema necesită intervenție umană — nu mai mult agent.</p>
+
+  <p>Când Greploop se oprește la limită, verifică:</p>
+  <ul>
+    <li>Finding-urile Greptile care au rămas nerezolvate</li>
+    <li>De ce agentul nu le-a putut aplica (poate necesită decizie de arhitectură)</li>
+    <li>Dacă finding-urile sunt false positives — le poți marca ca atare în Greptile</li>
+  </ul>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Rulează Greploop pe un PR real</div>
+    <ol>
+      <li>Asigură-te că ai Greptile instalat pe repository (Lecția 6) și un PR deschis.</li>
+      <li>Instalează skill-ul Greploop urmând instrucțiunile de pe <a href="https://claudskills.com/skills/greploop/" target="_blank">claudskills.com/skills/greploop/</a></li>
+      <li>Rulează <code>/greploop</code> și observă iterațiile în timp real.</li>
+      <li>La final, rulează <code>git log --oneline -10</code> pentru a vedea commit-urile create de Greploop.</li>
+      <li>Revizuiește fiecare schimbare cu <code>git show &lt;commit-hash&gt;</code> înainte de merge.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://claudskills.com/skills/greploop/" target="_blank">Greploop — Skill Page pe claudskills.com</a> — documentația completă a skill-ului, inclusiv cerințe, instalare și limitări cunoscute.</p>
+  </div>
+
+  <h2>Quiz — Verifică înțelegerea</h2>
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este condiția exactă în care Greploop se oprește cu succes?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când a rulat exact 5 iterații, indiferent de scorul Greptile</button></li>
+        <li><button data-correct="false">Când Claude Code consideră că codul este suficient de bun pentru merge</button></li>
+        <li><button data-correct="true">Când Greptile dă scor 5/5 cu zero comentarii nerezolvate</button></li>
+        <li><button data-correct="false">Când toate testele CI din GitHub Actions trec fără erori</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Condiția de succes este strictă: scor 5/5 de la Greptile și zero comentarii active nerezolvate. Altfel, Greploop mai iterează sau se oprește la limita de 5 iterații.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce limita de 5 iterații este un design deliberat și nu o limitare tehnică?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că API-ul Greptile permite maxim 5 review-uri per PR</button></li>
+        <li><button data-correct="true">Dacă după 5 iterații codul nu trece, problema necesită decizie umană</button></li>
+        <li><button data-correct="false">Pentru că GitHub blochează mai mult de 5 push-uri pe același PR</button></li>
+        <li><button data-correct="false">Pentru a reduce costurile de API ale serviciului Greptile</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. Dacă un agent nu poate rezolva problema în 5 iterații, înseamnă că problema depășește capacitatea de fix automat — poate necesită o decizie de arhitectură sau contextul pe care numai tu îl ai.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce trebuie să ai instalat ÎNAINTE de a putea folosi Greploop?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">CodeRabbit instalat pe repository pentru al doilea nivel de review</button></li>
+        <li><button data-correct="false">GitHub Actions configurat cu workflow de CI funcțional</button></li>
+        <li><button data-correct="true">Greptile instalat și indexat pe repository-ul tău</button></li>
+        <li><button data-correct="false">gh CLI autentificat și branch protection activat pe master</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Greploop este un orchestrator peste Greptile — fără Greptile instalat și indexat, Greploop nu are cu ce serviciu să interacționeze. Instalează Greptile mai întâi (Lecția 6).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce ar trebui să faci ÎNAINTE de a da merge după ce Greploop termină?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Să rulezi /greploop din nou pentru a confirma că scorul rămâne 5/5</button></li>
+        <li><button data-correct="false">Să instalezi din nou Greploop pentru a reseta starea skill-ului</button></li>
+        <li><button data-correct="true">Să revizuiești commit-urile create de Greploop cu git log și git show</button></li>
+        <li><button data-correct="false">Să aștepți ca Greptile să re-indexeze codebase-ul după ultimele push-uri</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Exact. Greploop a creat commit-uri automate — trebuie să verifici ce a schimbat. <code>git log --oneline</code> arată commit-urile, <code>git show &lt;hash&gt;</code> arată diff-ul fiecăruia. Merge-ul rămâne decizia ta.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">În ce moment din workflow rulezi /greploop față de crearea PR-ului?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Înainte de a crea PR-ul — pe branch-ul local neîmpins pe GitHub</button></li>
+        <li><button data-correct="false">Simultan cu crearea PR-ului — gh pr create și /greploop în paralel</button></li>
+        <li><button data-correct="true">După ce PR-ul este deja deschis pe GitHub</button></li>
+        <li><button data-correct="false">Doar după ce merge-ul a fost aprobat și codul e în main</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        Corect. Greploop necesită un PR deschis pentru a putea declanșa review-ul Greptile și a posta fix-urile înapoi. Ordinea: cod → /verify → /code-review → push → gh pr create → /greploop → merge.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Nu știi cum să instalezi Greploop sau vrei să înțelegi mai bine ce se întâmplă dacă un finding Greptile este un false positive? Scrie-mi în Claude Code.</p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0006-greptile-full-codebase-review.html">← Greptile: Full Codebase Review</a>
+    <a href="0008-coderabbit-alternativa.html">CodeRabbit — Alternativa →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
