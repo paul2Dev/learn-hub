@@ -7,47 +7,40 @@
   <link rel="stylesheet" href="assets/style.css">
   <style>
     .course-header { margin-bottom: 3rem; }
-    .course-header p { color: var(--muted); font-size: 1.05rem; }
+    .course-header p { font-size: 1.05rem; max-width: 560px; }
 
-    .lesson-grid { display: grid; gap: 1rem; margin: 1.5rem 0; }
+    .lesson-grid { display: grid; gap: 0.85rem; margin: 1.5rem 0 3rem; }
     .lesson-card {
-      display: flex; gap: 1rem; align-items: flex-start;
+      display: grid; grid-template-columns: 2.8rem 1fr;
+      gap: 0.9rem; align-items: start;
       border: 1px solid var(--border); border-radius: 9px;
-      padding: 1rem 1.2rem; text-decoration: none; color: var(--text);
+      padding: 0.9rem 1.1rem; text-decoration: none; color: var(--text);
       transition: border-color 0.15s, background 0.15s;
     }
-    .lesson-card:hover { border-color: var(--accent); background: #f5f8ff; }
+    .lesson-card:hover { border-color: var(--accent); background: #f8faff; }
     .lesson-num {
-      width: 2.2rem; height: 2.2rem; border-radius: 50%;
-      background: var(--accent); color: white;
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--mono); font-size: 0.8rem; font-weight: bold;
-      flex-shrink: 0;
+      font-family: var(--mono); font-size: 1rem; font-weight: bold;
+      color: var(--accent); padding-top: 0.1rem;
     }
-    .lesson-info { flex: 1; }
-    .lesson-info h3 { font-size: 0.97rem; margin-bottom: 0.15rem; }
-    .lesson-info p { font-size: 0.82rem; color: var(--muted); margin: 0; line-height: 1.45; }
-    .lesson-tag {
-      font-size: 0.7rem; font-family: var(--mono);
-      background: var(--code-bg); padding: 0.12rem 0.45rem;
-      border-radius: 4px; white-space: nowrap; align-self: flex-start;
-      margin-top: 0.15rem;
-    }
+    .lesson-card h3 { font-size: 0.97rem; font-style: normal; color: var(--text); margin: 0 0 0.25rem; }
+    .lesson-card p  { font-size: 0.83rem; color: var(--muted); margin: 0; line-height: 1.45; }
 
-    .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+    .ref-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem; margin: 1.2rem 0 3rem;
+    }
     .ref-card {
-      border: 1px solid var(--border); border-radius: 9px;
-      padding: 1rem 1.2rem; text-decoration: none; color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.75rem 1rem; text-decoration: none; color: var(--text);
       transition: border-color 0.15s;
     }
     .ref-card:hover { border-color: var(--accent); }
-    .ref-card h3 { font-size: 0.92rem; margin-bottom: 0.2rem; }
-    .ref-card p { font-size: 0.82rem; color: var(--muted); margin: 0; }
+    .ref-card strong { display: block; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .ref-card span   { font-size: 0.8rem; color: var(--muted); }
 
-    .quick-ref { margin: 1.5rem 0; }
-    .quick-ref table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .quick-ref th { background: var(--code-bg); padding: 0.5rem 0.75rem; border: 1px solid var(--border); font-family: var(--mono); font-size: 0.78rem; text-align: left; }
-    .quick-ref td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+    .quick-ref { width: 100%; border-collapse: collapse; margin: 1.2rem 0 2rem; font-size: 0.85rem; }
+    .quick-ref th { background: var(--code-bg); padding: 0.55rem 0.9rem; text-align: left; border: 1px solid var(--border); font-family: var(--mono); font-size: 0.78rem; }
+    .quick-ref td { padding: 0.55rem 0.9rem; border: 1px solid var(--border); vertical-align: top; }
     .quick-ref tr:nth-child(even) td { background: #f8f7f4; }
     .quick-ref code { font-size: 0.8rem; }
   </style>
@@ -70,176 +63,164 @@
   <div class="lesson-grid">
     <a class="lesson-card" href="lessons/0001-ce-este-workflow-agentic.html">
       <div class="lesson-num">01</div>
-      <div class="lesson-info">
+      <div>
         <h3>Ce este un workflow agentic</h3>
         <p>Fluxul end-to-end de la idee la producție. Modelul hibrid și cei trei actori ai workflow-ului.</p>
       </div>
-      <span class="lesson-tag">Fundamente · 15 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0002-branch-protection-git-flow.html">
       <div class="lesson-num">02</div>
-      <div class="lesson-info">
+      <div>
         <h3>Branch Protection + Git Flow</h3>
         <p>Activarea branch protection pe GitHub. Convenții de denumire și workflow disciplinat.</p>
       </div>
-      <span class="lesson-tag">Fundament critic · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0003-claude-code-verify-simplify.html">
       <div class="lesson-num">03</div>
-      <div class="lesson-info">
+      <div>
         <h3>Claude Code: /verify și /simplify</h3>
         <p>Confirmă că feature-ul funcționează și curăță codul înainte de orice push.</p>
       </div>
-      <span class="lesson-tag">Claude Code · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0004-code-review-cu-claude.html">
       <div class="lesson-num">04</div>
-      <div class="lesson-info">
+      <div>
         <h3>Code Review cu Claude</h3>
         <p>/code-review, /security-review și /code-review ultra — înainte de push sau pe PR-uri importante.</p>
       </div>
-      <span class="lesson-tag">Claude Code · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0005-pr-automation-gh-cli.html">
       <div class="lesson-num">05</div>
-      <div class="lesson-info">
+      <div>
         <h3>PR Automation cu gh CLI</h3>
         <p>Claude creează PR-uri cu descrieri complete. Tu dai click pe Merge.</p>
       </div>
-      <span class="lesson-tag">GitHub CLI · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0006-greptile-full-codebase-review.html">
       <div class="lesson-num">06</div>
-      <div class="lesson-info">
+      <div>
         <h3>Greptile — Full Codebase Review</h3>
         <p>82% bug catch rate prin indexarea întregului codebase și multi-hop investigation.</p>
       </div>
-      <span class="lesson-tag">AI Review · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0007-greploop-bucla-autonoma.html">
       <div class="lesson-num">07</div>
-      <div class="lesson-info">
+      <div>
         <h3>Greploop — Bucla Autonomă</h3>
         <p>Skill-ul care iterează automat review-fix-push până la 5/5 Greptile sau 5 iterații.</p>
       </div>
-      <span class="lesson-tag">Automatizare · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0008-coderabbit-alternativa.html">
       <div class="lesson-num">08</div>
-      <div class="lesson-info">
+      <div>
         <h3>CodeRabbit — Alternativa</h3>
         <p>Review rapid în 30 secunde, autofix 1-click, generare teste. Gratis pentru open source.</p>
       </div>
-      <span class="lesson-tag">AI Review · 20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0009-github-actions-claude-code.html">
       <div class="lesson-num">09</div>
-      <div class="lesson-info">
+      <div>
         <h3>GitHub Actions + Claude Code</h3>
         <p>Build + lint automat pe fiecare PR. @claude în comentarii. HTTP Hooks locale.</p>
       </div>
-      <span class="lesson-tag">CI/CD · 25 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0010-workflow-complet-end-to-end.html">
       <div class="lesson-num">10</div>
-      <div class="lesson-info">
+      <div>
         <h3>Workflow Complet End-to-End</h3>
         <p>Sinteză: toți pașii la un loc, ordinea corectă, checklist pre-merge, troubleshooting.</p>
       </div>
-      <span class="lesson-tag">Sinteză · 30 min</span>
     </a>
   </div>
 
-  <h2>Referințe</h2>
+  <h2>Referință</h2>
   <div class="ref-grid">
     <a class="ref-card" href="reference/glossary.html">
-      <h3>Glosar complet</h3>
-      <p>Toți termenii, tool-urile și conceptele definite. Include matrice comparativă.</p>
+      <strong>Glosar complet</strong>
+      <span>Toți termenii, tool-urile și conceptele definite. Include matrice comparativă.</span>
     </a>
     <a class="ref-card" href="RESOURCES.md">
-      <h3>Resurse externe</h3>
-      <p>Documentații oficiale, benchmark-uri, ghiduri practice. Actualizat cu surse din 2026.</p>
+      <strong>Resurse externe</strong>
+      <span>Documentații oficiale, benchmark-uri, ghiduri practice. Actualizat 2026.</span>
     </a>
   </div>
 
-  <h2>Referință rapidă — Comezi și momente de utilizare</h2>
-  <div class="quick-ref">
-    <table>
-      <thead>
-        <tr>
-          <th>Comandă / Tool</th>
-          <th>Când îl folosești</th>
-          <th>Unde rulează</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>/verify</code></td>
-          <td>Înainte de orice commit — confirmă că feature-ul funcționează</td>
-          <td>Local</td>
-        </tr>
-        <tr>
-          <td><code>/simplify</code></td>
-          <td>După ce feature-ul trece /verify — curăță codul</td>
-          <td>Local</td>
-        </tr>
-        <tr>
-          <td><code>/code-review</code></td>
-          <td>Înainte de push — review diff pentru buguri</td>
-          <td>Local</td>
-        </tr>
-        <tr>
-          <td><code>/security-review</code></td>
-          <td>Cod cu autentificare, input utilizator, date sensibile</td>
-          <td>Local</td>
-        </tr>
-        <tr>
-          <td><code>/code-review ultra</code></td>
-          <td>PR-uri mari sau înainte de release-uri importante</td>
-          <td>Cloud</td>
-        </tr>
-        <tr>
-          <td><code>gh pr create</code></td>
-          <td>După push — Claude creează PR cu descriere completă</td>
-          <td>GitHub CLI</td>
-        </tr>
-        <tr>
-          <td><code>gh pr checks</code></td>
-          <td>Verificare status CI fără a deschide GitHub în browser</td>
-          <td>GitHub CLI</td>
-        </tr>
-        <tr>
-          <td>Greptile</td>
-          <td>Automat la fiecare PR — review full-codebase</td>
-          <td>Cloud auto</td>
-        </tr>
-        <tr>
-          <td><code>/greploop</code></td>
-          <td>Pe PR-ul deschis — buclă autonomă fix până la 5/5</td>
-          <td>Local + Cloud</td>
-        </tr>
-        <tr>
-          <td>CodeRabbit</td>
-          <td>Automat la fiecare PR — review rapid în 30 secunde</td>
-          <td>Cloud auto</td>
-        </tr>
-        <tr>
-          <td>GitHub Actions CI</td>
-          <td>Automat la fiecare PR/push — build, lint, teste</td>
-          <td>Cloud auto</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <h2>Referință rapidă — Comenzi și momente de utilizare</h2>
+  <table class="quick-ref">
+    <thead>
+      <tr>
+        <th>Comandă / Tool</th>
+        <th>Când îl folosești</th>
+        <th>Unde rulează</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/verify</code></td>
+        <td>Înainte de orice commit — confirmă că feature-ul funcționează</td>
+        <td>Local</td>
+      </tr>
+      <tr>
+        <td><code>/simplify</code></td>
+        <td>După ce feature-ul trece /verify — curăță codul</td>
+        <td>Local</td>
+      </tr>
+      <tr>
+        <td><code>/code-review</code></td>
+        <td>Înainte de push — review diff pentru buguri</td>
+        <td>Local</td>
+      </tr>
+      <tr>
+        <td><code>/security-review</code></td>
+        <td>Cod cu autentificare, input utilizator, date sensibile</td>
+        <td>Local</td>
+      </tr>
+      <tr>
+        <td><code>/code-review ultra</code></td>
+        <td>PR-uri mari sau înainte de release-uri importante</td>
+        <td>Cloud</td>
+      </tr>
+      <tr>
+        <td><code>gh pr create</code></td>
+        <td>După push — Claude creează PR cu descriere completă</td>
+        <td>GitHub CLI</td>
+      </tr>
+      <tr>
+        <td><code>gh pr checks</code></td>
+        <td>Verificare status CI fără a deschide GitHub în browser</td>
+        <td>GitHub CLI</td>
+      </tr>
+      <tr>
+        <td>Greptile</td>
+        <td>Automat la fiecare PR — review full-codebase</td>
+        <td>Cloud auto</td>
+      </tr>
+      <tr>
+        <td><code>/greploop</code></td>
+        <td>Pe PR-ul deschis — buclă autonomă fix până la 5/5</td>
+        <td>Local + Cloud</td>
+      </tr>
+      <tr>
+        <td>CodeRabbit</td>
+        <td>Automat la fiecare PR — review rapid în 30 secunde</td>
+        <td>Cloud auto</td>
+      </tr>
+      <tr>
+        <td>GitHub Actions CI</td>
+        <td>Automat la fiecare PR/push — build, lint, teste</td>
+        <td>Cloud auto</td>
+      </tr>
+    </tbody>
+  </table>
 
 </div>
 </body>
