@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 06 — CI/CD Pipelines</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── pipeline diagram ── */
+    .pipeline-diagram {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 1.5rem 0;
+      overflow-x: auto;
+    }
+    .pipe-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+    .pipe-box {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      min-width: 5rem;
+      line-height: 1.3;
+    }
+    .pipe-box.pb-commit  { background: #dbeafe; color: #1e40af; border: 1.5px solid #93c5fd; }
+    .pipe-box.pb-ci      { background: #d1fae5; color: #065f46; border: 1.5px solid #6ee7b7; }
+    .pipe-box.pb-merge   { background: #fef3c7; color: #92400e; border: 1.5px solid #fcd34d; }
+    .pipe-box.pb-cd      { background: #f3e8ff; color: #5b21b6; border: 1.5px solid #c4b5fd; }
+    .pipe-box.pb-prod    { background: #fee2e2; color: #991b1b; border: 1.5px solid #fca5a5; }
+    .pipe-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.68rem;
+      color: #9ca3af;
+      text-align: center;
+    }
+    .pipe-arrow {
+      font-size: 1rem;
+      color: #d1d5db;
+      flex-shrink: 0;
+      padding: 0 0.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    /* ── annotated workflow block ── */
+    pre.annotated-yaml {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.79rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 1rem 0;
+      tab-size: 2;
+    }
+    .yn  { color: #7dd3fc; }   /* key name */
+    .yv  { color: #86efac; }   /* value / string */
+    .yc  { color: #64748b; }   /* comment */
+    .yp  { color: #fbbf24; }   /* punctuation */
+    .annot-num {
+      display: inline-block;
+      background: #f97316;
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 0 0.35rem;
+      border-radius: 3px;
+      vertical-align: middle;
+      margin-left: 0.4rem;
+    }
+
+    /* ── annotation list ── */
+    .annot-list {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0 1.5rem;
+    }
+    .annot-list li {
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-start;
+      margin-bottom: 0.6rem;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .annot-list .annot-num {
+      flex-shrink: 0;
+      margin-left: 0;
+      margin-top: 0.18rem;
+    }
+    .annot-list .annot-body { flex: 1; min-width: 0; }
+
+    /* ── branch protection diagram ── */
+    .bp-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.25rem 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.84rem;
+    }
+    .bp-box {
+      border: 1.5px solid #e8e5e0;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      line-height: 1.45;
+    }
+    .bp-box.bp-left  { border-left: 3px solid #3b82f6; }
+    .bp-box.bp-right { border-left: 3px solid #059669; }
+    .bp-arrow { color: #9ca3af; font-size: 1.2rem; text-align: center; }
+    .bp-box strong { display: block; margin-bottom: 0.2rem; }
+    .bp-checks {
+      list-style: none;
+      padding: 0;
+      margin: 0.3rem 0 0;
+    }
+    .bp-checks li {
+      font-size: 0.78rem;
+      color: #374151;
+      margin-bottom: 0.15rem;
+    }
+    .bp-checks li::before { content: "✓ "; color: #059669; font-weight: 700; }
+
+    /* ── environments table ── */
+    .env-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.85rem;
+      margin: 1.25rem 0;
+    }
+    .env-table th {
+      text-align: left;
+      padding: 0.5rem 0.85rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-weight: 700;
+      color: #374151;
+    }
+    .env-table td {
+      padding: 0.45rem 0.85rem;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+      line-height: 1.4;
+    }
+    .env-table tr:nth-child(even) td { background: #fafaf8; }
+    .dot {
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+    }
+    .dot.dev  { background: #3b82f6; }
+    .dot.stg  { background: #f59e0b; }
+    .dot.prod { background: #ef4444; }
+
+    @media (max-width: 500px) {
+      .pipeline-diagram { flex-direction: column; }
+      .pipe-arrow { transform: rotate(90deg); }
+      .bp-flow { grid-template-columns: 1fr; }
+      .bp-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 06 &middot; Git &amp; GitHub Fluency</p>
+      <h1>CI/CD Pipelines</h1>
+      <p class="tagline">How code travels from your laptop to production — automatically and safely</p>
+    </header>
+
+    <section>
+      <h2>What CI/CD means</h2>
+      <p>
+        <strong>CI — Continuous Integration</strong> means every developer's code is merged
+        into a shared branch frequently, and an automated pipeline immediately verifies it
+        (runs tests, checks formatting, looks for security issues). The goal: catch problems
+        within minutes, not days.
+      </p>
+      <p>
+        <strong>CD — Continuous Delivery / Deployment</strong> means that once code passes
+        CI, it is automatically packaged and either made ready to deploy (Delivery) or
+        actually deployed to production without manual steps (Deployment).
+      </p>
+      <div class="callout">
+        <p>
+          The distinction that matters day-to-day: <strong>CI is about quality gates</strong>
+          (nothing broken merges). <strong>CD is about shipping speed</strong>
+          (verified code reaches users fast). You can have CI without CD, but CD without
+          CI is dangerous.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>The commit-to-production journey</h2>
+
+      <div class="pipeline-diagram">
+        <div class="pipe-stage">
+          <div class="pipe-box pb-commit">Push<br>to PR branch</div>
+          <div class="pipe-label">developer</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <div class="pipe-box pb-ci">CI runs<br>tests + lint</div>
+          <div class="pipe-label">GitHub Actions</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <div class="pipe-box pb-merge">PR reviewed<br>&amp; merged</div>
+          <div class="pipe-label">team + gate</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <div class="pipe-box pb-cd">CD deploys<br>to staging</div>
+          <div class="pipe-label">GitHub Actions</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <div class="pipe-box pb-prod">Deploy<br>to prod</div>
+          <div class="pipe-label">manual or auto</div>
+        </div>
+      </div>
+
+      <p>
+        Each arrow is an event that triggers the next step. GitHub Actions powers the
+        automation; branch protection rules enforce the gates.
+      </p>
+    </section>
+
+    <section>
+      <h2>A real CI workflow</h2>
+      <p>
+        This is what a team's CI workflow actually looks like. It runs on every push and
+        on every pull request targeting <code>main</code>:
+      </p>
+
+<pre class="annotated-yaml"><span class="yn">name</span><span class="yp">:</span> <span class="yv">CI</span>  <span class="annot-num">[1]</span>
+
+<span class="yn">on</span><span class="yp">:</span>  <span class="annot-num">[2]</span>
+  <span class="yn">push</span><span class="yp">:</span>
+    <span class="yn">branches</span><span class="yp">:</span> <span class="yp">[</span><span class="yv">main</span><span class="yp">]</span>
+  <span class="yn">pull_request</span><span class="yp">:</span>
+    <span class="yn">branches</span><span class="yp">:</span> <span class="yp">[</span><span class="yv">main</span><span class="yp">]</span>
+
+<span class="yn">jobs</span><span class="yp">:</span>
+  <span class="yn">test</span><span class="yp">:</span>  <span class="annot-num">[3]</span>
+    <span class="yn">runs-on</span><span class="yp">:</span> <span class="yv">ubuntu-latest</span>  <span class="annot-num">[4]</span>
+
+    <span class="yn">steps</span><span class="yp">:</span>
+      <span class="yp">-</span> <span class="yn">uses</span><span class="yp">:</span> <span class="yv">actions/checkout@v4</span>  <span class="annot-num">[5]</span>
+
+      <span class="yp">-</span> <span class="yn">uses</span><span class="yp">:</span> <span class="yv">actions/setup-node@v4</span>
+        <span class="yn">with</span><span class="yp">:</span>
+          <span class="yn">node-version</span><span class="yp">:</span> <span class="yv">20</span>
+
+      <span class="yp">-</span> <span class="yn">run</span><span class="yp">:</span> <span class="yv">npm ci</span>  <span class="annot-num">[6]</span>
+
+      <span class="yp">-</span> <span class="yn">name</span><span class="yp">:</span> <span class="yv">Lint</span>
+        <span class="yn">run</span><span class="yp">:</span> <span class="yv">npm run lint</span>
+
+      <span class="yp">-</span> <span class="yn">name</span><span class="yp">:</span> <span class="yv">Test</span>
+        <span class="yn">run</span><span class="yp">:</span> <span class="yv">npm test</span>  <span class="annot-num">[7]</span>
+
+  <span class="yn">build</span><span class="yp">:</span>  <span class="annot-num">[8]</span>
+    <span class="yn">needs</span><span class="yp">:</span> <span class="yv">test</span>  <span class="yc"># only runs if test job passes</span>
+    <span class="yn">runs-on</span><span class="yp">:</span> <span class="yv">ubuntu-latest</span>
+    <span class="yn">steps</span><span class="yp">:</span>
+      <span class="yp">-</span> <span class="yn">uses</span><span class="yp">:</span> <span class="yv">actions/checkout@v4</span>
+      <span class="yp">-</span> <span class="yn">run</span><span class="yp">:</span> <span class="yv">npm ci &amp;&amp; npm run build</span></pre>
+
+      <ol class="annot-list">
+        <li>
+          <span class="annot-num">1</span>
+          <span class="annot-body"><strong>Workflow name</strong> — shown in the GitHub Actions tab. Pick something descriptive.</span>
+        </li>
+        <li>
+          <span class="annot-num">2</span>
+          <span class="annot-body"><strong>Triggers</strong> — runs on push to <code>main</code> AND on any PR targeting <code>main</code>. This means the PR is tested before it merges, not after.</span>
+        </li>
+        <li>
+          <span class="annot-num">3</span>
+          <span class="annot-body"><strong>Job name</strong> — <code>test</code>. Jobs run in parallel by default. The <code>build</code> job below uses <code>needs: test</code> to force sequential order.</span>
+        </li>
+        <li>
+          <span class="annot-num">4</span>
+          <span class="annot-body"><strong>Runner</strong> — a fresh Ubuntu VM for each run. Nothing carries over between runs; every run starts clean.</span>
+        </li>
+        <li>
+          <span class="annot-num">5</span>
+          <span class="annot-body"><strong>Checkout action</strong> — clones your repository into the runner so subsequent steps can access your code.</span>
+        </li>
+        <li>
+          <span class="annot-num">6</span>
+          <span class="annot-body"><code>npm ci</code> installs exact versions from <code>package-lock.json</code> — faster and deterministic. Always prefer it over <code>npm install</code> in CI.</span>
+        </li>
+        <li>
+          <span class="annot-num">7</span>
+          <span class="annot-body"><strong>Test step</strong> — if this exits with a non-zero code, the job fails, the PR gets a red X, and merge is blocked (when branch protection is on).</span>
+        </li>
+        <li>
+          <span class="annot-num">8</span>
+          <span class="annot-body"><strong>Build job</strong> — only runs after <code>test</code> succeeds. This is job chaining: fail fast, don't waste build minutes on code that doesn't pass tests.</span>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Branch protection: the gate that enforces CI</h2>
+      <p>
+        A workflow file alone does not prevent broken code from merging.
+        <strong>Branch protection rules</strong> are what actually block the merge button
+        until CI passes. You configure them in
+        GitHub → repository → Settings → Branches → Add branch protection rule.
+      </p>
+
+      <div class="bp-flow">
+        <div class="bp-box bp-left">
+          <strong>Developer opens PR</strong>
+          <ul class="bp-checks">
+            <li>Pushes feature branch</li>
+            <li>Opens pull request to main</li>
+            <li>CI workflow triggers automatically</li>
+          </ul>
+        </div>
+        <div class="bp-arrow">→</div>
+        <div class="bp-box bp-right">
+          <strong>Branch protection gates</strong>
+          <ul class="bp-checks">
+            <li>Require status check: CI (test job)</li>
+            <li>Require at least 1 approving review</li>
+            <li>No merge until all checks pass</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>
+        The key setting is <em>"Require status checks to pass before merging"</em> — you
+        select which workflow jobs must be green. Once this is on, GitHub physically
+        disables the merge button if any required check is failing.
+      </p>
+    </section>
+
+    <section>
+      <h2>Environments: staging and production</h2>
+      <p>
+        Most teams deploy to multiple environments before shipping to users. GitHub supports
+        this natively via <strong>Environments</strong>
+        (Settings → Environments), which let you add required reviewers and secrets per environment:
+      </p>
+
+      <table class="env-table">
+        <thead>
+          <tr>
+            <th>Environment</th>
+            <th>Triggered by</th>
+            <th>Typical gate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dot dev"></span><strong>development</strong></td>
+            <td>Push to any branch</td>
+            <td>None — deploy fast, test freely</td>
+          </tr>
+          <tr>
+            <td><span class="dot stg"></span><strong>staging</strong></td>
+            <td>Merge to <code>main</code></td>
+            <td>CI must pass</td>
+          </tr>
+          <tr>
+            <td><span class="dot prod"></span><strong>production</strong></td>
+            <td>Manual trigger or tag push</td>
+            <td>Required reviewer approves in GitHub UI</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        In your workflow file you reference an environment with <code>environment: production</code>
+        on a job. GitHub then pauses that job and waits for a human to approve it in the UI
+        before the deployment continues — a built-in manual gate with a full audit trail.
+      </p>
+    </section>
+
+    <section>
+      <h2>What "a green pipeline" means at work</h2>
+      <p>
+        When a colleague says <em>"the pipeline is green"</em>, they mean every automated
+        check passed — tests, lint, build, security scan. It is a signal that the code is
+        safe to merge or deploy.
+      </p>
+      <p>
+        When someone says <em>"the pipeline is red"</em> or <em>"CI is broken"</em>,
+        fixing it is treated as the highest priority. A red pipeline blocks the whole team
+        from merging, so convention is: whoever broke it fixes it immediately.
+      </p>
+      <div class="callout">
+        <p>
+          <strong>At your next PR:</strong> look at the checks section at the bottom of
+          the PR page. Each row is one job from the workflow file. Click <em>Details</em>
+          next to a failing check to see the exact step and log line that failed.
+          This is how you debug CI in practice.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary source ── -->
+    <section class="primary-source">
+      <h2>Primary sources</h2>
+      <p>
+        <a href="https://docs.github.com/en/actions/use-cases-and-examples/deploying/deploying-with-github-actions"
+           target="_blank" rel="noopener noreferrer">
+          Deploying with GitHub Actions
+        </a> — the official guide for wiring CI into CD with environments and approvals.
+      </p>
+      <p>
+        <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+           target="_blank" rel="noopener noreferrer">
+          About Protected Branches
+        </a> — everything you can configure to enforce CI as a merge gate.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        If you want to walk through setting up CI on a real repository, or are confused
+        about any step in the pipeline, ask your teacher — paste your workflow YAML and
+        describe what you expect vs. what actually happened.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0005-github-webhooks.html">← Lesson 05: GitHub Webhooks</a>
+        <a class="nav-next" href="0007-pull-requests.html">Lesson 07: Pull Requests →</a>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'CI prevents broken code from merging by…',
+        options: [
+          'Blocking merge until checks pass',
+          'Automatically reverting bad commits',
+          'Emailing team about failed builds',
+          'Locking branches after each push'
+        ],
+        correct: 0,
+        explain:
+          'CI runs automated checks, but it\'s <strong>branch protection rules</strong> that ' +
+          'enforce the gate — they disable the merge button until required status checks ' +
+          'are green. The workflow alone does not block anything without that setting.'
+      },
+      {
+        q: 'In a workflow, <code>needs: test</code> on a job means…',
+        options: [
+          'Run only if test job passes',
+          'Run the test job first always',
+          'Share test results with job',
+          'Require manual test approval'
+        ],
+        correct: 0,
+        explain:
+          '<code>needs</code> declares a dependency between jobs. The dependent job only ' +
+          'starts if all listed jobs succeeded. This is how you chain jobs: run tests ' +
+          'first, only build if tests pass, only deploy if build passes.'
+      },
+      {
+        q: 'A "required reviewer" on a production environment does what?',
+        options: [
+          'Pauses deployment for human approval',
+          'Runs extra tests before deploying',
+          'Notifies the reviewer after deploy',
+          'Requires reviewer to write the code'
+        ],
+        correct: 0,
+        explain:
+          'When a job targets an environment with required reviewers, GitHub pauses the ' +
+          'workflow and waits for an approved human to click "Approve and deploy" in the ' +
+          'GitHub UI. This is a built-in manual gate — no code required.'
+      }
+    ]);
+  </script>
+</body>
+</html>

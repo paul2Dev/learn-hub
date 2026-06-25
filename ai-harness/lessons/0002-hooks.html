@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2: Hooks — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 2 din 8</span>
+    <span class="tag">~20 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Hooks</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Comenzi shell pe care harness-ul le rulează în numele tău — înainte de tool-uri, după tool-uri și la încheierea sesiunilor.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: CE SUNT HOOKS-URILE ══════ -->
+  <h2>Ce este un hook?</h2>
+
+  <p>
+    Un <strong>hook</strong> este o comandă shell pe care o înregistrezi în <code>settings.json</code>.
+    Harness-ul o rulează automat când se declanșează un eveniment specific — fără prompt, fără implicarea modelului.
+    Hooks-urile sunt shell pur: un script Python, un one-liner PowerShell, un binar compilat, orice poate executa shell-ul tău.
+  </p>
+
+  <p>
+    Gândește-te la hooks-uri ca la ascultători de evenimente atașați pe exteriorul harness-ului.
+    Modelul nu le vede niciodată — pur și simplu vede rezultatele tool-urilor sosind în context,
+    fără să știe că un script de logging a rulat între timp.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce contează hooks-urile</div>
+    Fără hooks-uri, harness-ul este o cutie neagră — nu poți intercepta, loga, bloca sau reacționa la ce face.
+    Hooks-urile îți oferă o îmbinare programabilă între "modelul decide" și "tool-ul se execută."
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: PATRU EVENIMENTE ══════ -->
+  <h2>Cele patru evenimente de hook</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>PreToolUse</h4>
+        <p>Se declanșează înainte de execuția unui tool. Primește numele tool-ului și argumentele de input ca JSON pe stdin. <strong>Dacă hook-ul iese cu cod non-zero, tool-ul este blocat.</strong></p>
+      </div>
+      <div class="arch-tag">poate bloca</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>PostToolUse</h4>
+        <p>Se declanșează după finalizarea unui tool. Primește numele tool-ului, inputul și outputul său. Codul de ieșire este ignorat — tool-ul a rulat deja.</p>
+      </div>
+      <div class="arch-tag">doar observare</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Stop</h4>
+        <p>Se declanșează când agentul își termină tura (produce un răspuns text final). Util pentru notificări, curățare sau rezumate post-sesiune.</p>
+      </div>
+      <div class="arch-tag">sfârșitul sesiunii</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>Notification</h4>
+        <p>Se declanșează când harness-ul trimite o notificare utilizatorului (de ex. "așteptând input"). Folosit pentru a declanșa notificări desktop sau alerte.</p>
+      </div>
+      <div class="arch-tag">evenimente UI</div>
+    </div>
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 3: STRUCTURA CONFIGURĂRII ══════ -->
+  <h2>Structura configurării</h2>
+
+  <p>
+    Hooks-urile se află în <code>settings.json</code> sub o cheie de nivel superior <code>"hooks"</code>.
+    Fiecare nume de eveniment se mapează la un array de <strong>obiecte matcher</strong>.
+    Fiecare matcher țintește unul sau mai multe tool-uri și listează comenzile de rulat.
+  </p>
+
+  <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/validate-bash.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python scripts/audit-log.py"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+  <p>Puncte cheie din această configurare:</p>
+  <ul>
+    <li><code>"matcher": "Bash"</code> — se declanșează doar pentru tool-ul <code>Bash</code></li>
+    <li><code>"matcher": "*"</code> — se declanșează pentru <strong>orice</strong> apel de tool</li>
+    <li><code>"type": "command"</code> — singurul tip suportat în prezent</li>
+    <li>Mai multe comenzi de hook sub un singur matcher rulează în ordine</li>
+  </ul>
+
+
+  <!-- ══════ SECȚIUNEA 4: PAYLOAD STDIN ══════ -->
+  <h2>Citirea inputului de hook</h2>
+
+  <p>
+    Harness-ul trimite prin pipe un obiect JSON la <code>stdin</code>-ul script-ului tău de hook.
+    Pentru <code>PreToolUse</code> și <code>PostToolUse</code> arată astfel:
+  </p>
+
+  <pre><code>// stdin PreToolUse
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rm -rf dist/"
+  }
+}
+
+// stdin PostToolUse (adaugă tool_response)
+{
+  "tool_name": "Bash",
+  "tool_input": { "command": "ls src/" },
+  "tool_response": {
+    "output": "index.ts\nutils.ts\ntypes.ts\n",
+    "exit_code": 0
+  }
+}</code></pre>
+
+  <p>
+    Script-ul tău citește din stdin, face ce are de făcut, apoi iese.
+    Pentru <code>PreToolUse</code>: ieși cu <code>0</code> pentru a permite, ieși cu cod non-zero pentru a bloca.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 5: PRACTIC ══════ -->
+  <h2>Practic: scrie primele tale două hooks-uri</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiul 1 — Jurnal de audit (PostToolUse)</div>
+    <p style="font-size:0.9rem;margin-bottom:0.8rem;">
+      Loghează fiecare apel de tool într-un fișier. Acesta este cel mai simplu hook util — append pur, fără logică.
+    </p>
+    <ol>
+      <li>
+        Creează <code>.claude/hooks/audit.sh</code> în proiectul tău:
+        <pre><code>#!/bin/sh
+# Citește stdin și adaugă cu timestamp
+echo "[$(date -u +%H:%M:%S)] $(cat -)" >> .claude/audit.log</code></pre>
+        Pe Windows, folosește un script PowerShell (<code>audit.ps1</code>):
+        <pre><code>$input = $input | Out-String
+$ts = (Get-Date -Format "HH:mm:ss")
+Add-Content .claude/audit.log "[$ts] $input"</code></pre>
+      </li>
+      <li>
+        Înregistrează-l în <code>.claude/settings.json</code>:
+        <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .claude/hooks/audit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+      </li>
+      <li>Rulează Claude Code și cere-i să citească un fișier. Apoi verifică <code>.claude/audit.log</code> — ar trebui să vezi apelul de tool logat.</li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiul 2 — Blochează comenzi periculoase (PreToolUse)</div>
+    <p style="font-size:0.9rem;margin-bottom:0.8rem;">
+      Interceptează apelurile <code>Bash</code> și blochează orice comandă care conține <code>rm -rf</code>.
+    </p>
+    <ol>
+      <li>
+        Creează <code>.claude/hooks/guard.sh</code>:
+        <pre><code>#!/bin/sh
+INPUT=$(cat -)
+echo "$INPUT" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+cmd = data.get('tool_input', {}).get('command', '')
+if 'rm -rf' in cmd:
+    print('BLOCAT: rm -rf nu este permis de hook guard', file=sys.stderr)
+    sys.exit(1)
+"</code></pre>
+      </li>
+      <li>
+        Adaugă o intrare <code>PreToolUse</code> alături de hook-ul existent în <code>settings.json</code>.
+      </li>
+      <li>
+        Cere lui Claude să ruleze <code>rm -rf /tmp/test</code>. Hook-ul ar trebui să blocheze comanda.
+        Urmărește cum harness-ul raportează "tool blocat de hook" în loc să execute.
+      </li>
+    </ol>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Sfat</div>
+    Poți de asemenea să returnezi un obiect JSON dintr-un hook <code>PreToolUse</code> cu
+    <code>{"decision": "block", "reason": "mesajul tău"}</code> pentru a trimite utilizatorului un mesaj de eroare clar
+    în loc de un simplu cod de ieșire non-zero.
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/hooks" target="_blank">
+        Referința Hooks Claude Code — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Lista completă de evenimente, schema stdin, opțiunile de format pentru output și exemple concrete.
+        Citește secțiunile "Hook input" și "Hook output" înainte de a-ți scrie propriile hooks-uri.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Un hook <code>PreToolUse</code> iese cu codul <code>2</code>. Ce se întâmplă cu apelul de tool?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Tool-ul rulează normal și codul de ieșire este logat</button></li>
+        <li><button data-correct="true">Tool-ul este blocat — nu se execută</button></li>
+        <li><button data-correct="false">Harness-ul reîncearcă hook-ul o dată înainte de a continua</button></li>
+        <li><button data-correct="false">Modelul primește codul de ieșire și decide ce să facă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Orice ieșire non-zero dintr-un hook <code>PreToolUse</code> blochează tool-ul.
+        Modelul primește o eroare, nu rezultatul tool-ului. Codurile de ieșire ale <code>PostToolUse</code> sunt ignorate
+        deoarece tool-ul a rulat deja.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Cum transmite harness-ul detaliile apelului de tool la script-ul tău de hook?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Ca argumente în linia de comandă</button></li>
+        <li><button data-correct="false">Ca variabile de mediu</button></li>
+        <li><button data-correct="true">Ca obiect JSON pe stdin</button></li>
+        <li><button data-correct="false">Ca cale a unui fișier temporar</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Harness-ul trimite JSON prin pipe la stdin-ul script-ului tău.
+        Script-ul tău citește stdin, parsează JSON-ul și acționează pe câmpurile <code>tool_name</code> și
+        <code>tool_input</code>. Asta face hooks-urile independente de limbaj — orice runtime care poate
+        citi stdin funcționează.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce valoare de matcher declanșează hook-ul pentru <em>orice</em> apel de tool, indiferent de tool?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>"all"</code></button></li>
+        <li><button data-correct="true"><code>"*"</code></button></li>
+        <li><button data-correct="false"><code>"any"</code></button></li>
+        <li><button data-correct="false"><code>""</code> (șir gol)</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Wildcardul <code>"*"</code> se potrivește cu toate numele de tool-uri.
+        Este util pentru jurnale de audit sau limitatoare de rată care ar trebui să ruleze la fiecare acțiune.
+        Matchere specifice precum <code>"Bash"</code> vizează un singur tool.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Vrei să trimiți o notificare desktop când Claude își termină tura. La ce eveniment te abonezi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">PostToolUse</button></li>
+        <li><button data-correct="false">PreToolUse</button></li>
+        <li><button data-correct="true">Stop</button></li>
+        <li><button data-correct="false">Notification</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>Stop</code> se declanșează când agentul își termină tura —
+        ideal pentru notificări de tip "gata". <code>Notification</code> se declanșează la
+        notificările harness-ului din interiorul sesiunii (cum ar fi "așteptând utilizatorul"), nu la terminarea turei.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Știe modelul (Claude) că a rulat un hook între apelul său de tool și rezultat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Da — outputul hook-ului este adăugat la rezultatul tool-ului</button></li>
+        <li><button data-correct="false">Da — modelul primește o notificare de eveniment de hook</button></li>
+        <li><button data-correct="true">Nu — hooks-urile sunt invizibile pentru model</button></li>
+        <li><button data-correct="false">Doar dacă hook-ul scrie pe stdout</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Hooks-urile rulează în afara ferestrei de context a modelului.
+        Modelul vede rezultatul tool-ului (sau o eroare de blocare) — niciodată hook-ul în sine.
+        Acesta este un design intenționat: hooks-urile sunt logică controlată de operator, nu parte din bucla de raționament AI.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Vrei să blochezi un pattern bash specific? Nu știi cum să parsezi stdin în limbajul tău preferat?
+    Întreabă-mă — îți pot arăta scripturi de hook în Python, PowerShell, Node.js sau shell.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0001-what-is-the-ai-harness.html">← Lecția 1: Ce este AI Harness?</a>
+    <a href="0003-skills.html">Lecția 3: Skills →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

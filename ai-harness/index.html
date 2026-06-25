@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Harness — Index curs</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; color: var(--muted); max-width: 560px; }
+
+    .lesson-grid { display: flex; flex-direction: column; gap: 0; margin: 0.5rem 0 2.5rem; }
+    .lesson-card {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      padding: 1rem 1.2rem; border: 1px solid var(--border);
+      border-bottom: none; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+    }
+    .lesson-card:first-child { border-radius: 8px 8px 0 0; }
+    .lesson-card:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .lesson-card:hover { background: var(--code-bg); }
+    .lesson-num {
+      width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold; flex-shrink: 0;
+    }
+    .lesson-card:nth-child(1) .lesson-num { background: #f59e0b; }
+    .lesson-card:nth-child(2) .lesson-num { background: #9333ea; }
+    .lesson-card:nth-child(3) .lesson-num { background: #0284c7; }
+    .lesson-card:nth-child(4) .lesson-num { background: #16a34a; }
+    .lesson-card:nth-child(5) .lesson-num { background: #dc2626; }
+    .lesson-card:nth-child(6) .lesson-num { background: #0891b2; }
+    .lesson-card:nth-child(7) .lesson-num { background: #65a30d; }
+    .lesson-card:nth-child(8) .lesson-num { background: #7c3aed; }
+    .lesson-info h3 { font-size: 0.97rem; margin: 0 0 0.15rem; }
+    .lesson-info p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .lesson-time {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono); white-space: nowrap; align-self: center;
+    }
+
+    .reference-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0 3rem; }
+    .ref-card {
+      flex: 1; min-width: 160px;
+      padding: 0.85rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+      text-decoration: none; color: var(--text);
+      transition: background 0.12s;
+    }
+    .ref-card:hover { background: var(--code-bg); }
+    .ref-card h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ref-card p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+    .skills-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .skills-table th {
+      text-align: left; padding: 0.5rem 0.8rem;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    }
+    .skills-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .skills-table tr:last-child td { border-bottom: none; }
+    .skills-table code { font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="course-header">
+    <div class="lesson-meta">
+      <span class="tag">8 lecții</span>
+      <span class="tag">~2.5 ore total</span>
+      <span>AI Harness — Curs</span>
+    </div>
+    <h1>Învață AI Harness</h1>
+    <p>
+      Un curs practic despre harness-ul Claude Code — runtime-ul care alimentează agenții, hooks-urile, skills-urile și
+      fluxurile automate. Începe de la Lecția 1 și parcurge-le în ordine, sau sari direct la orice subiect.
+    </p>
+  </div>
+
+
+  <!-- ══════ LESSON INDEX ══════ -->
+  <h2 style="margin-top:0;">Lecții</h2>
+
+  <div class="lesson-grid">
+
+    <a class="lesson-card" href="lessons/0001-what-is-the-ai-harness.html">
+      <div class="lesson-num">1</div>
+      <div class="lesson-info">
+        <h3>Ce este AI Harness?</h3>
+        <p>Concept, arhitectură pe patru straturi și trasarea unui request end-to-end</p>
+      </div>
+      <span class="lesson-time">~15 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0002-hooks.html">
+      <div class="lesson-num">2</div>
+      <div class="lesson-info">
+        <h3>Hooks</h3>
+        <p>PreToolUse, PostToolUse, Stop — interceptează și reacționează la fiecare apel de tool</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0003-skills.html">
+      <div class="lesson-num">3</div>
+      <div class="lesson-info">
+        <h3>Skills</h3>
+        <p>Împachetează instrucțiuni reutilizabile în slash commands pentru orice proiect</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0004-agents.html">
+      <div class="lesson-num">4</div>
+      <div class="lesson-info">
+        <h3>Agents &amp; Fluxuri Multi-Agent</h3>
+        <p>Lansează sub-agenți specializați pentru lucru în paralel sau în izolare</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0005-scheduling.html">
+      <div class="lesson-num">5</div>
+      <div class="lesson-info">
+        <h3>Scheduling &amp; Automatizare</h3>
+        <p>CronCreate, CronList, ScheduleWakeup — rulează agenți fără să fii prezent</p>
+      </div>
+      <span class="lesson-time">~15 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0006-memory.html">
+      <div class="lesson-num">6</div>
+      <div class="lesson-info">
+        <h3>Sistemul de memorie</h3>
+        <p>Oferă lui Claude context persistent între sesiuni, prin memorie bazată pe fișiere</p>
+      </div>
+      <span class="lesson-time">~15 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0007-permissions.html">
+      <div class="lesson-num">7</div>
+      <div class="lesson-info">
+        <h3>Permissions &amp; Settings</h3>
+        <p>Liste allow/deny, ierarhia fișierelor de setări și variabile de mediu</p>
+      </div>
+      <span class="lesson-time">~15 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0008-mcp-servers.html">
+      <div class="lesson-num">8</div>
+      <div class="lesson-info">
+        <h3>MCP Servers</h3>
+        <p>Extinde harness-ul cu tool-uri personalizate — construiește și conectează primul tău server MCP</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+  </div>
+
+
+  <!-- ══════ REFERENCE ══════ -->
+  <h2>Referințe</h2>
+
+  <div class="reference-links">
+    <a class="ref-card" href="reference/glossary.html">
+      <h4>Glosar</h4>
+      <p>Termeni cheie folosiți în toate lecțiile</p>
+    </a>
+    <a class="ref-card" href="RESOURCES.md">
+      <h4>Resurse</h4>
+      <p>Documentații, specificații și comunități recomandate</p>
+    </a>
+    <a class="ref-card" href="README.md">
+      <h4>README</h4>
+      <p>Prezentare generală a cursului și structura modulelor</p>
+    </a>
+  </div>
+
+
+  <!-- ══════ HARNESS QUICK-REF ══════ -->
+  <h2>Referință rapidă — harness</h2>
+
+  <table class="skills-table">
+    <thead>
+      <tr>
+        <th>Strat</th>
+        <th>Ce face</th>
+        <th>Unde se configurează</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Model</strong></td>
+        <td>Inferență LLM — citește contextul, emite apeluri de tool</td>
+        <td><code>settings.json → model</code></td>
+        <td><a href="lessons/0001-what-is-the-ai-harness.html">1</a></td>
+      </tr>
+      <tr>
+        <td><strong>Tool Registry</strong></td>
+        <td>Funcții pe care modelul le poate apela (built-in + MCP)</td>
+        <td><code>settings.json → mcpServers</code></td>
+        <td><a href="lessons/0008-mcp-servers.html">8</a></td>
+      </tr>
+      <tr>
+        <td><strong>Permission Layer</strong></td>
+        <td>Poartă allow/deny înainte de fiecare execuție de tool</td>
+        <td><code>settings.json → permissions</code></td>
+        <td><a href="lessons/0007-permissions.html">7</a></td>
+      </tr>
+      <tr>
+        <td><strong>Hook Layer</strong></td>
+        <td>Comenzi shell la PreToolUse / PostToolUse / Stop</td>
+        <td><code>settings.json → hooks</code></td>
+        <td><a href="lessons/0002-hooks.html">2</a></td>
+      </tr>
+      <tr>
+        <td><strong>Skills</strong></td>
+        <td>Seturi de instrucțiuni reutilizabile ca slash commands</td>
+        <td><code>~/.claude/skills/&lt;name&gt;/</code></td>
+        <td><a href="lessons/0003-skills.html">3</a></td>
+      </tr>
+      <tr>
+        <td><strong>Sub-agenți</strong></td>
+        <td>Agenți independenți lansați prin tool-ul Agent</td>
+        <td>Promptul agentului părinte</td>
+        <td><a href="lessons/0004-agents.html">4</a></td>
+      </tr>
+      <tr>
+        <td><strong>Scheduling</strong></td>
+        <td>Agenți în cloud pe cron sau o singură dată</td>
+        <td>Tool-uri CronCreate / ScheduleWakeup</td>
+        <td><a href="lessons/0005-scheduling.html">5</a></td>
+      </tr>
+      <tr>
+        <td><strong>Memorie</strong></td>
+        <td>Context persistent injectat la pornirea sesiunii</td>
+        <td><code>~/.claude/projects/&lt;hash&gt;/memory/</code></td>
+        <td><a href="lessons/0006-memory.html">6</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    AI Harness — Curs · Începe de la <a href="lessons/0001-what-is-the-ai-harness.html">Lecția 1</a>
+  </p>
+
+</div>
+</body>
+</html>

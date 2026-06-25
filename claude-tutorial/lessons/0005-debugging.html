@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>05 · Debugging — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 5 din 12</p>
+  <h1>Debugging cu Claude Code</h1>
+  <p class="tagline">Stack traces, teste care eșuează și erori de neînțeles — cum le rezolvi mai rapid cu Claude Code.</p>
+
+  <section>
+    <h2>Pattern de bază: paste eroarea, cere analiza</h2>
+    <p>Cel mai simplu și eficient pattern de debugging:</p>
+    <pre><code>&gt; Primesc această eroare când rulez aplicația. Ajută-mă să înțeleg cauza
+  și cum o rezolv:
+
+  TypeError: Cannot read properties of undefined (reading 'id')
+      at getUserProfile (src/services/user.js:47:23)
+      at async handleRequest (src/controllers/auth.js:112:18)
+      at Layer.handle [as handle_request] (node_modules/express/...)</code></pre>
+    <p>Claude Code va:</p>
+    <ul>
+      <li>Citi <code>src/services/user.js</code> la linia 47</li>
+      <li>Citi <code>src/controllers/auth.js</code> la linia 112</li>
+      <li>Urma lanțul de apeluri pentru a găsi rădăcina problemei</li>
+      <li>Propune fix-ul cu context</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Teste care eșuează</h2>
+    <p>Acesta e unul din cele mai puternice use case-uri. Nu mai citi manual output-ul testelor:</p>
+    <pre><code>&gt; Rulează testele și repară ce eșuează</code></pre>
+    <p>Claude Code va rula comanda de teste, va citi output-ul, va identifica fișierele cu probleme și va propune fix-uri. Poți itera:</p>
+    <pre><code>&gt; Testele de autentificare încă eșuează, uite output-ul:
+  [paste output]
+
+&gt; Acum rulează din nou doar testele de auth: npm test -- --grep "auth"</code></pre>
+    <div class="callout callout--tip">
+      <p><strong>Sfat:</strong> Dacă ai o comandă specifică de test, pune-o în <code>CLAUDE.md</code>. Astfel Claude Code știe exact cum să ruleze testele proiectului tău fără să îi explici de fiecare dată.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bug de logică — când codul "funcționează" dar dă rezultate greșite</h2>
+    <p>Erorile de logică sunt mai greu de prins. Descrie comportamentul așteptat vs. cel real:</p>
+    <pre><code>&gt; Funcția `calculateDiscount` din src/pricing.js returnează discount greșit
+  pentru comenzi peste 500 RON. Ar trebui să aplice 15% dar aplică 10%.
+  Uite câteva exemple:
+  - order: 600 RON → discount returnat: 60 RON (greșit, ar trebui 90)
+  - order: 1000 RON → discount returnat: 100 RON (greșit, ar trebui 150)</code></pre>
+    <p>Cu exemple concrete (input → output așteptat vs. real), Claude Code poate identifica mult mai rapid unde e logica defectă.</p>
+  </section>
+
+  <section>
+    <h2>Debugging interactiv — când nu știi de unde să începi</h2>
+    <p>Uneori nu ai un stack trace clar. Descrie simptomul:</p>
+    <pre><code>&gt; Aplicația devine lentă după câteva ore de funcționare și trebuie restartată.
+  Nu am erori în log-uri. Unde aș putea căuta cauzele?</code></pre>
+    <p>Claude Code va analiza codul și va sugera locuri unde s-ar putea produce memory leaks, conexiuni nedeschise sau query-uri costisitoare — și îți va propune ce să verifici și în ce ordine.</p>
+  </section>
+
+  <section>
+    <h2>Adăugarea de logging temporar</h2>
+    <p>Când ai nevoie să înțelegi fluxul de execuție:</p>
+    <pre><code>&gt; Adaugă console.log-uri temporare în funcția `processOrder` pentru a
+  vedea valoarea variabilelor la fiecare pas. Marchează-le cu // DEBUG
+  ca să le găsesc ușor ulterior.</code></pre>
+    <p>Și după ce ai înțeles problema:</p>
+    <pre><code>&gt; Acum șterge toate comentariile // DEBUG din proiect</code></pre>
+  </section>
+
+  <section>
+    <h2>Compararea cu o versiune anterioară</h2>
+    <p>Dacă bug-ul a apărut recent:</p>
+    <pre><code>&gt; Funcționalitatea X funcționa săptămâna trecută. Ce s-a schimbat în
+  ultimele 5 commit-uri în fișierele legate de modulul de plăți?</code></pre>
+    <p>Claude Code va rula <code>git log</code> și <code>git diff</code> pentru a identifica modificările relevante.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-5"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">Claude Code Overview — documentație oficială Anthropic</a><br/>
+    Secțiunea despre capabilitățile de execuție a comenzilor, esențiale pentru debugging interactiv.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai un bug acum?</strong><br/>
+    Deschide <code>claude</code> în proiect și paste eroarea direct. Nu reformata, nu filtra — dă-i tot ce ai.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0004-editare-si-implementare.html">← Lecția 4: Editare</a>
+    <a class="nav-next" href="0006-git-workflow.html">Lecția 6: Git Workflow →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-5', [
+  {
+    q: 'Ce informații să îi dai lui Claude Code când ai o eroare?',
+    options: [
+      'Doar mesajul de eroare, fără stack trace — e mai concis',
+      'Stack trace-ul complet, exact cum apare, fără reformatare',
+      'O descriere în cuvinte proprii a erorii, fără mesajul tehnic',
+      'Codul sursa complet al proiectului, pentru context maxim'
+    ],
+    correct: 1,
+    explain: 'Stack trace-ul complet e esențial — conține numerele de linie, lanțul de apeluri și tipul erorii. Claude Code citește fișierele menționate direct. Nu filtra nimic.'
+  },
+  {
+    q: 'Cum descrii cel mai eficient un bug de logică (fără mesaj de eroare)?',
+    options: [
+      'Îi trimiți codul funcției și îi ceri să ghicească ce e greșit',
+      'Descrii comportamentul așteptat vs. real cu exemple concrete de input/output',
+      'Îi ceri să rescrie funcția de la zero cu o logică mai bună',
+      'Îi spui că ceva nu merge și îl lași să investigheze singur'
+    ],
+    correct: 1,
+    explain: 'Exemple concrete (input → output așteptat vs. real) elimină ambiguitatea. Claude Code poate testa mental ipoteze față de datele tale concrete, nu față de o descriere vagă.'
+  },
+  {
+    q: 'Care e cea mai bună practică când adaugi logging temporar pentru debugging?',
+    options: [
+      'Adaugi log-urile și le lași permanent — pot fi utile în viitor',
+      'Adaugi log-urile cu un marcaj distinctiv (ex: // DEBUG) și le ștergi după',
+      'Folosești un sistem de logging de producție, nu console.log temporar',
+      'Nu adaugi niciodată logging temporar — folosești doar debugger-ul'
+    ],
+    correct: 1,
+    explain: 'Marcajele distincte (// DEBUG) fac log-urile temporare ușor de găsit și șters. Poți chiar cere lui Claude Code să le șteargă pe toate automat după ce ai terminat investigația.'
+  }
+]);
+</script>
+</body>
+</html>

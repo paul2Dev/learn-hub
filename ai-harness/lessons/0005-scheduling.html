@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5: Scheduling — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 5 din 8</span>
+    <span class="tag">~15 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Scheduling &amp; Automatizare</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Rulează agenți pe un program — chiar și când IDE-ul tău este închis.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: DE CE SĂ PLANIFICI ══════ -->
+  <h2>De ce să planifici agenți?</h2>
+
+  <p>
+    Până acum, fiecare interacțiune cu un agent a fost reactivă — tu întrebi, Claude răspunde.
+    Scheduling întoarce acest lucru: definești o sarcină o dată, iar harness-ul o rulează automat
+    la momentul sau intervalul pe care îl specifici, <em>fără să fii prezent</em>.
+  </p>
+
+  <p>
+    Agenții planificați rulează în cloud, nu pe mașina ta. Asta înseamnă:
+  </p>
+  <ul>
+    <li>Laptopul tău poate fi oprit — programul tot se declanșează</li>
+    <li>Agentul are același acces la tool-uri ca sesiunea ta normală</li>
+    <li>Rezultatele sunt livrate ca notificări când deschizi din nou Claude Code</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-label">Cazuri de utilizare bune</div>
+    Remindere zilnice de standup · Rezumate ale rulărilor de test nocturne · Audituri săptămânale de dependențe ·
+    Monitorizare orară a unui pipeline CI · Un singur "amintește-mi să revizuiesc acest PR vineri"
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: TREI TOOL-URI ══════ -->
+  <h2>Tool-urile de scheduling</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>CronCreate</h4>
+        <p>Creează un agent cloud recurent pe un program cron. Returnează un ID de program pe care îl poți folosi pentru a-l gestiona ulterior.</p>
+      </div>
+      <div class="arch-tag">recurent</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>CronList</h4>
+        <p>Listează toți agenții planificați activi cu ID-urile lor, expresiile cron și momentele următoarei rulări.</p>
+      </div>
+      <div class="arch-tag">citire</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>CronDelete</h4>
+        <p>Anulează un agent planificat după ID-ul său. Agentul nu se va mai declanșa după ștergere.</p>
+      </div>
+      <div class="arch-tag">anulare</div>
+    </div>
+  </div>
+
+  <p>
+    Pentru o rulare <strong>unică</strong> viitoare (non-recurentă), folosește <strong>ScheduleWakeup</strong> în schimb.
+    Se declanșează o dată după o întârziere dată în secunde, apoi dispare.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 3: SINTAXA CRON ══════ -->
+  <h2>Sintaxa cron</h2>
+
+  <p>
+    O expresie cron are cinci câmpuri: <code>minut  oră  zi-din-lună  lună  zi-din-săptămână</code>.
+    <code>*</code> înseamnă "orice valoare." Iată pattern-urile pe care le vei folosi cel mai des:
+  </p>
+
+  <pre><code>┌─ minut  (0–59)
+│  ┌─ oră   (0–23, UTC)
+│  │  ┌─ zi din lună  (1–31)
+│  │  │  ┌─ lună  (1–12)
+│  │  │  │  ┌─ zi din săptămână  (0=Dum, 1=Lun … 6=Sâm)
+│  │  │  │  │
+*  *  *  *  *
+
+Exemple:
+"0 9 * * 1-5"    →  09:00 UTC, Luni până Vineri
+"0 8 * * 1"      →  08:00 UTC, în fiecare Luni
+"*/30 * * * *"   →  la fiecare 30 de minute
+"0 0 * * *"      →  miezul nopții UTC, în fiecare zi
+"0 9 1 * *"      →  09:00 UTC în prima zi din fiecare lună</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Fus orar</div>
+    Orele cron sunt în <strong>UTC</strong>. Dacă ești în UTC+3, scade 3 ore din ora locală
+    pentru a obține echivalentul UTC. <code>09:00 UTC+3 = 06:00 UTC</code>.
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 4: CRONCREATE ══════ -->
+  <h2>Crearea unui program</h2>
+
+  <p>
+    Când îi ceri lui Claude Code să creeze un agent planificat, acesta invocă <code>CronCreate</code>
+    cu o expresie cron și un prompt care descrie ce ar trebui să facă agentul de fiecare dată când se declanșează.
+  </p>
+
+  <pre><code>// Ce apelează harness-ul intern:
+CronCreate({
+  schedule: "0 9 * * 1-5",
+  prompt: `
+    Rulează suita de teste a proiectului cu: npm test
+    Rezumă rezultatele: câte au trecut, au eșuat sau au fost sărite.
+    Dacă vreun test a eșuat, listează numele testelor și mesajele de eroare.
+    Trimite rezumatul ca notificare.
+  `
+})</code></pre>
+
+  <p>
+    Promptul este briefing-ul complet pentru agent — exact ca un prompt de subagent.
+    Scrie-l să fie autonom; agentul care rulează luni dimineața nu are nicio memorie
+    a conversației în care ai configurat programul.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 5: SCHEDULEWAKEUP ══════ -->
+  <h2>Rulări unice cu ScheduleWakeup</h2>
+
+  <p>
+    <code>ScheduleWakeup</code> este folosit în interiorul unei <strong>sesiuni în buclă</strong> pentru a face pauză și
+    a relua după o întârziere. Este tool-ul potrivit când vrei să:
+  </p>
+  <ul>
+    <li>Sondezi o rulare CI la fiecare 5 minute până se termină</li>
+    <li>Verifici un deploy după 10 minute</li>
+    <li>Îți amintești ceva în 2 ore</li>
+  </ul>
+
+  <pre><code>ScheduleWakeup({
+  delaySeconds: 600,          // 10 minute
+  prompt: "Verifică starea deploy-ului la staging.example.com și raportează.",
+  reason: "așteptând finalizarea deploy-ului"
+})</code></pre>
+
+  <p>
+    Spre deosebire de <code>CronCreate</code>, un <code>ScheduleWakeup</code> se declanșează o dată și dispare.
+    Menține fereastra de context caldă dacă întârzierea este sub 270 de secunde (în fereastra de cache de 5 minute).
+  </p>
+
+
+  <!-- ══════ PRACTIC ══════ -->
+  <h2>Practic: configurează un digest zilnic</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Creează și gestionează un program</div>
+    <ol>
+      <li>
+        Cere lui Claude Code: <em>"Planifică un agent zilnic să ruleze la 09:00 UTC în zilele lucrătoare.
+        Ar trebui să citească CHANGELOG.md și să rezume ultimele 3 intrări ca briefing de dimineață."</em>
+      </li>
+      <li>
+        Claude va apela <code>CronCreate</code>. Notează ID-ul programului pe care îl returnează.
+      </li>
+      <li>
+        Întreabă: <em>"Listează toți agenții mei planificați."</em> — acesta apelează <code>CronList</code>.
+        Ar trebui să-ți vezi noul program cu momentul următoarei rulări.
+      </li>
+      <li>
+        Întreabă: <em>"Anulează programul de digest zilnic."</em> — Claude apelează <code>CronDelete</code>
+        cu ID-ul programului.
+      </li>
+      <li>
+        Verifică că a dispărut cu un alt apel <code>CronList</code>.
+      </li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Reminder unic</div>
+    <ol>
+      <li>
+        Pornește o sesiune în buclă: cere lui Claude să <em>"îmi amintești în 5 minute să verific review-ul PR-ului."</em>
+      </li>
+      <li>
+        Claude va folosi <code>ScheduleWakeup</code> cu <code>delaySeconds: 300</code>.
+      </li>
+      <li>
+        După 5 minute, bucla se trezește și livrează reminderul ca notificare.
+      </li>
+    </ol>
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/background-agents" target="_blank">
+        Claude Code Background Agents — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Acoperă agenții planificați, modelul în buclă, strategia de timing ScheduleWakeup și
+        cum agenții cloud diferă de sub-agenții din sesiune.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Poate un agent planificat (via CronCreate) să ruleze cât timp laptopul tău este oprit?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu — are nevoie ca mașina ta să ruleze Claude Code</button></li>
+        <li><button data-correct="true">Da — agenții planificați rulează în cloud</button></li>
+        <li><button data-correct="false">Numai dacă IDE-ul este deschis în background</button></li>
+        <li><button data-correct="false">Numai pe macOS, nu pe Windows</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Agenții planificați sunt executați în cloud. Nu depind de
+        mașina locală, IDE sau conexiunea la rețea. Rezultatele te așteaptă ca notificări când
+        deschizi din nou Claude Code.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce înseamnă expresia cron <code>"0 8 * * 1"</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">8:00 UTC în fiecare zi</button></li>
+        <li><button data-correct="true">8:00 UTC în fiecare Luni</button></li>
+        <li><button data-correct="false">8:00 UTC în prima zi din fiecare lună</button></li>
+        <li><button data-correct="false">La fiecare oră în primul minut, de 8 ori</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Câmpurile: <code>0</code>=minutul 0, <code>8</code>=ora 8,
+        <code>*</code>=orice zi, <code>*</code>=orice lună, <code>1</code>=Luni.
+        Ziua din săptămână folosește 0=Duminică până la 6=Sâmbătă. <code>1-5</code> ar fi zilele lucrătoare.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Promptul unui agent planificat ar trebui să fie…</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un one-liner scurt — agentul va deduce restul</button></li>
+        <li><button data-correct="false">O referință la contextul conversației de astăzi</button></li>
+        <li><button data-correct="true">Complet autonom — agentul nu are memorie a când a fost creat programul</button></li>
+        <li><button data-correct="false">Scris în sintaxa cron alături de expresia de program</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Agentul care se declanșează conform programului pornește proaspăt — nu are
+        nicio memorie a când sau de ce ai creat programul. Promptul trebuie să îi spună totul:
+        ce să facă, unde să găsească lucrurile și ce output să producă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce tool folosești pentru o rulare viitoare <em>unică</em> (non-recurentă)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">CronCreate cu <code>once: true</code></button></li>
+        <li><button data-correct="false">CronDelete (planificat în viitor)</button></li>
+        <li><button data-correct="true">ScheduleWakeup</button></li>
+        <li><button data-correct="false">CronList cu o dată specifică</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>ScheduleWakeup</code> se declanșează o dată după o întârziere în secunde,
+        apoi se curăță singur. Folosește <code>CronCreate</code> numai pentru programe recurente.
+        Nu există flag "once" pe CronCreate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care este strategia optimă pentru <code>delaySeconds</code> la ScheduleWakeup?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Folosește întotdeauna 300 de secunde (exact 5 minute)</button></li>
+        <li><button data-correct="false">Folosește întotdeauna cea mai lungă întârziere posibilă pentru a economisi costuri</button></li>
+        <li><button data-correct="true">Sub 270s pentru a rămâne în cache; 1200s+ pentru așteptări lungi — evită exact 300s</button></li>
+        <li><button data-correct="false">Folosește întotdeauna 60 de secunde — minimul — pentru a rămâne receptiv</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cache-ul de prompt Anthropic are un TTL de 5 minute (300s).
+        A dormi sub 270s menține cache-ul cald (reintegrare rapidă, ieftină).
+        A dormi peste 300s generează un cache miss — deci dacă trebuie să aștepți mai mult,
+        angajează-te la 1200s+ pentru a amortiza costul. Exact 300s este cel mai rău scenariu din ambele.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Vrei ajutor la scrierea unei expresii cron pentru un program specific? Nu ești sigur dacă să folosești
+    CronCreate sau ScheduleWakeup pentru cazul tău de utilizare? Întreabă-mă.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0004-agents.html">← Lecția 4: Agents</a>
+    <a href="0006-memory.html">Lecția 6: Memory →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

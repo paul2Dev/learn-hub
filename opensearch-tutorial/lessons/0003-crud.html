@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 3 — CRUD în OpenSearch</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 03 · OpenSearch + Laravel</span>
+  <h1>CRUD în OpenSearch</h1>
+  <p class="subtitle">Creează index, indexează documente, citește, actualizează, șterge</p>
+</div>
+
+<p>
+  În această lecție folosim <strong>clientul low-level</strong> (<code>friendsofcat/opensearch-client</code>)
+  pentru a înțelege exact ce se întâmplă la nivel HTTP. Ai nevoie de conexiunea configurată din
+  <a href="0002-instalare-si-conectare.html">Lecția 2</a>.
+</p>
+
+<div class="box box-info">
+  <span class="box-title">Analogia cu MongoDB (pe care o știi deja)</span>
+  <table style="margin:0">
+    <tr><th>MongoDB</th><th>OpenSearch</th></tr>
+    <tr><td>Collection</td><td>Index</td></tr>
+    <tr><td>Document</td><td>Document</td></tr>
+    <tr><td>insertOne()</td><td>index() / create()</td></tr>
+    <tr><td>findOne()</td><td>get()</td></tr>
+    <tr><td>updateOne()</td><td>update()</td></tr>
+    <tr><td>deleteOne()</td><td>delete()</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════ SETUP ══ -->
+<h2>1. Service de bază pentru CRUD</h2>
+
+<p>Extindem service-ul din Lecția 2 cu toate operațiile CRUD:</p>
+
+<pre><code><span class="cm">// app/Services/OpenSearchService.php</span>
+<span class="kw">namespace</span> App\Services;
+
+<span class="kw">use</span> OpenSearch\Laravel\Client\ClientBuilderInterface;
+
+<span class="kw">class</span> <span class="cls">OpenSearchService</span>
+{
+    <span class="kw">protected</span> $client;
+
+    <span class="kw">public function</span> <span class="fn">__construct</span>(ClientBuilderInterface $builder)
+    {
+        $<span class="kw">this</span>->client = $builder-><span class="fn">default</span>();
+    }
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ CREATE INDEX ══ -->
+<h2>2. Creare index</h2>
+
+<p>
+  Un <strong>index</strong> trebuie creat înainte de a indexa documente.
+  Îl creezi o singură dată — de obicei printr-o comandă Artisan sau migration echivalent.
+</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">createIndex</span>(string $indexName): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client->indices()-><span class="fn">create</span>([
+        <span class="str">'index'</span> => $indexName,
+        <span class="str">'body'</span>  => [
+            <span class="str">'settings'</span> => [
+                <span class="str">'number_of_shards'</span>   => <span class="num">1</span>,   <span class="cm">// un shard pentru dev</span>
+                <span class="str">'number_of_replicas'</span> => <span class="num">0</span>,   <span class="cm">// zero replici pentru dev</span>
+            ],
+        ],
+    ]);
+}
+
+<span class="cm">// Verifici dacă indexul există deja</span>
+<span class="kw">public function</span> <span class="fn">indexExists</span>(string $indexName): bool
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client->indices()-><span class="fn">exists</span>([
+        <span class="str">'index'</span> => $indexName,
+    ]);
+}
+
+<span class="cm">// Ștergi indexul (ATENȚIE: șterge toate documentele!)</span>
+<span class="kw">public function</span> <span class="fn">deleteIndex</span>(string $indexName): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client->indices()-><span class="fn">delete</span>([
+        <span class="str">'index'</span> => $indexName,
+    ]);
+}</code></pre>
+
+<pre><code><span class="cm">// Exemplu de utilizare</span>
+$search = <span class="fn">app</span>(OpenSearchService::class);
+
+<span class="kw">if</span> (!$search-><span class="fn">indexExists</span>(<span class="str">'articles'</span>)) {
+    $search-><span class="fn">createIndex</span>(<span class="str">'articles'</span>);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ INDEX DOC ══ -->
+<h2>3. Indexare document (Create)</h2>
+
+<p>
+  „A indexa un document" = a-l <strong>salva</strong> în OpenSearch.
+  Poți specifica un ID sau lăsa OpenSearch să genereze unul automat.
+</p>
+
+<pre><code><span class="cm">// Cu ID specificat manual (recomandat — îl legi de _id din MongoDB)</span>
+<span class="kw">public function</span> <span class="fn">indexDocument</span>(string $index, string $id, array $data): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">index</span>([
+        <span class="str">'index'</span> => $index,
+        <span class="str">'id'</span>    => $id,
+        <span class="str">'body'</span>  => $data,
+    ]);
+}
+
+<span class="cm">// Fără ID — OpenSearch generează automat un ID unic</span>
+<span class="kw">public function</span> <span class="fn">indexDocumentAutoId</span>(string $index, array $data): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">index</span>([
+        <span class="str">'index'</span> => $index,
+        <span class="str">'body'</span>  => $data,
+    ]);
+}</code></pre>
+
+<pre><code><span class="cm">// Exemplu concret: indexezi un articol după ce l-ai salvat în MongoDB</span>
+<span class="kw">class</span> <span class="cls">ArticleService</span>
+{
+    <span class="kw">public function</span> <span class="fn">create</span>(array $data): void
+    {
+        <span class="cm">// 1. Salvezi în MongoDB (sursa de adevăr)</span>
+        $article = Article::<span class="fn">create</span>($data);
+
+        <span class="cm">// 2. Indexezi în OpenSearch (pentru search)</span>
+        $<span class="kw">this</span>->search-><span class="fn">indexDocument</span>(<span class="str">'articles'</span>, (string) $article->_id, [
+            <span class="str">'titlu'</span>       => $article->titlu,
+            <span class="str">'continut'</span>    => $article->continut,
+            <span class="str">'autor'</span>       => $article->autor,
+            <span class="str">'publicat_la'</span> => $article->created_at->toIso8601String(),
+            <span class="str">'taguri'</span>      => $article->taguri,
+        ]);
+    }
+}</code></pre>
+
+<div class="box box-tip">
+  <span class="box-title">Pattern cheie: ID-ul din MongoDB = ID-ul din OpenSearch</span>
+  Folosind același ID în ambele baze de date, poți recupera detalii complete din MongoDB
+  după ce ai obținut ID-urile din OpenSearch prin search. Simplu și eficient.
+</div>
+
+<!-- ══════════════════════════════════════════ GET ══ -->
+<h2>4. Citire document (Read)</h2>
+
+<pre><code><span class="cm">// Citire după ID</span>
+<span class="kw">public function</span> <span class="fn">getDocument</span>(string $index, string $id): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">get</span>([
+        <span class="str">'index'</span> => $index,
+        <span class="str">'id'</span>    => $id,
+    ]);
+}</code></pre>
+
+<pre><code><span class="cm">// Răspunsul arată astfel:</span>
+[
+    <span class="str">'_index'</span>   => <span class="str">'articles'</span>,
+    <span class="str">'_id'</span>      => <span class="str">'64f1a2b3c4d5e6f7a8b9c0d1'</span>,
+    <span class="str">'_version'</span> => <span class="num">1</span>,
+    <span class="str">'found'</span>    => <span class="kw">true</span>,
+    <span class="str">'_source'</span>  => [                          <span class="cm">// datele tale sunt aici</span>
+        <span class="str">'titlu'</span>    => <span class="str">'Introducere în Laravel'</span>,
+        <span class="str">'autor'</span>    => <span class="str">'Paul'</span>,
+        <span class="str">'continut'</span> => <span class="str">'Laravel este...'</span>,
+    ],
+]
+
+<span class="cm">// Accesezi datele tale:</span>
+$doc     = $search-><span class="fn">getDocument</span>(<span class="str">'articles'</span>, $id);
+$titlu   = $doc[<span class="str">'_source'</span>][<span class="str">'titlu'</span>];
+$gasit   = $doc[<span class="str">'found'</span>];    <span class="cm">// true / false</span></code></pre>
+
+<!-- ══════════════════════════════════════════ UPDATE ══ -->
+<h2>5. Actualizare document (Update)</h2>
+
+<p>
+  OpenSearch are două abordări de update. <strong>Partial update</strong> (cu <code>doc</code>)
+  actualizează doar câmpurile specificate — celelalte rămân neatinse.
+</p>
+
+<pre><code><span class="cm">// Partial update — actualizează doar câmpurile trimise</span>
+<span class="kw">public function</span> <span class="fn">updateDocument</span>(string $index, string $id, array $fields): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">update</span>([
+        <span class="str">'index'</span> => $index,
+        <span class="str">'id'</span>    => $id,
+        <span class="str">'body'</span>  => [
+            <span class="str">'doc'</span> => $fields,   <span class="cm">// doar câmpurile de actualizat</span>
+        ],
+    ]);
+}
+
+<span class="cm">// Re-indexare completă — înlocuiește tot documentul</span>
+<span class="kw">public function</span> <span class="fn">replaceDocument</span>(string $index, string $id, array $data): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">index</span>([   <span class="cm">// același client->index() ca la creare</span>
+        <span class="str">'index'</span> => $index,
+        <span class="str">'id'</span>    => $id,
+        <span class="str">'body'</span>  => $data,
+    ]);
+}</code></pre>
+
+<pre><code><span class="cm">// Exemplu: utilizatorul a editat articolul</span>
+<span class="kw">public function</span> <span class="fn">update</span>(string $id, array $data): void
+{
+    <span class="cm">// 1. Actualizezi în MongoDB</span>
+    Article::<span class="fn">where</span>(<span class="str">'_id'</span>, $id)-><span class="fn">update</span>($data);
+
+    <span class="cm">// 2. Actualizezi în OpenSearch (doar câmpurile searchable)</span>
+    $<span class="kw">this</span>->search-><span class="fn">updateDocument</span>(<span class="str">'articles'</span>, $id, [
+        <span class="str">'titlu'</span>    => $data[<span class="str">'titlu'</span>]    ?? <span class="kw">null</span>,
+        <span class="str">'continut'</span> => $data[<span class="str">'continut'</span>] ?? <span class="kw">null</span>,
+    ]);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ DELETE ══ -->
+<h2>6. Ștergere document (Delete)</h2>
+
+<pre><code><span class="cm">// Ștergere după ID</span>
+<span class="kw">public function</span> <span class="fn">deleteDocument</span>(string $index, string $id): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">delete</span>([
+        <span class="str">'index'</span> => $index,
+        <span class="str">'id'</span>    => $id,
+    ]);
+}</code></pre>
+
+<pre><code><span class="cm">// Exemplu: ștergi articolul din ambele baze de date</span>
+<span class="kw">public function</span> <span class="fn">delete</span>(string $id): void
+{
+    Article::<span class="fn">where</span>(<span class="str">'_id'</span>, $id)-><span class="fn">delete</span>();          <span class="cm">// MongoDB</span>
+    $<span class="kw">this</span>->search-><span class="fn">deleteDocument</span>(<span class="str">'articles'</span>, $id); <span class="cm">// OpenSearch</span>
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ BULK ══ -->
+<h2>7. Indexare în masă (Bulk)</h2>
+
+<p>
+  Dacă ai multe documente de indexat (migrare inițială, resync),
+  <strong>bulk</strong> este mult mai rapid decât indexarea individuală.
+</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">bulkIndex</span>(string $index, array $documents): array
+{
+    $body = [];
+
+    <span class="kw">foreach</span> ($documents <span class="kw">as</span> $doc) {
+        <span class="cm">// Fiecare document necesită 2 linii în bulk: action + data</span>
+        $body[] = [<span class="str">'index'</span> => [<span class="str">'_index'</span> => $index, <span class="str">'_id'</span> => $doc[<span class="str">'id'</span>]]];
+        $body[] = $doc[<span class="str">'data'</span>];
+    }
+
+    <span class="kw">return</span> $<span class="kw">this</span>->client-><span class="fn">bulk</span>(['body' => $body]);
+}
+
+<span class="cm">// Utilizare: resync toate articolele din MongoDB în OpenSearch</span>
+Article::<span class="fn">chunk</span>(<span class="num">500</span>, <span class="kw">function</span> ($articles) <span class="kw">use</span> ($search) {
+    $docs = $articles-><span class="fn">map</span>(<span class="kw">fn</span>($a) => [
+        <span class="str">'id'</span>   => (string) $a->_id,
+        <span class="str">'data'</span> => [
+            <span class="str">'titlu'</span>       => $a->titlu,
+            <span class="str">'continut'</span>    => $a->continut,
+            <span class="str">'autor'</span>       => $a->autor,
+            <span class="str">'publicat_la'</span> => $a->created_at->toIso8601String(),
+        ],
+    ])-><span class="fn">toArray</span>();
+
+    $search-><span class="fn">bulkIndex</span>(<span class="str">'articles'</span>, $docs);
+});</code></pre>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="C">
+    <p>1. Vrei să actualizezi doar câmpul <code>titlu</code> al unui document, fără să atingi restul. Ce metodă folosești?</p>
+    <button class="quiz-opt" data-val="A">client->index() cu tot documentul</button>
+    <button class="quiz-opt" data-val="B">client->replace() cu câmpul nou</button>
+    <button class="quiz-opt" data-val="C">client->update() cu cheie 'doc' care conține doar titlul</button>
+    <button class="quiz-opt" data-val="D">client->patch() cu titlul modificat</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>2. De ce folosești același ID în MongoDB și OpenSearch?</p>
+    <button class="quiz-opt" data-val="A">Ca să poți recupera detalii din MongoDB după ce ai obținut ID-ul din search</button>
+    <button class="quiz-opt" data-val="B">OpenSearch cere obligatoriu același ID ca MongoDB</button>
+    <button class="quiz-opt" data-val="C">Ca să economisești spațiu pe disc în ambele baze</button>
+    <button class="quiz-opt" data-val="D">Nu contează — e o convenție opțională fără beneficii</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. Unde găsești datele documentului în răspunsul de la <code>client->get()</code>?</p>
+    <button class="quiz-opt" data-val="A">$response['data']</button>
+    <button class="quiz-opt" data-val="B">$response['document']</button>
+    <button class="quiz-opt" data-val="C">$response['body']</button>
+    <button class="quiz-opt" data-val="D">$response['_source']</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="B">
+    <p>4. Când folosești <code>bulk()</code> în loc de <code>index()</code> individual?</p>
+    <button class="quiz-opt" data-val="A">Niciodată — bulk este mai lent și mai complex</button>
+    <button class="quiz-opt" data-val="B">La indexarea mai multor documente deodată (migrare, resync)</button>
+    <button class="quiz-opt" data-val="C">Doar pentru indexuri cu mai mult de 1 milion de documente</button>
+    <button class="quiz-opt" data-val="D">Numai când nu ai ID-uri predefinite</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/clients/php/" target="_blank">PHP Client — OpenSearch Documentation</a></li>
+    <li><a href="https://docs.opensearch.org/latest/api-reference/document-apis/" target="_blank">Document APIs — OpenSearch Documentation</a></li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0002-instalare-si-conectare.html">← Lecția 2: Instalare și conectare</a>
+  <a href="0004-cautare-full-text.html">Lecția 4: Căutare full-text →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă primești erori la indexare (document_missing_exception, version_conflict etc.) descrie-le și le rezolvăm împreună.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

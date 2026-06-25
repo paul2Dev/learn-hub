@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 7 — Integrare Eloquent cu pdphilip/opensearch</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 07 · OpenSearch + Laravel</span>
+  <h1>Integrare Eloquent cu pdphilip/opensearch</h1>
+  <p class="subtitle">Modele Eloquent pe OpenSearch — instalare, CRUD, căutare, sincronizare cu MongoDB</p>
+</div>
+
+<p>
+  Dacă în Lecțiile 3–6 ai lucrat cu clientul low-level pentru a înțelege Query DSL,
+  acum trecem la nivelul de productivitate: <strong>modele Eloquent care trăiesc direct în OpenSearch</strong>.
+  Sintaxa va fi familiară — este Eloquent pe care îl știi deja.
+</p>
+
+<!-- ══════════════════════════════════════════ INSTALARE ══ -->
+<h2>1. Instalare</h2>
+
+<pre><code>composer require pdphilip/opensearch</code></pre>
+
+<p>Înregistrează Service Provider-ul în <code>bootstrap/providers.php</code>:</p>
+
+<pre><code><span class="cm">// bootstrap/providers.php</span>
+<span class="kw">return</span> [
+    App\Providers\AppServiceProvider::class,
+    PDPhilip\OpenSearch\OpenSearchServiceProvider::class,   <span class="cm">// adaugă aceasta</span>
+];</code></pre>
+
+<h3>Configurare conexiune în database.php</h3>
+
+<pre><code><span class="cm">// config/database.php — adaugă în array-ul 'connections'</span>
+<span class="str">'opensearch'</span> => [
+    <span class="str">'driver'</span>       => <span class="str">'opensearch'</span>,
+    <span class="str">'hosts'</span>        => <span class="fn">explode</span>(<span class="str">','</span>, env(<span class="str">'OS_HOSTS'</span>, <span class="str">'http://localhost:9200'</span>)),
+    <span class="str">'basic_auth'</span>   => [
+        <span class="str">'username'</span> => env(<span class="str">'OS_USERNAME'</span>, <span class="str">''</span>),
+        <span class="str">'password'</span> => env(<span class="str">'OS_PASSWORD'</span>, <span class="str">''</span>),
+    ],
+    <span class="str">'index_prefix'</span> => env(<span class="str">'OS_INDEX_PREFIX'</span>, <span class="kw">false</span>),
+    <span class="str">'options'</span>      => [
+        <span class="str">'ssl_verification'</span> => env(<span class="str">'OS_OPT_VERIFY_SSL'</span>, <span class="kw">false</span>),
+        <span class="str">'default_limit'</span>    => env(<span class="str">'OS_OPT_DEFAULT_LIMIT'</span>, <span class="num">1000</span>),
+    ],
+],</code></pre>
+
+<p>Adaugă în <code>.env</code>:</p>
+
+<pre><code>OS_HOSTS=http://localhost:9200
+OS_USERNAME=
+OS_PASSWORD=
+OS_INDEX_PREFIX=myapp_
+OS_OPT_VERIFY_SSL=false
+OS_OPT_DEFAULT_LIMIT=1000</code></pre>
+
+<!-- ══════════════════════════════════════════ MODEL ══ -->
+<h2>2. Crearea unui model OpenSearch</h2>
+
+<p>
+  În loc să extindă <code>Illuminate\Database\Eloquent\Model</code>, modelul tău extinde
+  <code>PDPhilip\OpenSearch\Eloquent\Model</code>. Restul funcționează la fel.
+</p>
+
+<pre><code><span class="cm">// app/Models/Search/ArticleIndex.php</span>
+<span class="kw">namespace</span> App\Models\Search;
+
+<span class="kw">use</span> PDPhilip\OpenSearch\Eloquent\Model;
+
+<span class="kw">class</span> <span class="cls">ArticleIndex</span> <span class="kw">extends</span> <span class="cls">Model</span>
+{
+    <span class="cm">// Conexiunea OpenSearch din database.php</span>
+    <span class="kw">protected</span> $connection = <span class="str">'opensearch'</span>;
+
+    <span class="cm">// Numele indexului (implicit: numele clasei pluralizat snake_case)</span>
+    <span class="cm">// 'article_indices' → vrei să fie 'articles', deci specifici manual</span>
+    <span class="kw">protected</span> $index = <span class="str">'articles'</span>;
+
+    <span class="cm">// Câmpurile care pot fi asignate în masă</span>
+    <span class="kw">protected</span> $fillable = [
+        <span class="str">'mongo_id'</span>,
+        <span class="str">'titlu'</span>,
+        <span class="str">'continut'</span>,
+        <span class="str">'autor'</span>,
+        <span class="str">'slug'</span>,
+        <span class="str">'status'</span>,
+        <span class="str">'taguri'</span>,
+        <span class="str">'publicat_la'</span>,
+        <span class="str">'vizualizari'</span>,
+        <span class="str">'este_publicat'</span>,
+    ];
+
+    <span class="cm">// Câmpuri care nu apar în JSON (dacă ai date sensibile)</span>
+    <span class="kw">protected</span> $hidden = [];
+}</code></pre>
+
+<div class="box box-tip">
+  <span class="box-title">Convenție recomandată: namespace separat</span>
+  Pune modelele OpenSearch în <code>App\Models\Search\</code> — le separi clar
+  de modelele MongoDB din <code>App\Models\</code>.
+  Evită confuzia între „modelul operațional" și „modelul de search".
+</div>
+
+<!-- ══════════════════════════════════════════ CRUD ══ -->
+<h2>3. CRUD cu Eloquent</h2>
+
+<h3>Create</h3>
+<pre><code><span class="cm">// Creare directă</span>
+$doc = ArticleIndex::<span class="fn">create</span>([
+    <span class="str">'mongo_id'</span>    => (string) $article->_id,
+    <span class="str">'titlu'</span>       => $article->titlu,
+    <span class="str">'continut'</span>    => $article->continut,
+    <span class="str">'autor'</span>       => $article->autor,
+    <span class="str">'status'</span>      => $article->status,
+    <span class="str">'taguri'</span>      => $article->taguri,
+    <span class="str">'publicat_la'</span> => $article->created_at,
+    <span class="str">'vizualizari'</span> => <span class="num">0</span>,
+]);</code></pre>
+
+<h3>Read</h3>
+<pre><code><span class="cm">// Caută după ID OpenSearch</span>
+$doc = ArticleIndex::<span class="fn">find</span>($openSearchId);
+
+<span class="cm">// Caută după mongo_id (câmpul tău custom)</span>
+$doc = ArticleIndex::<span class="fn">where</span>(<span class="str">'mongo_id'</span>, $mongoId)-><span class="fn">first</span>();
+
+<span class="cm">// Toate documentele</span>
+$docs = ArticleIndex::<span class="fn">all</span>();
+
+<span class="cm">// Cu condiție</span>
+$docs = ArticleIndex::<span class="fn">where</span>(<span class="str">'status'</span>, <span class="str">'published'</span>)-><span class="fn">get</span>();</code></pre>
+
+<h3>Update</h3>
+<pre><code><span class="cm">// Update simplu</span>
+$doc = ArticleIndex::<span class="fn">where</span>(<span class="str">'mongo_id'</span>, $mongoId)-><span class="fn">first</span>();
+$doc->titlu = $nouTitlu;
+$doc-><span class="fn">save</span>();
+
+<span class="cm">// Update în masă</span>
+ArticleIndex::<span class="fn">where</span>(<span class="str">'status'</span>, <span class="str">'draft'</span>)-><span class="fn">update</span>([<span class="str">'status'</span> => <span class="str">'published'</span>]);
+
+<span class="cm">// Update sau creare (upsert)</span>
+ArticleIndex::<span class="fn">updateOrCreate</span>(
+    [<span class="str">'mongo_id'</span> => (string) $article->_id],   <span class="cm">// condiție de match</span>
+    [                                           <span class="cm">// date de salvat</span>
+        <span class="str">'titlu'</span>    => $article->titlu,
+        <span class="str">'continut'</span> => $article->continut,
+        <span class="str">'status'</span>   => $article->status,
+    ]
+);</code></pre>
+
+<h3>Delete</h3>
+<pre><code><span class="cm">// Ștergere după instanță</span>
+$doc = ArticleIndex::<span class="fn">where</span>(<span class="str">'mongo_id'</span>, $mongoId)-><span class="fn">first</span>();
+$doc-><span class="fn">delete</span>();
+
+<span class="cm">// Ștergere directă</span>
+ArticleIndex::<span class="fn">where</span>(<span class="str">'mongo_id'</span>, $mongoId)-><span class="fn">delete</span>();</code></pre>
+
+<!-- ══════════════════════════════════════════ SEARCH ══ -->
+<h2>4. Căutare cu Eloquent</h2>
+
+<pre><code><span class="cm">// whereMatch — căutare full-text în câmp specific</span>
+$results = ArticleIndex::<span class="fn">whereMatch</span>(<span class="str">'titlu'</span>, <span class="str">'laravel'</span>)-><span class="fn">get</span>();
+
+<span class="cm">// Combinat cu filtre Eloquent standard</span>
+$results = ArticleIndex
+    ::<span class="fn">whereMatch</span>(<span class="str">'titlu'</span>, <span class="str">'laravel'</span>)
+    -><span class="fn">where</span>(<span class="str">'status'</span>, <span class="str">'published'</span>)          <span class="cm">// filtru exact</span>
+    -><span class="fn">orderBy</span>(<span class="str">'publicat_la'</span>, <span class="str">'desc'</span>)        <span class="cm">// sortare</span>
+    -><span class="fn">limit</span>(<span class="num">10</span>)
+    -><span class="fn">get</span>();
+
+<span class="cm">// whereFuzzy — tolerant la typo-uri</span>
+$results = ArticleIndex::<span class="fn">whereFuzzy</span>(<span class="str">'titlu'</span>, <span class="str">'laravell'</span>)-><span class="fn">get</span>();
+
+<span class="cm">// Paginație nativă Laravel</span>
+$results = ArticleIndex
+    ::<span class="fn">whereMatch</span>(<span class="str">'titlu'</span>, request(<span class="str">'q'</span>))
+    -><span class="fn">where</span>(<span class="str">'status'</span>, <span class="str">'published'</span>)
+    -><span class="fn">paginate</span>(<span class="num">15</span>);   <span class="cm">// returnează LengthAwarePaginator</span></code></pre>
+
+<!-- ══════════════════════════════════════════ SINCRONIZARE ══ -->
+<h2>5. Sincronizare MongoDB → OpenSearch</h2>
+
+<p>
+  Cel mai curat pattern: folosești <strong>Eloquent Observers</strong> pe modelul MongoDB
+  pentru a sincroniza automat cu OpenSearch la orice modificare.
+</p>
+
+<pre><code><span class="cm">// app/Observers/ArticleObserver.php</span>
+<span class="kw">namespace</span> App\Observers;
+
+<span class="kw">use</span> App\Models\Article;           <span class="cm">// modelul MongoDB</span>
+<span class="kw">use</span> App\Models\Search\ArticleIndex; <span class="cm">// modelul OpenSearch</span>
+
+<span class="kw">class</span> <span class="cls">ArticleObserver</span>
+{
+    <span class="cm">// Apelat după Article::create() sau ->save() pe un model nou</span>
+    <span class="kw">public function</span> <span class="fn">created</span>(Article $article): void
+    {
+        ArticleIndex::<span class="fn">create</span>($<span class="kw">this</span>-><span class="fn">toIndexData</span>($article));
+    }
+
+    <span class="cm">// Apelat după ->save() pe un model existent</span>
+    <span class="kw">public function</span> <span class="fn">updated</span>(Article $article): void
+    {
+        ArticleIndex::<span class="fn">updateOrCreate</span>(
+            [<span class="str">'mongo_id'</span> => (string) $article->_id],
+            $<span class="kw">this</span>-><span class="fn">toIndexData</span>($article)
+        );
+    }
+
+    <span class="cm">// Apelat după ->delete()</span>
+    <span class="kw">public function</span> <span class="fn">deleted</span>(Article $article): void
+    {
+        ArticleIndex::<span class="fn">where</span>(<span class="str">'mongo_id'</span>, (string) $article->_id)-><span class="fn">delete</span>();
+    }
+
+    <span class="cm">// Extrage doar câmpurile relevante pentru search</span>
+    <span class="kw">private function</span> <span class="fn">toIndexData</span>(Article $article): array
+    {
+        <span class="kw">return</span> [
+            <span class="str">'mongo_id'</span>      => (string) $article->_id,
+            <span class="str">'titlu'</span>         => $article->titlu,
+            <span class="str">'continut'</span>      => $article->continut,
+            <span class="str">'autor'</span>         => $article->autor,
+            <span class="str">'slug'</span>          => $article->slug,
+            <span class="str">'status'</span>        => $article->status,
+            <span class="str">'taguri'</span>        => $article->taguri ?? [],
+            <span class="str">'publicat_la'</span>   => $article->created_at?->toIso8601String(),
+            <span class="str">'este_publicat'</span> => $article->status === <span class="str">'published'</span>,
+            <span class="str">'vizualizari'</span>   => $article->vizualizari ?? <span class="num">0</span>,
+        ];
+    }
+}</code></pre>
+
+<p>Înregistrează observer-ul în <code>AppServiceProvider</code>:</p>
+
+<pre><code><span class="cm">// app/Providers/AppServiceProvider.php</span>
+<span class="kw">use</span> App\Models\Article;
+<span class="kw">use</span> App\Observers\ArticleObserver;
+
+<span class="kw">public function</span> <span class="fn">boot</span>(): void
+{
+    Article::<span class="fn">observe</span>(ArticleObserver::class);
+}</code></pre>
+
+<div class="box box-tip">
+  <span class="box-title">De acum înainte</span>
+  Orice <code>Article::create()</code>, <code>$article->save()</code> sau <code>$article->delete()</code>
+  va sincroniza automat OpenSearch. Nu mai trebuie să te gândești la asta în controllere.
+</div>
+
+<!-- ══════════════════════════════════════════ RESYNC ══ -->
+<h2>6. Re-sincronizare completă (migrare inițială)</h2>
+
+<pre><code><span class="cm">// app/Console/Commands/OpenSearchResync.php</span>
+<span class="kw">class</span> <span class="cls">OpenSearchResync</span> <span class="kw">extends</span> <span class="cls">Command</span>
+{
+    <span class="kw">protected</span> $signature   = <span class="str">'opensearch:resync'</span>;
+    <span class="kw">protected</span> $description = <span class="str">'Re-indexează toate articolele din MongoDB în OpenSearch'</span>;
+
+    <span class="kw">public function</span> <span class="fn">handle</span>(): <span class="kw">int</span>
+    {
+        $total = Article::<span class="fn">count</span>();
+        $bar   = $<span class="kw">this</span>-><span class="fn">output</span>-><span class="fn">createProgressBar</span>($total);
+
+        Article::<span class="fn">chunk</span>(<span class="num">500</span>, <span class="kw">function</span> ($articles) <span class="kw">use</span> ($bar) {
+            <span class="kw">foreach</span> ($articles <span class="kw">as</span> $article) {
+                ArticleIndex::<span class="fn">updateOrCreate</span>(
+                    [<span class="str">'mongo_id'</span> => (string) $article->_id],
+                    $<span class="kw">this</span>-><span class="fn">toIndexData</span>($article)
+                );
+                $bar-><span class="fn">advance</span>();
+            }
+        });
+
+        $bar-><span class="fn">finish</span>();
+        $<span class="kw">this</span>-><span class="fn">newLine</span>();
+        $<span class="kw">this</span>-><span class="fn">info</span>(<span class="str">"✓ {$total} articole re-indexate."</span>);
+        <span class="kw">return</span> <span class="num">0</span>;
+    }
+
+    <span class="kw">private function</span> <span class="fn">toIndexData</span>(Article $article): array
+    {
+        <span class="kw">return</span> [
+            <span class="str">'mongo_id'</span>      => (string) $article->_id,
+            <span class="str">'titlu'</span>         => $article->titlu,
+            <span class="str">'continut'</span>      => $article->continut,
+            <span class="str">'autor'</span>         => $article->autor,
+            <span class="str">'slug'</span>          => $article->slug,
+            <span class="str">'status'</span>        => $article->status,
+            <span class="str">'taguri'</span>        => $article->taguri ?? [],
+            <span class="str">'publicat_la'</span>   => $article->created_at?->toIso8601String(),
+            <span class="str">'este_publicat'</span> => $article->status === <span class="str">'published'</span>,
+            <span class="str">'vizualizari'</span>   => $article->vizualizari ?? <span class="num">0</span>,
+        ];
+    }
+}</code></pre>
+
+<pre><code>php artisan opensearch:resync</code></pre>
+
+<!-- ══════════════════════════════════════════ CONTROLLER ══ -->
+<h2>7. Controller complet — de la cerere la răspuns</h2>
+
+<pre><code><span class="cm">// app/Http/Controllers/SearchController.php</span>
+<span class="kw">class</span> <span class="cls">SearchController</span> <span class="kw">extends</span> <span class="cls">Controller</span>
+{
+    <span class="kw">public function</span> <span class="fn">index</span>(Request $request)
+    {
+        $query = $request-><span class="fn">get</span>(<span class="str">'q'</span>, <span class="str">''</span>);
+        $tag   = $request-><span class="fn">get</span>(<span class="str">'tag'</span>);
+
+        $builder = ArticleIndex::<span class="fn">where</span>(<span class="str">'status'</span>, <span class="str">'published'</span>);
+
+        <span class="kw">if</span> ($query) {
+            $builder-><span class="fn">whereMatch</span>(<span class="str">'titlu'</span>, $query)
+                     -><span class="fn">orWhereMatch</span>(<span class="str">'continut'</span>, $query);
+        }
+
+        <span class="kw">if</span> ($tag) {
+            $builder-><span class="fn">where</span>(<span class="str">'taguri'</span>, $tag);
+        }
+
+        $results = $builder
+            -><span class="fn">orderBy</span>($query ? <span class="str">'_score'</span> : <span class="str">'publicat_la'</span>, <span class="str">'desc'</span>)
+            -><span class="fn">paginate</span>(<span class="num">15</span>);
+
+        <span class="kw">return</span> <span class="fn">response</span>()-><span class="fn">json</span>($results);
+    }
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="C">
+    <p>1. Ce clasă extinde un model OpenSearch în loc de <code>Illuminate\Database\Eloquent\Model</code>?</p>
+    <button class="quiz-opt" data-val="A">OpenSearch\Laravel\Model</button>
+    <button class="quiz-opt" data-val="B">PDPhilip\OpenSearch\Model\Eloquent</button>
+    <button class="quiz-opt" data-val="C">PDPhilip\OpenSearch\Eloquent\Model</button>
+    <button class="quiz-opt" data-val="D">Illuminate\OpenSearch\Eloquent\Model</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="B">
+    <p>2. Unde configurezi conexiunea OpenSearch pentru modelul Eloquent?</p>
+    <button class="quiz-opt" data-val="A">În config/opensearch.php separat</button>
+    <button class="quiz-opt" data-val="B">În config/database.php la array-ul 'connections'</button>
+    <button class="quiz-opt" data-val="C">Direct în model, în constructor</button>
+    <button class="quiz-opt" data-val="D">În .env, fără config/database.php</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. Care este cel mai curat pattern pentru sincronizarea automată MongoDB → OpenSearch?</p>
+    <button class="quiz-opt" data-val="A">Middleware care interceptează toate request-urile</button>
+    <button class="quiz-opt" data-val="B">Cron job la fiecare 5 minute care re-indexează tot</button>
+    <button class="quiz-opt" data-val="C">Apel manual în fiecare controller după save()</button>
+    <button class="quiz-opt" data-val="D">Eloquent Observer pe modelul MongoDB</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>4. Vrei rezultate paginate (15 per pagină) din ArticleIndex. Ce metodă folosești?</p>
+    <button class="quiz-opt" data-val="A">->paginate(15) — returnează LengthAwarePaginator</button>
+    <button class="quiz-opt" data-val="B">->limit(15)->offset(0)->get()</button>
+    <button class="quiz-opt" data-val="C">->take(15)->skip(0)->all()</button>
+    <button class="quiz-opt" data-val="D">->chunk(15, callback)</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://opensearch.pdphilip.com/getting-started/" target="_blank">pdphilip/opensearch — Getting Started</a> — sursa principală recomandată</li>
+    <li><a href="https://opensearch.pdphilip.com/eloquent/saving-models/" target="_blank">Saving Models — pdphilip/opensearch</a></li>
+    <li><a href="https://opensearch.pdphilip.com/eloquent/querying-models/" target="_blank">Querying Models — pdphilip/opensearch</a></li>
+    <li><a href="https://laravel.com/docs/eloquent#observers" target="_blank">Eloquent Observers — Laravel Documentation</a></li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0006-filtre-sortare-paginatie.html">← Lecția 6: Filtre, sortare, paginație</a>
+  <a href="0008-highlight.html">Lecția 8: Highlight →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Felicitări — ai parcurs toate lecțiile de bază!</strong>
+  Acum știi să conectezi OpenSearch la Laravel, să indexezi documente, să cauți, să filtrezi și să sincronizezi cu MongoDB.
+  Pune-mi orice întrebare despre aplicarea acestor concepte în proiectul tău real.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

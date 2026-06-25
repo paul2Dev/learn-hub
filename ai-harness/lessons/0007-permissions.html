@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7: Permissions — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 7 din 8</span>
+    <span class="tag">~15 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Permissions &amp; Settings</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Controlează exact ce poate și ce nu poate face Claude — per tool, per comandă, per proiect.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: DE CE PERMISSIONS ══════ -->
+  <h2>De ce să configurezi permisiuni?</h2>
+
+  <p>
+    În mod implicit, Claude Code cere confirmarea utilizatorului înainte de orice acțiune care ar putea fi distructivă
+    sau ireversibilă. Permisiunile îți permit să sari acele prompturi pentru operațiunile în care ai încredere și să
+    blochezi hard operațiunile pe care nu vrei să se producă niciodată — fără confirmare, fără posibilitate de override.
+  </p>
+
+  <p>Există două motive pentru a configura permisiuni:</p>
+  <ul>
+    <li><strong>Viteză</strong> — pre-aprobă operațiunile sigure ca să nu mai dai clic pe "Permite" de 20 de ori per sesiune</li>
+    <li><strong>Siguranță</strong> — blochează hard operațiunile periculoase astfel încât nici un prompt prost scris să nu le poată declanșa</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-label">Deny suprascrie allow</div>
+    Dacă un tool sau o comandă se potrivește atât cu o regulă <code>allow</code> cât și cu o regulă <code>deny</code>,
+    <strong>deny câștigă</strong>. Întotdeauna. Folosește asta pentru a crea un safety floor explicit.
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: IERARHIA FIȘIERELOR DE SETĂRI ══════ -->
+  <h2>Ierarhia fișierelor de setări</h2>
+
+  <p>
+    Există trei fișiere <code>settings.json</code> în joc. Fișierele mai specifice suprascriu cele mai generale:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Politică enterprise (read-only)</h4>
+        <p>Setată de IT/admin. Se aplică tuturor utilizatorilor de pe o mașină gestionată. Nu poate fi suprascrisă.</p>
+      </div>
+      <div class="arch-tag">prioritate maximă</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>~/.claude/settings.json (nivel utilizator)</h4>
+        <p>Valorile tale implicite personale pentru toate proiectele. Hooks, permisiuni și servere MCP pe care le vrei peste tot.</p>
+      </div>
+      <div class="arch-tag">scope utilizator</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>.claude/settings.json (nivel proiect)</h4>
+        <p>Comis în repo. Se aplică tuturor celor care deschid proiectul. Ideal pentru reguli allow/deny specifice proiectului.</p>
+      </div>
+      <div class="arch-tag">scope proiect</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>.claude/settings.local.json (override-uri locale)</h4>
+        <p>Override-uri personale pentru un proiect specific. Gitignored — niciodată comis. Folosit pentru credențiale și preferințe personale.</p>
+      </div>
+      <div class="arch-tag">cel mai jos / nu comite niciodată</div>
+    </div>
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 3: STRUCTURA ══════ -->
+  <h2>Structura permisiunilor</h2>
+
+  <pre><code>{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm run *)",
+      "Read",
+      "Write",
+      "Edit"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(chmod *)",
+      "WebFetch(https://suspicious-domain.com*)"
+    ]
+  }
+}</code></pre>
+
+  <h3>Sintaxa pattern-urilor</h3>
+  <ul>
+    <li><code>"Read"</code> — numai numele tool-ului permite/blochează toate utilizările acelui tool</li>
+    <li><code>"Bash(git *)"</code> — numele tool-ului + pattern de comandă în paranteze; <code>*</code> este wildcard</li>
+    <li><code>"WebFetch(https://api.example.com*)"</code> — pattern-uri URL pentru tool-uri web</li>
+    <li>Pattern-urile sunt potrivite prefix-style: <code>"Bash(git push*)"</code> se potrivește cu <code>git push</code>, <code>git push --force</code>, etc.</li>
+  </ul>
+
+
+  <!-- ══════ SECȚIUNEA 4: PATTERN-URI COMUNE ══════ -->
+  <h2>Pattern-uri comune de permisiuni</h2>
+
+  <h3>Auto-aprobă operațiunile sigure de citire</h3>
+  <pre><code>{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)"
+    ]
+  }
+}</code></pre>
+
+  <h3>Specific proiectului: permite npm, blochează deploy-urile în producție</h3>
+  <pre><code>{
+  "permissions": {
+    "allow": [
+      "Bash(npm run test)",
+      "Bash(npm run build)",
+      "Bash(npm run lint)"
+    ],
+    "deny": [
+      "Bash(npm run deploy:prod)",
+      "Bash(npm run deploy:staging)"
+    ]
+  }
+}</code></pre>
+
+  <h3>Safety floor hard (adaugă la setările de nivel utilizator)</h3>
+  <pre><code>{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~*)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(DROP TABLE*)",
+      "Bash(curl * | bash)"
+    ]
+  }
+}</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">Sfat — Reduci prompturile de permisiune</div>
+    Skill-ul <code>/fewer-permission-prompts</code> analizează transcrierile sesiunilor tale și
+    recomandă o listă allow bazată pe comenzile pe care le-ai aprobat în mod repetat.
+    Rulează-l după câteva sesiuni pentru a genera automat lista ta de bază allow.
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 5: VARIABILE DE MEDIU ══════ -->
+  <h2>Variabile de mediu în settings</h2>
+
+  <p>
+    Poți injecta variabile de mediu în fiecare sesiune Claude Code prin <code>settings.json</code>.
+    Astfel transmiți chei API, flag-uri de feature și identificatori de mediu fără să le hardcodezi:
+  </p>
+
+  <pre><code>{
+  "env": {
+    "NODE_ENV": "development",
+    "LOG_LEVEL": "debug",
+    "API_BASE_URL": "https://api.staging.example.com"
+  },
+  "permissions": {
+    "allow": ["Bash(npm *)", "Read", "Edit"]
+  }
+}</code></pre>
+
+  <p>
+    Valorile sensibile (tokeni, parole) aparțin lui <code>settings.local.json</code> — gitignored —
+    nu în <code>settings.json</code> comis.
+  </p>
+
+
+  <!-- ══════ PRACTIC ══════ -->
+  <h2>Practic: configurează setările proiectului tău</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Creează un settings.json de proiect</div>
+    <ol>
+      <li>
+        Creează <code>.claude/settings.json</code> în rădăcina proiectului tău (creează folderul dacă nu există).
+      </li>
+      <li>
+        Adaugă o listă allow pentru operațiuni git și fișiere read-only:
+        <pre><code>{
+  "permissions": {
+    "allow": [
+      "Read", "Glob", "Grep",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}</code></pre>
+      </li>
+      <li>
+        Repornește Claude Code. Acum cere-i să ruleze <code>git status</code>.
+        Ar trebui să se execute fără un prompt de confirmare.
+      </li>
+      <li>
+        Cere-i să ruleze <code>rm -rf dist/</code>. Ar trebui să fie blocat de regula deny,
+        chiar dacă spui "sunt sigur, te rog fă asta."
+      </li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Mută o permisiune la scope de utilizator</div>
+    <ol>
+      <li>Deschide <code>~/.claude/settings.json</code>.</li>
+      <li>Adaugă <code>"Bash(git *)"</code> la lista allow acolo în loc de în fișierul de proiect.</li>
+      <li>Acum fiecare proiect la care lucrezi va auto-aproba comenzile git — fără a fi nevoie de asta în setările fiecărui repo.</li>
+    </ol>
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank">
+        Referința Claude Code Settings — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Referința completă pentru schema settings.json, ierarhia fișierelor, sintaxa pattern-urilor,
+        regulile de permisiune și injectarea variabilelor de mediu.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">
+          Un tool este listat atât în <code>allow</code> cât și în <code>deny</code> în același fișier de setări. Ce se întâmplă?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Allow câștigă — aprobarea explicită are prioritate</button></li>
+        <li><button data-correct="true">Deny câștigă — suprascrie întotdeauna allow</button></li>
+        <li><button data-correct="false">Utilizatorul este întrebat să decidă</button></li>
+        <li><button data-correct="false">Ultima regulă listată câștigă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Deny câștigă întotdeauna când există un conflict.
+        Aceasta este intenționat — regulile deny sunt safety floor-ul tău, nu sugestii.
+        Folosește asta pentru a crea blocuri irevocabile: chiar dacă o regulă allow se potrivește accidental,
+        regula deny garantează că comanda nu rulează.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">
+          Ce fișier de setări ar trebui să conțină secrete ca tokenii API?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>.claude/settings.json</code> (la nivel de proiect, comis)</button></li>
+        <li><button data-correct="false"><code>~/.claude/settings.json</code> (la nivel de utilizator)</button></li>
+        <li><button data-correct="true"><code>.claude/settings.local.json</code> (override-uri locale, gitignored)</button></li>
+        <li><button data-correct="false">Secretele ar trebui hardcodate în prompt în schimb</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>settings.local.json</code> este gitignored — nu pleacă niciodată de pe mașina ta.
+        <code>settings.json</code> de la nivel de proiect este comis și vizibil pentru toți cei cu acces la repo.
+        Setările la nivel de utilizator se sincronizează pe toate mașinile tale, ceea ce poate să nu fie de dorit
+        pentru secrete specifice proiectului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">
+          Cu ce se potrivește regula de permisiune <code>"Bash(npm run *)"</code>?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Numai <code>npm run</code> fără argumente</button></li>
+        <li><button data-correct="false">Orice comandă <code>npm</code></button></li>
+        <li><button data-correct="true">Orice comandă bash care începe cu <code>npm run </code></button></li>
+        <li><button data-correct="false">Șirul literal <code>npm run *</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>*</code> este un wildcard care se potrivește cu orice sufix.
+        <code>"Bash(npm run *)"</code> permite <code>npm run test</code>, <code>npm run build</code>,
+        <code>npm run lint:fix</code> — orice începe cu <code>npm run</code>.
+        Pentru a permite numai <code>npm run test</code>, folosește <code>"Bash(npm run test)"</code> exact.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">
+          Adaugi <code>"Bash(git *)"</code> la <code>~/.claude/settings.json</code>.
+          Se aplică în toate proiectele tale?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="true">Da — setările la nivel de utilizator se aplică în toate proiectele</button></li>
+        <li><button data-correct="false">Nu — setările la nivel de utilizator se aplică numai când nu există fișier la nivel de proiect</button></li>
+        <li><button data-correct="false">Numai dacă proiectul nu are propriul <code>settings.json</code></button></li>
+        <li><button data-correct="false">Numai pentru proiectele din directorul home</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Setările la nivel de utilizator sunt linia de bază pentru fiecare sesiune.
+        Setările la nivel de proiect se adaugă deasupra — pot adăuga mai multe allow-uri/deny-uri, dar nu
+        le șterg pe cele la nivel de utilizator. Pattern util: pune valorile implicite cross-proiect la nivel de utilizator,
+        regulile specifice proiectului la nivel de proiect.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">
+          Vrei să pasezi <code>NODE_ENV=production</code> sesiunilor Claude Code numai într-un proiect specific. Unde îl setezi?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">În <code>~/.claude/settings.json</code> sub <code>"env"</code></button></li>
+        <li><button data-correct="true">În <code>.claude/settings.json</code> (la nivel de proiect) sub <code>"env"</code></button></li>
+        <li><button data-correct="false">Într-un fișier <code>.env</code> din rădăcina proiectului</button></li>
+        <li><button data-correct="false">În mediul de sistem — settings.json nu suportă variabile de mediu</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cheia <code>"env"</code> din <code>settings.json</code>
+        injectează variabile în sesiunea Claude Code. Plasamentul la nivel de proiect înseamnă că se aplică
+        numai acelui proiect. Dacă ai nevoie de ea peste tot, folosește în schimb setările la nivel de utilizator.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Vrei ajutor la scrierea unui pattern de permisiune pentru o comandă specifică?
+    Nu ești sigur dacă ceva aparține scope-ului de utilizator sau de proiect? Întreabă-mă.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0006-memory.html">← Lecția 6: Memory</a>
+    <a href="0008-mcp-servers.html">Lecția 8: MCP Servers →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

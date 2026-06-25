@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1: Ce este AI Harness? — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <!-- Header -->
+  <div class="lesson-meta">
+    <span class="tag">lecția 1 din 8</span>
+    <span class="tag">~15 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Ce este AI Harness?</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Concept, arhitectură și primul exercițiu practic — trasarea unui request prin harness.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: CONCEPTUL
+  ══════════════════════════════════════ -->
+  <h2>Conceptul</h2>
+
+  <p>
+    Un <strong>LLM brut</strong> primește text și produce text. Atât.
+    Nu poate citi un fișier, nu poate rula o comandă și nu reține nimic între conversații.
+    Este puternic, dar inert — un creier fără mâini și fără memorie de scurtă durată.
+  </p>
+
+  <p>
+    Un <strong>AI harness</strong> este stratul care îi dă creierului mâini.
+    Înfășoară LLM-ul într-un runtime structurat care oferă patru lucruri:
+  </p>
+
+  <ul>
+    <li><strong>Tool-uri</strong> — funcții pe care modelul le poate apela (<code>Read</code>, <code>Bash</code>, <code>WebSearch</code>, …)</li>
+    <li><strong>Context</strong> — istoricul conversației, system prompt-ul și rezultatele tool-urilor pe care modelul le poate vedea</li>
+    <li><strong>Permissions</strong> — reguli despre ce tool-uri sunt permise și care sunt blocate</li>
+    <li><strong>Hooks</strong> — comenzi shell care se declanșează la evenimente (înainte de rularea unui tool, după finalizare, la încheierea sesiunii)</li>
+  </ul>
+
+  <p>
+    Combinate, aceste patru elemente formează un <strong>agent</strong>: un LLM care poate percepe mediul înconjurător, poate lua acțiuni și poate fi constrâns la un domeniu definit de comportament.
+    Harness-ul este cel care transformă modelul dintr-un chatbot într-un colaborator de inginerie software.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Idee cheie</div>
+    Harness-ul rulează <em>în afara</em> modelului. Claude nu vede niciodată verificarea de permisiuni sau script-ul de hook — vede doar rezultatul apelului său de tool returnat în context.
+    Modelul gândește în tokeni; harness-ul gândește în evenimente.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: ARHITECTURA
+  ══════════════════════════════════════ -->
+  <h2>Cele patru straturi</h2>
+
+  <p>
+    Harness-ul Claude Code are patru straturi suprapuse.
+    Fiecare apel de tool trece prin toate patru, de sus în jos și înapoi.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Modelul (Claude)</h4>
+        <p>Citește fereastra de context, decide ce să facă în continuare și emite fie un răspuns text, fie un apel de tool. Acesta este singurul strat care folosește inferență AI.</p>
+      </div>
+      <div class="arch-tag">claude-sonnet-4-x</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Tool Registry</h4>
+        <p>Setul de funcții disponibile pentru model. Built-in-uri: Read, Write, Edit, Bash, Grep, Glob, Agent, WebSearch. Extins prin servere MCP.</p>
+      </div>
+      <div class="arch-tag">tools + MCP</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Permission Layer</h4>
+        <p>Verifică fiecare apel de tool față de listele allow/deny din <code>settings.json</code> înainte de execuție. Poate bloca o comandă Bash specifică în timp ce le permite pe celelalte.</p>
+      </div>
+      <div class="arch-tag">settings.json</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>Hook Layer</h4>
+        <p>Comenzi shell declanșate de evenimente ale harness-ului: <code>PreToolUse</code>, <code>PostToolUse</code>, <code>Stop</code>, <code>Notification</code>. Shell pur — fără implicarea modelului.</p>
+      </div>
+      <div class="arch-tag">hooks</div>
+    </div>
+  </div>
+
+  <p>
+    Aceste straturi sunt <em>independente</em>. Poți configura permission layer-ul fără să scrii vreun hook.
+    Poți adăuga un tool MCP fără să schimbi permisiunile.
+    Fiecare strat are un singur rol și se compun curat împreună.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: TRASAREA UNUI REQUEST
+  ══════════════════════════════════════ -->
+  <h2>Trasarea unui request</h2>
+
+  <p>
+    Imaginează-ți că îi ceri lui Claude: <em>"Citește package.json și spune-mi versiunea."</em>
+    Iată exact ce face harness-ul, pas cu pas:
+  </p>
+
+  <div class="flow">
+
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Mesajul tău intră în <strong>fereastra de context</strong>. Modelul citește contextul complet și decide să apeleze <code>Read("package.json")</code>.</p>
+        <span class="layer-tag">Stratul 1 — Model</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Harness-ul caută <code>Read</code> în <strong>tool registry</strong>. Este un built-in — confirmat disponibil.</p>
+        <span class="layer-tag">Stratul 2 — Tool Registry</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Permission layer</strong> verifică <code>settings.json</code>: este tool-ul <code>Read</code> permis? Este <code>package.json</code> într-o cale blocată? Dacă este refuzat, execuția se oprește aici și o eroare este returnată modelului.</p>
+        <span class="layer-tag">Stratul 3 — Permission Layer</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Orice <strong>hooks <code>PreToolUse</code></strong> înregistrate se declanșează. Script-ul tău de hook primește numele tool-ului și argumentele sale ca JSON pe stdin.</p>
+        <span class="layer-tag">Stratul 4 — Hooks</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><strong>Tool-ul se execută</strong>: <code>package.json</code> este citit de pe disc.</p>
+        <span class="layer-tag">Stratul 2 — Tool</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <p>Orice <strong>hooks <code>PostToolUse</code></strong> se declanșează. Primesc numele tool-ului, inputul și conținutul fișierului.</p>
+        <span class="layer-tag">Stratul 4 — Hooks</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        <p>Rezultatul tool-ului (conținutul fișierului) este injectat înapoi în <strong>fereastra de context</strong>. Modelul îl citește și generează răspunsul text: <em>"Versiunea este 1.4.2."</em></p>
+        <span class="layer-tag">Stratul 1 — Model</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Ce să observi</div>
+    Modelul este implicat doar la pașii 1 și 7. Tot ce se întâmplă între ele — verificarea permisiunilor, hooks-urile, I/O-ul efectiv al fișierului — este logică pură de harness. Modelul nu "știe" de permission layer; pur și simplu primește un rezultat sau o eroare.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: EXERCIȚIU PRACTIC
+  ══════════════════════════════════════ -->
+  <h2>Practic: inspectează-ți harness-ul</h2>
+
+  <p>
+    Ai deja un harness care rulează — ești în interiorul lui chiar acum.
+    Acest exercițiu face vizibile cele patru straturi.
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiul 1 — Găsește permission layer-ul</div>
+    <ol>
+      <li>
+        Deschide un terminal în directorul rădăcină al proiectului și rulează:<br>
+        <pre><code>cat .claude/settings.json</code></pre>
+        (Sau verifică <code>%USERPROFILE%\.claude\settings.json</code> pentru configurarea la nivel de utilizator pe Windows.)
+      </li>
+      <li>
+        Caută un bloc <code>"permissions"</code>. Vei vedea arrayuri <code>allow</code> și <code>deny</code> — acestea sunt permission layer-ul tău.
+      </li>
+      <li>
+        Caută un bloc <code>"hooks"</code>. Gol? Acesta este hook layer-ul fără nimic înregistrat încă — exact ce vom remedia în Lecția 2.
+      </li>
+      <li>
+        Caută <code>"mcpServers"</code>. Orice intrări de acolo sunt extensii ale tool registry-ului tău.
+      </li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiul 2 — Cere lui Claude să-și descrie propriul harness</div>
+    <ol>
+      <li>În Claude Code, întreabă: <em>"Ce tool-uri ai disponibile în momentul acesta?"</em></li>
+      <li>Lista pe care ți-o oferă este viziunea sa asupra <strong>tool registry</strong>-ului (Stratul 2).</li>
+      <li>Apoi întreabă: <em>"Ce permisiuni sunt configurate pentru această sesiune?"</em> — va încerca să citească <code>settings.json</code>, oferindu-ți o trasare live prin harness.</li>
+    </ol>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: CUM ARATĂ UN HOOK
+  ══════════════════════════════════════ -->
+  <h2>Cum arată un hook</h2>
+
+  <p>
+    Înainte de quiz, iată o previzualizare concretă a ceea ce vei scrie în Lecția 2.
+    Aceasta este o înregistrare completă și funcțională a unui hook în <code>settings.json</code>:
+  </p>
+
+  <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"Bash tool finished\" >> /tmp/harness.log"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+  <p>
+    Citește asta ca: <em>"După fiecare apel al tool-ului <code>Bash</code>, rulează această comandă shell."</em>
+    Acea comandă shell este pură OS — fără model, fără AI, doar un script.
+    Harness-ul o execută și continuă.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-label">Notă Windows</div>
+    Pe Windows cu Claude Code, comenzile de hook rulează implicit în PowerShell.
+    Înlocuiește <code>/tmp/harness.log</code> cu <code>$env:TEMP\harness.log</code> sau o cale relativă la proiect.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 6: SURSĂ PRIMARĂ
+  ══════════════════════════════════════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank">
+        Claude Code Settings &amp; Hooks — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Referința autoritară pentru <code>settings.json</code>, evenimentele de hook, listele de permisiuni și înregistrarea serverelor MCP.
+        Citește secțiunea "Hooks" înainte de Lecția 2.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 7: QUIZ
+  ══════════════════════════════════════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <!-- Q1 -->
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">
+          Îi ceri lui Claude să ruleze <code>npm install</code>. Înainte ca comanda să se execute,
+          ce strat verifică dacă aceasta este permisă?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Modelul (inferența Claude)</button></li>
+        <li><button data-correct="false">Tool Registry</button></li>
+        <li><button data-correct="true">Permission Layer</button></li>
+        <li><button data-correct="false">Hook Layer</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Permission layer-ul citește <code>settings.json</code> și verifică listele allow/deny
+        <em>înainte</em> de execuția oricărui tool. Modelul nu vede niciodată această verificare — vede doar rezultatul sau o eroare.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">
+          Un hook înregistrat pe <code>PostToolUse</code> pentru tool-ul <code>Write</code> se declanșează în ce moment?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când modelul decide să apeleze <code>Write</code></button></li>
+        <li><button data-correct="false">Când permission layer-ul aprobă apelul</button></li>
+        <li><button data-correct="false">Imediat înainte de scrierea fișierului</button></li>
+        <li><button data-correct="true">Imediat după scrierea fișierului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>PostToolUse</code> se declanșează <em>după</em> finalizarea tool-ului.
+        Dacă ai nevoie să interceptezi înainte de execuție (de exemplu, pentru a valida inputul), folosește în schimb <code>PreToolUse</code>.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">
+          Conectezi un tool personalizat de interogare a bazei de date printr-un server MCP.
+          În ce strat intră acest tool?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Permission Layer</button></li>
+        <li><button data-correct="true">Tool Registry</button></li>
+        <li><button data-correct="false">Modelul</button></li>
+        <li><button data-correct="false">Hook Layer</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Serverele MCP extind tool registry-ul. Odată înregistrat,
+        modelul poate apela tool-ul tău personalizat exact ca un built-in — și tot trece prin
+        permission layer înainte de execuție.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">
+          Care dintre cele patru straturi ale harness-ului este <em>singurul</em> care folosește inferență AI?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="true">Modelul</button></li>
+        <li><button data-correct="false">Tool Registry</button></li>
+        <li><button data-correct="false">Permission Layer</button></li>
+        <li><button data-correct="false">Hook Layer</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Celelalte trei straturi sunt logică pură: căutarea tool-ului, verificarea fișierului de configurare
+        și execuția script-ului shell. Numai stratul model apelează API-ul LLM.
+        Această separare este motivul pentru care harness-urile pot fi rapide, deterministe și auditabile.
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">
+          Un script de hook al harness-ului primește inputul tool-ului ca JSON pe <code>stdin</code>.
+          În ce limbaj rulează?
+        </span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">JavaScript (Node.js)</button></li>
+        <li><button data-correct="false">Python</button></li>
+        <li><button data-correct="true">Orice comandă shell specifici tu</button></li>
+        <li><button data-correct="false">TypeScript</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un hook este doar un șir <code>"command"</code> — orice comandă shell validă.
+        Poate apela un script Python, un fișier Node.js, un one-liner PowerShell sau un binar compilat.
+        Harness-ul nu se preocupă de asta; rulează comanda și continuă.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       ÎNTREABĂ PROFESORUL
+  ══════════════════════════════════════ -->
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ceva din această lecție nu este clar? Vrei să vezi trasarea requestului aplicată la un alt tool?
+      Ești curios cum gestionează permission layer-ul wildcardurile?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+      Scrie întrebarea ta în Claude Code și voi răspunde în contextul a ceea ce ai învățat până acum.
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       NAVIGARE
+  ══════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <span class="current">← Începutul cursului</span>
+    <a href="0002-hooks.html">Lecția 2: Hooks →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

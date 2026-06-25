@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8 — Strategia de Testare | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 8 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Strategia de Testare</h1>
+  <p>Cum să decizi ce să testezi, la ce nivel și de ce această judecată nu poate fi delegată AI-ului.</p>
+
+  <h2>AI poate scrie teste. Nu aceasta este partea grea.</h2>
+  <p>AI va genera teste unitare la cerere, adesea cu o acoperire bună a cazului fericit. Părțile dificile ale testării — ce <em>trebuie</em> testat, la ce nivel, cu ce izolare — necesită judecată inginerească. O strategie de testare proastă produce un pipeline CI verde care nu te protejează cu adevărat.</p>
+
+  <h2>Piramida de testare</h2>
+  <p>Piramida de testare este un model pentru modul de alocare a efortului de testare pe trei niveluri:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">E</div>
+      <div class="arch-info">
+        <h4>Teste end-to-end (vârf)</h4>
+        <p>Exercită întregul sistem dintr-o perspectivă reală de utilizator — de la browser până la baza de date. Lente, fragile, costisitoare. Folosește-le cu moderație pentru călătoriile critice ale utilizatorului.</p>
+      </div>
+      <div class="arch-tag">puține</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">I</div>
+      <div class="arch-info">
+        <h4>Teste de integrare (mijloc)</h4>
+        <p>Testează mai multe componente împreună — de obicei endpoint API până la baza de date reală. Mai lente, dar testează cablajul real. Folosește-le pentru contractele critice ale aplicației.</p>
+      </div>
+      <div class="arch-tag">moderate</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">U</div>
+      <div class="arch-info">
+        <h4>Teste unitare (bază)</h4>
+        <p>Testează o singură clasă sau funcție în izolare. Rapide, deterministe, focalizate. Folosește-le pentru logica de business complexă, cazuri limită și algoritmi.</p>
+      </div>
+      <div class="arch-tag">multe</div>
+    </div>
+  </div>
+
+  <h2>Testare bazată pe risc: ce să testezi primul</h2>
+  <p>Nu poți testa totul. Întrebarea nu este „ce procent din linii sunt acoperite?" ci „ce se strică dacă acest cod este greșit?" Testează proporțional cu riscul:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Nivel de risc</th><th>Ce se califică</th><th>Prioritate de testare</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Critic</strong></td>
+        <td>Autentificare, plăți, ștergere date, facturare, gestionare PII</td>
+        <td>Teste de integrare complete + teste unitare explicite pentru cazuri limită</td>
+      </tr>
+      <tr>
+        <td><strong>Ridicat</strong></td>
+        <td>Reguli de business care afectează bani sau integritatea datelor</td>
+        <td>Teste unitare pentru toate ramurile logice, test de integrare pentru contract</td>
+      </tr>
+      <tr>
+        <td><strong>Mediu</strong></td>
+        <td>Logică de funcționalitate care afectează experiența utilizatorului</td>
+        <td>Teste unitare pentru cazul fericit și cazurile limită cheie</td>
+      </tr>
+      <tr>
+        <td><strong>Scăzut</strong></td>
+        <td>Text UI, culoare, layout, CRUD simplu fără reguli de business</td>
+        <td>Verificări punctuale; încredere în sistemul de tipuri și validarea framework-ului</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Ce ratează AI în teste</h2>
+  <p>AI generează teste care trec cu implementarea pe care tocmai a scris-o. Aceasta nu este testare — este verificarea că codul face ce face. Testele de care ai cu adevărat nevoie sunt teste care ar prinde <em>bug-uri în acea implementare</em>. Judecata umană este necesară pentru:</p>
+
+  <ul>
+    <li><strong>Condiții la limită:</strong> valorile exacte unde comportamentul se schimbă (zero, unu, max, min)</li>
+    <li><strong>Cazuri limită de securitate:</strong> SQL injection în filtre, XSS în câmpuri de afișare, acces neautorizat la datele altor utilizatori</li>
+    <li><strong>Concurență:</strong> două request-uri concurând pe aceeași înregistrare</li>
+    <li><strong>Cusăturile de integrare:</strong> ce se întâmplă când baza de date este lentă sau API-ul extern returnează un răspuns neașteptat</li>
+    <li><strong>Comportament dependent de stare:</strong> ce se întâmplă când aceeași acțiune este apelată de două ori? Pe o comandă deja anulată?</li>
+  </ul>
+
+  <h2>Contractul de testare</h2>
+  <p>Fiecare test ar trebui să testeze un contract, nu o implementare. Un contract este o afirmație despre comportamentul observabil:</p>
+
+  <pre><code>// Testează implementarea — fragil (se strică la refactorizarea internalelor)
+it('apelează metoda StripeClient::charge cu suma', function() {
+    $mockStripe = Mockery::mock(StripeClient::class);
+    $mockStripe->shouldReceive('charge')->once()->with(100.00);
+    // ...
+});
+
+// Testează contractul — robust (se uită doar la rezultat)
+it('deduce suma de plată din soldul clientului când checkout-ul reușește', function() {
+    $customer = Customer::factory()->withBalance(500)->create();
+    $this->post('/checkout', ['amount' => 100]);
+    expect($customer->fresh()->balance)->toBe(400.00);
+});</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Mirosul testului de implementare</div>
+    Dacă un test se strică când refactorizezi codul intern fără a schimba comportamentul extern, testează implementarea, nu contractul. Aceste teste adaugă cost de mentenanță fără a adăuga siguranță.
+  </div>
+
+  <h2>Testele ca feedback de design</h2>
+  <p>Codul greu de testat este aproape întotdeauna cod prost proiectat. Dacă te găsești configurând cinci obiecte mock pentru a testa o singură metodă, acea metodă are prea multe dependențe — ceea ce este o încălcare SOLID/DIP. Testele dureroase de scris sunt un semnal de design, nu o problemă de testare.</p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Audit de acoperire a testelor</div>
+    <ol>
+      <li>Alege o funcționalitate critică (autentificare, plăți sau acces la date) din codebase-ul tău.</li>
+      <li>Listează cazurile limită de securitate: acces neautorizat, input lipsă, tranziții de stare invalide.</li>
+      <li>Verifică dacă fiecare caz limită are un test. Marchează lacunele.</li>
+      <li>Pentru cea mai importantă lacună, scrie testul mai întâi (fără a te uita la implementare).</li>
+      <li>Rulează testul. Trece? Dacă da, codul deja îl gestionează. Dacă nu, ai găsit un bug real.</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://martinfowler.com/articles/practical-test-pyramid.html" target="_blank">The Practical Test Pyramid — Martin Fowler</a>. Ghidul definitiv pentru ce este fiecare nivel al piramidei, când să folosești mock-uri vs. dependențe reale și cum să structurezi o suită de teste care te protejează cu adevărat.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Conform piramidei de testare, ce tip de test ar trebui să ai cel mai mult?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Teste end-to-end — testează călătoria completă a utilizatorului de la browser la baza de date</button></li>
+        <li><button data-correct="false">Teste de integrare — verifică cablajul real între componente</button></li>
+        <li><button data-correct="true">Teste unitare — sunt rapide, deterministe și focalizate pe logică specifică</button></li>
+        <li><button data-correct="false">Teste manuale — prind ce testele automate ratează întotdeauna</button></li>
+      </ul>
+      <div class="quiz-feedback">Baza piramidei sunt testele unitare — multe, rapide și focalizate. Testele end-to-end sunt la vârf (puține) deoarece sunt lente, fragile și costisitoare de întreținut. Forma piramidei îți spune unde să investești: mai mult la bază, mai puțin la vârf.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este prioritatea corectă pentru testarea unei funcționalități de procesare a plăților?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Prioritate scăzută — SDK-ul de plată gestionează corectitudinea intern</button></li>
+        <li><button data-correct="false">Prioritate medie — testează doar cazul fericit; cazurile limită sunt rare</button></li>
+        <li><button data-correct="true">Prioritate critică — teste de integrare complete plus teste unitare explicite pentru cazuri limită</button></li>
+        <li><button data-correct="false">Sari peste teste — AI le va genera dacă este nevoie mai târziu</button></li>
+      </ul>
+      <div class="quiz-feedback">Procesarea plăților este critică deoarece erorile afectează bani și încrederea utilizatorilor. Merită teste de integrare complete (testând întreaga cale inclusiv baza de date) plus teste unitare explicite pentru fiecare caz limită: taxe duplicate, eșecuri parțiale, rotunjire valutară, scenarii de rambursare.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Un test se strică după ce redenumești o metodă privată dar comportamentul extern rămâne neschimbat. Ce face greșit acest test?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Folosește testare la nivel de integrare când un test unitar ar fi mai rapid</button></li>
+        <li><button data-correct="false">Nu acoperă suficient cazurile limită și condițiile de frontieră ale funcționalității</button></li>
+        <li><button data-correct="true">Testează detalii de implementare mai degrabă decât contractul observabil</button></li>
+        <li><button data-correct="false">Asertează o valoare de output greșită pentru input-ul dat</button></li>
+      </ul>
+      <div class="quiz-feedback">Testele ar trebui să aserteze pe comportamentul extern, observabil — ce poate vedea apelantul. Un test care se strică când se schimbă detalii interne (nume de metode, stare privată, număr de apeluri) este cuplat la implementare, nu la contract. Refactorizările nu ar trebui să strice testele dacă comportamentul nu se schimbă.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ai nevoie de cinci mock-uri pentru a testa o singură metodă de serviciu. Ce semnalează asta?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Testul este cuprinzător și acoperă toate dependențele metodei</button></li>
+        <li><button data-correct="false">Testul ar trebui împărțit în cinci teste separate cu câte un mock fiecare</button></li>
+        <li><button data-correct="true">Metoda are prea multe dependențe — probabil o problemă de design care merită rezolvată</button></li>
+        <li><button data-correct="false">Framework-ul de testare folosit nu este suficient de puternic pentru acest caz de utilizare</button></li>
+      </ul>
+      <div class="quiz-feedback">Codul greu de testat este aproape întotdeauna cod prost proiectat. Cinci mock-uri pentru o metodă înseamnă că metoda depinde de cinci lucruri — o încălcare a SRP și probabil DIP. Testele acționează ca feedback de design: testele dureroase indică probleme de design, nu probleme de testare.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce testele generate de AI eșuează adesea să prindă bug-uri în codul pe care AI l-a generat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece modelele AI nu pot citi documentația de testare a framework-ului</button></li>
+        <li><button data-correct="false">Deoarece AI generează teste într-un limbaj diferit față de codul sursă</button></li>
+        <li><button data-correct="true">Deoarece testele AI verifică că codul face ce face — nu că ce face este corect</button></li>
+        <li><button data-correct="false">Deoarece testele AI folosesc întotdeauna mock-uri, prevenind testarea de integrare reală</button></li>
+      </ul>
+      <div class="quiz-feedback">AI generează teste din implementarea pe care tocmai a scris-o. Aceste teste trec prin construcție — verifică comportamentul curent al codului, nu dacă acel comportament este corect conform cerințelor. Pentru a prinde bug-uri reale, testele trebuie derivate din cerințe, nu din implementare.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Cum testez un controller Laravel care depinde de trei servicii?"</em> sau <em>„Care este diferența dintre un stub și un mock?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0007-technical-debt.html">← Lecția 7: Datorie Tehnică</a>
+    <a href="0009-security-by-design.html">Lecția 9: Securitate prin Design →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

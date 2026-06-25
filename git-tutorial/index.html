@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git &amp; GitHub — Cursul tău</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .course-header {
+      max-width: 660px;
+      margin: 0 auto 2.5rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .course-meta {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .course-header h1 {
+      font-size: 2.1rem;
+      line-height: 1.18;
+      font-weight: 700;
+      margin-bottom: 0.45rem;
+    }
+    .course-subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .course-body {
+      max-width: 660px;
+      margin: 0 auto;
+    }
+    .course-body h2 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      margin-bottom: 0.75rem;
+    }
+    .course-grid {
+      display: grid;
+      gap: 14px;
+      margin: 1.25em 0 2.5em;
+    }
+    .lesson-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 14px 18px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+    .lesson-card:hover {
+      border-color: var(--accent);
+      background: #eff6ff;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .lesson-num {
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 2rem;
+      line-height: 1;
+      padding-top: 3px;
+    }
+    .lesson-info h3 {
+      margin: 0 0 4px;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 700;
+    }
+    .lesson-info p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-style: normal;
+      line-height: 1.5;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      padding: 2px 7px;
+      border-radius: 3px;
+      margin-left: 8px;
+      vertical-align: middle;
+      font-weight: 600;
+    }
+    .badge-concept {
+      background: #eff6ff;
+      color: var(--accent);
+      border: 1px solid #bfdbfe;
+    }
+    .badge-skill {
+      background: #fff7ed;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+    .badge-lab {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .course-body ul {
+      padding-left: 1.4rem;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.95rem;
+    }
+    .course-body ul li { margin-bottom: 0.4rem; }
+  </style>
+</head>
+<body>
+
+<div style="max-width:660px;margin:0 auto 1rem;padding-top:1.5rem;">
+  <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="course-header">
+  <p class="course-meta">Git &amp; GitHub · Cursul tău personal</p>
+  <h1>Git &amp; GitHub Fluency</h1>
+  <p class="course-subtitle">De la mental model la CI/CD complet — 9 lecții, cod concret, quiz-uri interactive</p>
+</div>
+
+<div class="course-body">
+
+  <h2>Lecții</h2>
+
+  <div class="course-grid">
+
+    <a class="lesson-card" href="lessons/0001-git-mental-model.html">
+      <span class="lesson-num">01</span>
+      <div class="lesson-info">
+        <h3>The Git Commit Graph <span class="badge badge-concept">concepte</span></h3>
+        <p>Cum gândește Git intern: commit graph, HEAD, branches ca pointeri, detached HEAD state. Mental modelul care face totul să facă sens.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0002-merge-conflicts.html">
+      <span class="lesson-num">02</span>
+      <div class="lesson-info">
+        <h3>Merge Conflicts <span class="badge badge-skill">practică</span></h3>
+        <p>De ce apar conflictele, cum arată markerii de conflict, cum le rezolvi pas cu pas și strategii de prevenire în echipă.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0003-rebase-vs-merge.html">
+      <span class="lesson-num">03</span>
+      <div class="lesson-info">
+        <h3>Rebase vs. Merge <span class="badge badge-concept">concepte</span></h3>
+        <p>Diferențele reale între cele două strategii, când folosești fiecare, interactive rebase și golden rule-ul pe care nu trebuie să-l încalci.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0004-github-actions.html">
+      <span class="lesson-num">04</span>
+      <div class="lesson-info">
+        <h3>GitHub Actions <span class="badge badge-skill">practică</span></h3>
+        <p>Anatomia unui workflow YAML: triggers, jobs, steps, runners. Secrets, artifacts, matrix builds. Primul tău workflow funcțional.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0005-github-webhooks.html">
+      <span class="lesson-num">05</span>
+      <div class="lesson-info">
+        <h3>GitHub Webhooks <span class="badge badge-skill">practică</span></h3>
+        <p>Ce sunt webhook-urile, cum funcționează payload-ul, securitate cu HMAC signature, și când alegi webhooks în loc de Actions.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0006-cicd-pipelines.html">
+      <span class="lesson-num">06</span>
+      <div class="lesson-info">
+        <h3>CI/CD Pipelines <span class="badge badge-skill">practică</span></h3>
+        <p>Pipeline complet de la push la deploy: build, test, lint, environments, approvals manuale, rollback strategy.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0007-pull-requests.html">
+      <span class="lesson-num">07</span>
+      <div class="lesson-info">
+        <h3>Pull Requests <span class="badge badge-skill">practică</span></h3>
+        <p>Cum scrii un PR bun, code review eficient, draft PRs, branch protection rules, merge strategies și eticheta de echipă.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0008-workflow-automations.html">
+      <span class="lesson-num">08</span>
+      <div class="lesson-info">
+        <h3>Workflow Automations <span class="badge badge-skill">practică</span></h3>
+        <p>Automatizări Git care salvează timp zilnic: hooks, aliases, scripts, GitHub CLI, auto-labeling, stale bot, dependabot.</p>
+      </div>
+    </a>
+
+    <a class="lesson-card" href="lessons/0009-real-world-lab.html">
+      <span class="lesson-num">09</span>
+      <div class="lesson-info">
+        <h3>Real-World Lab <span class="badge badge-lab">laborator</span></h3>
+        <p>Scenariu complet end-to-end: feature branch → conflict → PR cu CI → code review → merge → deploy automat. Totul la un loc.</p>
+      </div>
+    </a>
+
+  </div>
+
+  <h2>Resurse</h2>
+  <ul>
+    <li><a href="https://git-scm.com/book/en/v2" target="_blank">Pro Git — cartea oficială Git (free online)</a></li>
+    <li><a href="https://docs.github.com/en/actions" target="_blank">GitHub Actions — documentație oficială</a></li>
+    <li><a href="https://docs.github.com/en/webhooks" target="_blank">GitHub Webhooks — documentație oficială</a></li>
+    <li><a href="https://learngitbranching.js.org/" target="_blank">Learn Git Branching — vizualizator interactiv</a></li>
+  </ul>
+
+  <div class="ask-teacher">
+    <strong>Continui cu un profesor.</strong> La sesiunea viitoare putem aprofunda:
+    Git bisect, cherry-pick, worktrees, monorepo strategies, sau orice scenarii concrete din proiectul tău.
+    Deschide o sesiune nouă și spune ce vrei să înveți.
+  </div>
+
+</div>
+
+</body>
+</html>

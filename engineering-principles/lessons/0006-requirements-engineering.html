@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6 — Ingineria Cerințelor | Principii de Inginerie</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:0.75rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">Lecția 6 din 10</span>
+    <span>⏱ 20 min</span>
+    <span><a href="../reference/glossary.html">Glosar</a></span>
+    <span><a href="../index.html">Index curs</a></span>
+  </div>
+
+  <h1>Ingineria Cerințelor</h1>
+  <p>Cum să traduci ce vor stakeholderii în specificații suficient de precise pentru a construi din ele — și pentru a evalua output-ul AI împotriva lor.</p>
+
+  <h2>De ce cerințele contează mai mult cu AI</h2>
+  <p>AI este remarcabil de bun la completarea golurilor. Dă-i o cerință ambiguă și va produce cod complet și cu aspect confident care satisface o interpretare plauzibilă a ce ai cerut. Problema: dacă interpretarea este greșită, acum ai o cantitate mare de cod greșit care arată corect.</p>
+
+  <p>Cerințele precise sunt pârghia ta: ele determină dacă output-ul AI este evaluabil. Nu poți revizui codul AI față de o cerință pe care nu o poți articula.</p>
+
+  <h2>Cerințe funcționale vs. non-funcționale</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">F</div>
+      <div class="arch-info">
+        <h4>Cerințe funcționale</h4>
+        <p>Ce <em>face</em> sistemul. Comportamente care pot fi demonstrate: „Utilizatorii pot reseta parola prin e-mail."</p>
+      </div>
+      <div class="arch-tag">ce face</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">N</div>
+      <div class="arch-info">
+        <h4>Cerințe non-funcționale</h4>
+        <p>Cât de bine o face. Performanță, securitate, fiabilitate, scalabilitate: „Token-urile de resetare a parolei expiră după 60 de minute și sunt de unică folosință."</p>
+      </div>
+      <div class="arch-tag">cât de bine o face</div>
+    </div>
+  </div>
+
+  <p>Cerințele non-funcționale sunt cele pe care AI le omite aproape întotdeauna dacă nu sunt solicitate explicit. „Construiește o funcționalitate de resetare a parolei" va produce funcționalitatea; nu va produce expirarea token-ului, aplicarea utilizării unice, limitarea ratei sau protecția împotriva forței brute — dacă nu ceri explicit.</p>
+
+  <h2>Formatul de specificație care funcționează</h2>
+  <p>User story-urile captează intenția; criteriile de acceptanță le fac testabile. Împreună formează o specificație pe care AI poate lucra și pe care tu o poți evalua:</p>
+
+  <pre><code>## Funcționalitate: Resetare Parolă
+
+### User story
+Ca utilizator înregistrat,
+vreau să-mi resetez parola prin e-mail,
+astfel încât să pot recăpăta accesul dacă îmi uit credențialele.
+
+### Criterii de acceptanță
+- [ ] Un link „Ai uitat parola?" apare pe pagina de login
+- [ ] Trimiterea formularului cu e-mail trimite un link de resetare dacă e-mailul este înregistrat
+- [ ] Trimiterea cu un e-mail neînregistrat returnează 200 (fără enumerare)
+- [ ] Token-ul de resetare expiră după 60 de minute
+- [ ] Fiecare token de resetare poate fi folosit o singură dată
+- [ ] Noua parolă trebuie să îndeplinească cerințele de complexitate (min 8 caractere, 1 cifră)
+- [ ] După resetare, toate celelalte sesiuni active sunt invalidate
+- [ ] Limitare rată: max 3 cereri de resetare per e-mail pe oră</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Exemplul de enumerare</div>
+    Observă „fără enumerare" — specificația spune că returnarea 200 indiferent dacă e-mailul este înregistrat sau nu este o cerință de securitate. AI nu ar produce asta fără să i se spună. Aceasta este o cerință non-funcțională pe care dezvoltatorul trebuie să o furnizeze.
+  </div>
+
+  <h2>Cazuri limită: jumătatea ascunsă a unei cerințe</h2>
+  <p>Fiecare cerință are un caz fericit și mai multe cazuri limită. Cazul fericit este ce a descris stakeholderul. Cazurile limită sunt ce stakeholderul a presupus că vei gestiona. Descoperirea lor înainte de implementare este mult mai ieftină decât descoperirea lor în producție.</p>
+
+  <p>O modalitate structurată de a găsi cazuri limită pentru orice cerință:</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>Întreabă: care sunt input-urile?</strong> Pentru fiecare input: ce se întâmplă când este gol, null, prea mare, prea mic, în format greșit sau conține caractere speciale?</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>Întreabă: care sunt precondiții?</strong> Ce trebuie să fie adevărat înainte ca această acțiune să poată reuși? Ce se întâmplă când o precondiție nu este îndeplinită?</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Întreabă: care sunt scenariile concurente?</strong> Ce se întâmplă dacă două request-uri sosesc simultan? Ce dacă această acțiune are loc în timp ce alta este în curs?</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><strong>Întreabă: care sunt modurile de eșec?</strong> Ce dacă un serviciu extern este indisponibil? Ce dacă baza de date este lentă? Sistemul eșuează în siguranță?</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Scrierea specificațiilor pe care AI le poate folosi</h2>
+  <p>Când furnizezi o specificație AI-ului, calitatea ei determină direct calitatea output-ului. O specificație utilă de prompt are:</p>
+
+  <table class="compare">
+    <thead>
+      <tr><th>Element</th><th>Versiune slabă</th><th>Versiune puternică</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Context</td>
+        <td>„Construiește un controller de comenzi"</td>
+        <td>„Laravel 11 API, response-uri JSON, comenzile sunt pentru un SaaS B2B — clienții pot avea mai multe comenzi"</td>
+      </tr>
+      <tr>
+        <td>Criterii de acceptanță</td>
+        <td>„Gestionează erorile corect"</td>
+        <td>„Returnează 422 cu erori per câmp; returnează 404 dacă comanda nu este găsită; returnează 409 dacă este deja anulată"</td>
+      </tr>
+      <tr>
+        <td>Constrângeri</td>
+        <td>„Fă-l sigur"</td>
+        <td>„Verifică că utilizatorul autentificat deține comanda înainte de a permite modificarea"</td>
+      </tr>
+      <tr>
+        <td>În afara domeniului</td>
+        <td>(nestipulat)</td>
+        <td>„Nu implementa plăți sau verificări de inventar — acestea sunt servicii separate"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Scrie o specificație corectă</div>
+    <ol>
+      <li>Alege o funcționalitate pe care ai construit-o recent cu o specificație imprecisă (sau din memorie).</li>
+      <li>Scrie user story-ul în formatul „Ca… vreau… astfel încât…"</li>
+      <li>Scrie cel puțin 5 criterii de acceptanță, incluzând cel puțin 2 non-funcționale.</li>
+      <li>Parcurge cele patru întrebări despre cazuri limită (input-uri, precondiții, concurență, moduri de eșec) și adaugă orice criterii noi găsești.</li>
+      <li>Acum dă această specificație unui AI și compară output-ul cu ce ai obținut fără ea. Ce s-a schimbat?</li>
+    </ol>
+  </div>
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p><a href="https://martinfowler.com/bliki/GivenWhenThen.html" target="_blank">GivenWhenThen — Martin Fowler</a>. Prezentare generală scurtă și precisă a formatului Given/When/Then pentru criteriile de acceptanță, care este o alternativă structurată față de lista de bifat din această lecție. Ambele formate produc criterii testabile și revizuibile.</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este diferența dintre o cerință funcțională și una non-funcțională?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cerințele funcționale sunt opționale; cele non-funcționale sunt obligatorii</button></li>
+        <li><button data-correct="false">Cerințele funcționale vin de la dezvoltatori; cele non-funcționale de la stakeholderii de business</button></li>
+        <li><button data-correct="true">Cerințele funcționale descriu ce face sistemul; cele non-funcționale cât de bine o face</button></li>
+        <li><button data-correct="false">Cerințele funcționale sunt testate automat; cele non-funcționale necesită verificări manuale</button></li>
+      </ul>
+      <div class="quiz-feedback">Cerințele funcționale sunt comportamentale: „utilizatorii pot reseta parola." Cerințele non-funcționale adaugă calități: „token-urile expiră în 60 de minute" (securitate), „pagina se încarcă în mai puțin de 2 secunde" (performanță), „sistemul gestionează 1000 de utilizatori concurenți" (scalabilitate).</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce specificația de resetare a parolei returnează HTTP 200 chiar și când e-mailul nu este înregistrat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece returnarea 404 ar confunda utilizatorul despre ce e-mail a încercat</button></li>
+        <li><button data-correct="false">Deoarece specificația HTTP nu permite 404 pe request-uri POST</button></li>
+        <li><button data-correct="true">Pentru a preveni enumerarea utilizatorilor — atacatorii ar putea confirma altfel ce e-mailuri sunt înregistrate</button></li>
+        <li><button data-correct="false">Deoarece 200 este mai rapid de procesat decât 404 la nivel de server</button></li>
+      </ul>
+      <div class="quiz-feedback">Enumerarea utilizatorilor este un atac de securitate: un atacator încearcă e-mailuri și folosește response-ul pentru a afla care au conturi. Returnarea aceluiași response (200) pentru e-mailuri înregistrate și neînregistrate previne această scurgere de informații. Aceasta este o cerință non-funcțională de securitate pe care dezvoltatorii trebuie să o specifice explicit.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">La ce categorie de caz limită aparține „ce se întâmplă dacă doi utilizatori încearcă să revendice același cod de cupon simultan?"</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Validare input — formatul codului de cupon este invalid</button></li>
+        <li><button data-correct="false">Eșec de precondiție — cuponul nu este încă activ</button></li>
+        <li><button data-correct="true">Concurență — două request-uri sosesc în același timp și concurează</button></li>
+        <li><button data-correct="false">Mod de eșec — serviciul de cupoane este indisponibil în timpul checkout-ului</button></li>
+      </ul>
+      <div class="quiz-feedback">Aceasta este o condiție de cursă — un caz limită de concurență. Două request-uri simultane citesc amândouă „cuponul este valid", ambele continuă și ambele reușesc — lăsând un cupon folosit de două ori. Specificația trebuie să abordeze acest lucru cu o revendicare unică la nivel de bază de date sau blocare optimistă.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este scopul principal al criteriilor de acceptanță într-o specificație?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Să ofere managerului de proiect ceva de arătat clientului la ședințele de revizuire</button></li>
+        <li><button data-correct="false">Să documenteze funcționalitatea pentru viitorii dezvoltatori care întrețin codul</button></li>
+        <li><button data-correct="true">Să facă cerința testabilă — fiecare criteriu este un comportament specific care poate trece sau eșua</button></li>
+        <li><button data-correct="false">Să estimeze efortul de dezvoltare înainte de a începe sprintul</button></li>
+      </ul>
+      <div class="quiz-feedback">Criteriile de acceptanță transformă o cerință dintr-o dorință într-o afirmație verificabilă. Fiecare criteriu ar trebui să fie binar: fie sistemul face asta, fie nu. Asta face posibilă evaluarea output-ului AI față de cerință și scrierea unui test automat pentru ea.</div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care este cel mai important element lipsă dintr-un prompt de genul „Construiește un controller de comenzi cu gestionarea erorilor"?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Limbajul de programare și framework-ul de folosit pentru output</button></li>
+        <li><button data-correct="false">Numele dezvoltatorului care va revizui codul generat</button></li>
+        <li><button data-correct="true">Criterii de acceptanță specifice: ce erori, ce coduri de stare, ce precondiții să verifice</button></li>
+        <li><button data-correct="false">O listă cu toate tabelele de baze de date pe care controllerul va trebui să le interogheze</button></li>
+      </ul>
+      <div class="quiz-feedback">„Gestionarea erorilor" este o intenție, nu o specificație. Fără criterii de acceptanță specifice — „returnează 422 cu erori per câmp, 404 dacă nu este găsit, 403 dacă nu este proprietarul" — AI va produce gestionare a erorilor cu aspect plauzibil care poate să nu corespundă cerințelor tale reale.</div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă profesorul</div>
+    <p>Întrebări bune: <em>„Cum scriu specificații pentru prompturi AI într-un flux de lucru real de proiect?"</em> sau <em>„Ce este formatul GivenWhenThen și când ar trebui să îl folosesc?"</em></p>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0005-api-design-principles.html">← Lecția 5: Design API</a>
+    <a href="0007-technical-debt.html">Lecția 7: Managementul Datoriei Tehnice →</a>
+  </nav>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

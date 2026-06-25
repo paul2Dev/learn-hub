@@ -1,0 +1,331 @@
+/* ============================================================
+   Git & GitHub Fluency — shared stylesheet
+   All lessons link this file.
+   ============================================================ */
+
+:root {
+  --bg:             #fafaf8;
+  --text:           #1a1a1a;
+  --muted:          #6b7280;
+  --border:         #e8e5e0;
+  --code-bg:        #f2efe9;
+  --accent:         #2563eb;
+  --correct:        #15803d;
+  --correct-bg:     #f0fdf4;
+  --correct-border: #86efac;
+  --wrong:          #b91c1c;
+  --wrong-bg:       #fff1f2;
+  --wrong-border:   #fca5a5;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 18px;
+  line-height: 1.78;
+  color: var(--text);
+  background: var(--bg);
+  padding: 2.5rem 1.25rem 5rem;
+}
+
+/* ── Layout ── */
+
+article {
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+
+.lesson-meta {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+h1 {
+  font-size: 2.1rem;
+  line-height: 1.18;
+  font-weight: 700;
+  margin-bottom: 0.45rem;
+}
+
+.tagline {
+  font-size: 1.05rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Sections ── */
+
+section {
+  margin-bottom: 2.75rem;
+}
+
+h2 {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin-bottom: 0.75rem;
+}
+
+p { margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+ul, ol {
+  padding-left: 1.6rem;
+  margin-bottom: 1rem;
+}
+li { margin-bottom: 0.4rem; }
+
+strong { font-weight: 700; }
+em     { font-style: italic; }
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:hover { text-decoration: none; }
+
+/* ── Code ── */
+
+code {
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+  font-size: 0.83em;
+  background: var(--code-bg);
+  padding: 0.1em 0.38em;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+pre code { background: none; border: none; padding: 0; }
+
+/* ── Diagrams ── */
+
+.diagram-wrap {
+  margin: 1.75rem 0;
+}
+
+.diagram-wrap svg {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+.diagram-caption {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.6rem;
+  font-style: italic;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── Callout ── */
+
+.callout {
+  background: #eff6ff;
+  border-left: 3px solid var(--accent);
+  padding: 0.9rem 1.1rem;
+  border-radius: 0 6px 6px 0;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.callout p { margin: 0; }
+
+/* ── Quiz ── */
+
+.quiz-section {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.75rem;
+}
+
+.quiz-progress {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.8rem;
+}
+
+.quiz-question {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quiz-option {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.95rem;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  line-height: 1.4;
+}
+.quiz-option:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #f0f7ff;
+}
+.quiz-option:disabled { cursor: default; }
+
+.quiz-option.quiz-correct {
+  background: var(--correct-bg);
+  border-color: var(--correct-border);
+  color: var(--correct);
+  font-weight: 700;
+}
+.quiz-option.quiz-wrong {
+  background: var(--wrong-bg);
+  border-color: var(--wrong-border);
+  color: var(--wrong);
+}
+
+.quiz-feedback {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+.quiz-feedback--right {
+  background: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct);
+}
+.quiz-feedback--wrong {
+  background: var(--wrong-bg);
+  border: 1px solid var(--wrong-border);
+  color: var(--wrong);
+}
+
+.quiz-next {
+  display: inline-block;
+  margin-top: 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.5rem 1.3rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.quiz-next:hover { opacity: 0.88; }
+
+.quiz-result {
+  text-align: center;
+  padding: 0.75rem 0;
+}
+.quiz-score {
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+.quiz-result p {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Primary source ── */
+
+.primary-source {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.3rem 1.5rem;
+}
+.primary-source h2 { margin-bottom: 0.5rem; }
+.primary-source p  { margin: 0; }
+
+/* ── Ask teacher ── */
+
+.ask-teacher {
+  margin-top: 2.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+}
+.ask-teacher strong { color: var(--text); }
+
+/* ── Lesson navigation ── */
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.88rem;
+}
+.lesson-nav a { text-decoration: none; font-weight: 600; }
+.lesson-nav a:hover { text-decoration: underline; }
+.lesson-nav .nav-next { margin-left: auto; }
+
+/* ── Print ── */
+
+@media print {
+  body { background: white; font-size: 12pt; padding: 0; }
+  article { max-width: none; }
+  .quiz-section  { page-break-inside: avoid; }
+  .ask-teacher   { display: none; }
+  .lesson-nav    { display: none; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.75em; color: #666; }
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 520px) {
+  body { font-size: 16px; padding: 1.5rem 1rem 4rem; }
+  h1   { font-size: 1.65rem; }
+  .quiz-section { padding: 1.25rem; }
+}

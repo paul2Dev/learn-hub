@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 5 — Mapping</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 05 · OpenSearch + Laravel</span>
+  <h1>Mapping — Schema indexului tău</h1>
+  <p class="subtitle">Tipuri de câmpuri, mappings explicite și de ce contează</p>
+</div>
+
+<p>
+  Mapping-ul este „schema" indexului OpenSearch — definește ce tip de date are fiecare câmp
+  și cum îl procesează motorul de căutare. E echivalentul unei <em>migrări Laravel</em>,
+  dar pentru OpenSearch.
+</p>
+
+<!-- ══════════════════════════════════════════ DE CE CONTEAZA ══ -->
+<h2>1. De ce mapping-ul este critic</h2>
+
+<p>
+  Dacă nu definești un mapping explicit, OpenSearch face <strong>dynamic mapping</strong>:
+  ghicește tipul câmpului din primul document indexat. Asta creează probleme:
+</p>
+
+<div class="box box-danger">
+  <span class="box-title">Probleme frecvente cu dynamic mapping</span>
+  <ul>
+    <li>Un câmp <code>status</code> = <code>"1"</code> (string) → devine <code>text</code>, nu poți filtra exact</li>
+    <li>Un câmp <code>pret</code> = <code>"29.99"</code> (string) → nu poți face range query numeric</li>
+    <li>Un câmp <code>titlu</code> → devine <code>text</code> dar și <code>keyword</code> sub-field automat — confuz</li>
+    <li>Odată stabilit, <strong>nu poți schimba</strong> tipul unui câmp fără să recreezi indexul</li>
+  </ul>
+</div>
+
+<p>
+  <strong>Soluție</strong>: definești mapping-ul explicit înainte de a indexa primul document.
+</p>
+
+<!-- ══════════════════════════════════════════ TIPURI ══ -->
+<h2>2. Tipurile de câmpuri esențiale</h2>
+
+<table>
+  <tr>
+    <th>Tip</th>
+    <th>Folosit pentru</th>
+    <th>Poate fi căutat full-text?</th>
+    <th>Poate fi filtrat exact?</th>
+  </tr>
+  <tr>
+    <td><code>text</code></td>
+    <td>Conținut lung: titluri, descrieri, articole</td>
+    <td>Da — analizat, tokenizat</td>
+    <td>Nu</td>
+  </tr>
+  <tr>
+    <td><code>keyword</code></td>
+    <td>Valori exacte: status, email, tag, slug</td>
+    <td>Nu</td>
+    <td>Da — filtru exact, sortare</td>
+  </tr>
+  <tr>
+    <td><code>integer</code></td>
+    <td>Numere întregi: vârste, cantități, contoare</td>
+    <td>Nu</td>
+    <td>Da — range queries</td>
+  </tr>
+  <tr>
+    <td><code>float</code></td>
+    <td>Numere zecimale: prețuri, rating-uri</td>
+    <td>Nu</td>
+    <td>Da — range queries</td>
+  </tr>
+  <tr>
+    <td><code>date</code></td>
+    <td>Date calendaristice: created_at, published_at</td>
+    <td>Nu</td>
+    <td>Da — range, sortare cronologică</td>
+  </tr>
+  <tr>
+    <td><code>boolean</code></td>
+    <td>Câmpuri true/false: is_published, is_active</td>
+    <td>Nu</td>
+    <td>Da — filtru exact</td>
+  </tr>
+  <tr>
+    <td><code>nested</code></td>
+    <td>Array de obiecte cu relații interne</td>
+    <td>Da — per obiect</td>
+    <td>Da — per obiect</td>
+  </tr>
+</table>
+
+<!-- ══════════════════════════════════════════ TEXT VS KEYWORD ══ -->
+<h2>3. text vs keyword — cea mai importantă distincție</h2>
+
+<div class="tree">
+  <div class="tree-root">
+    <span class="tree-label">Câmpul "autor" = "Paul Maxineanu"</span>
+    <ul class="tree-children">
+      <li class="tree-item">
+        <span class="tree-label">type: text</span>
+        <span class="tree-badge">full-text search</span>
+        <ul class="tree-children">
+          <li class="tree-item"><span class="tree-note">Analizat și tokenizat → ["paul", "maxineanu"]</span></li>
+          <li class="tree-item"><span class="tree-note">✓ match "paul" (case-insensitive)</span></li>
+          <li class="tree-item"><span class="tree-note">✓ match "maxineanu"</span></li>
+          <li class="tree-item"><span class="tree-note red">✗ filtru exact / sortare / agregare</span></li>
+        </ul>
+      </li>
+      <li class="tree-item">
+        <span class="tree-label">type: keyword</span>
+        <span class="tree-badge orange">filtru exact</span>
+        <ul class="tree-children">
+          <li class="tree-item"><span class="tree-note">Stocat exact → "Paul Maxineanu"</span></li>
+          <li class="tree-item"><span class="tree-note">✓ term "Paul Maxineanu"</span></li>
+          <li class="tree-item"><span class="tree-note">✓ sort, agregare (count per autor)</span></li>
+          <li class="tree-item"><span class="tree-note red">✗ match "paul" (nu e analizat)</span></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="box box-tip">
+  <span class="box-title">Multi-fields — cel mai bun din ambele lumi</span>
+  Poți defini un câmp cu ambele tipuri simultan. Laravel Eloquent face asta automat,
+  dar cu clientul low-level îl definești explicit:
+</div>
+
+<pre><code><span class="cm">// Câmpul „autor" disponibil atât ca text cât și ca keyword</span>
+<span class="str">'autor'</span> => [
+    <span class="str">'type'</span>   => <span class="str">'text'</span>,              <span class="cm">// pentru full-text search</span>
+    <span class="str">'fields'</span> => [
+        <span class="str">'keyword'</span> => [              <span class="cm">// sub-câmp pentru filtru exact</span>
+            <span class="str">'type'</span>         => <span class="str">'keyword'</span>,
+            <span class="str">'ignore_above'</span> => <span class="num">256</span>,
+        ],
+    ],
+],
+
+<span class="cm">// Accesare în query:</span>
+<span class="cm">// - căutare full-text: câmpul 'autor'</span>
+<span class="cm">// - filtru exact:      câmpul 'autor.keyword'</span></code></pre>
+
+<!-- ══════════════════════════════════════════ MAPPING COMPLET ══ -->
+<h2>4. Mapping complet pentru indexul „articles"</h2>
+
+<pre><code><span class="cm">// app/Services/OpenSearchService.php</span>
+<span class="kw">public function</span> <span class="fn">createArticlesIndex</span>(): array
+{
+    <span class="kw">return</span> $<span class="kw">this</span>->client->indices()-><span class="fn">create</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+
+            <span class="str">'settings'</span> => [
+                <span class="str">'number_of_shards'</span>   => <span class="num">1</span>,
+                <span class="str">'number_of_replicas'</span> => <span class="num">0</span>,
+                <span class="str">'analysis'</span> => [
+                    <span class="str">'analyzer'</span> => [
+                        <span class="str">'romanian_analyzer'</span> => [
+                            <span class="str">'type'</span>      => <span class="str">'standard'</span>,
+                            <span class="str">'stopwords'</span> => <span class="str">'_romanian_'</span>,
+                        ],
+                    ],
+                ],
+            ],
+
+            <span class="str">'mappings'</span> => [
+                <span class="str">'properties'</span> => [
+
+                    <span class="str">'titlu'</span> => [
+                        <span class="str">'type'</span>     => <span class="str">'text'</span>,
+                        <span class="str">'analyzer'</span> => <span class="str">'romanian_analyzer'</span>,
+                        <span class="str">'fields'</span>   => [
+                            <span class="str">'keyword'</span> => [<span class="str">'type'</span> => <span class="str">'keyword'</span>],
+                        ],
+                    ],
+
+                    <span class="str">'continut'</span> => [
+                        <span class="str">'type'</span>     => <span class="str">'text'</span>,
+                        <span class="str">'analyzer'</span> => <span class="str">'romanian_analyzer'</span>,
+                    ],
+
+                    <span class="str">'autor'</span> => [
+                        <span class="str">'type'</span>   => <span class="str">'text'</span>,
+                        <span class="str">'fields'</span> => [
+                            <span class="str">'keyword'</span> => [<span class="str">'type'</span> => <span class="str">'keyword'</span>],
+                        ],
+                    ],
+
+                    <span class="str">'slug'</span> => [
+                        <span class="str">'type'</span> => <span class="str">'keyword'</span>,  <span class="cm">// doar filtru exact, nu full-text</span>
+                    ],
+
+                    <span class="str">'status'</span> => [
+                        <span class="str">'type'</span> => <span class="str">'keyword'</span>,  <span class="cm">// 'draft', 'published', 'archived'</span>
+                    ],
+
+                    <span class="str">'este_publicat'</span> => [
+                        <span class="str">'type'</span> => <span class="str">'boolean'</span>,
+                    ],
+
+                    <span class="str">'vizualizari'</span> => [
+                        <span class="str">'type'</span> => <span class="str">'integer'</span>,
+                    ],
+
+                    <span class="str">'taguri'</span> => [
+                        <span class="str">'type'</span> => <span class="str">'keyword'</span>,  <span class="cm">// array de string-uri exacte</span>
+                    ],
+
+                    <span class="str">'publicat_la'</span> => [
+                        <span class="str">'type'</span>   => <span class="str">'date'</span>,
+                        <span class="str">'format'</span> => <span class="str">'strict_date_optional_time||epoch_millis'</span>,
+                    ],
+
+                    <span class="str">'mongo_id'</span> => [
+                        <span class="str">'type'</span> => <span class="str">'keyword'</span>,  <span class="cm">// ID-ul din MongoDB pentru referință</span>
+                    ],
+                ],
+            ],
+        ],
+    ]);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ COMANDA ARTISAN ══ -->
+<h2>5. Comandă Artisan pentru creare index</h2>
+
+<p>
+  Cel mai bun loc pentru crearea indexului este o <strong>comandă Artisan</strong>,
+  echivalentul unui <code>php artisan migrate</code>:
+</p>
+
+<pre><code><span class="cm">// app/Console/Commands/OpenSearchMigrate.php</span>
+<span class="kw">class</span> <span class="cls">OpenSearchMigrate</span> <span class="kw">extends</span> <span class="cls">Command</span>
+{
+    <span class="kw">protected</span> $signature   = <span class="str">'opensearch:migrate {--force : Recreează indexul dacă există}'</span>;
+    <span class="kw">protected</span> $description = <span class="str">'Creează indexurile OpenSearch cu mapping-urile definite'</span>;
+
+    <span class="kw">public function</span> <span class="fn">handle</span>(OpenSearchService $search): <span class="kw">int</span>
+    {
+        <span class="kw">if</span> ($search-><span class="fn">indexExists</span>(<span class="str">'articles'</span>)) {
+            <span class="kw">if</span> !$<span class="kw">this</span>-><span class="fn">option</span>(<span class="str">'force'</span>)) {
+                $<span class="kw">this</span>-><span class="fn">warn</span>(<span class="str">'Indexul "articles" există deja. Folosește --force pentru recreare.'</span>);
+                <span class="kw">return</span> <span class="num">0</span>;
+            }
+            $search-><span class="fn">deleteIndex</span>(<span class="str">'articles'</span>);
+            $<span class="kw">this</span>-><span class="fn">info</span>(<span class="str">'Index șters.'</span>);
+        }
+
+        $search-><span class="fn">createArticlesIndex</span>();
+        $<span class="kw">this</span>-><span class="fn">info</span>(<span class="str">'✓ Index "articles" creat cu mapping complet.'</span>);
+        <span class="kw">return</span> <span class="num">0</span>;
+    }
+}</code></pre>
+
+<pre><code><span class="cm"># Prima dată</span>
+php artisan opensearch:migrate
+
+<span class="cm"># Dacă vrei să recreezi (ATENȚIE: șterge toate documentele!)</span>
+php artisan opensearch:migrate --force</code></pre>
+
+<!-- ══════════════════════════════════════════ VERIFY ══ -->
+<h2>6. Verifici mapping-ul existent</h2>
+
+<pre><code><span class="cm">// Citești mapping-ul unui index</span>
+$mapping = $<span class="kw">this</span>->client->indices()-><span class="fn">getMapping</span>([
+    <span class="str">'index'</span> => <span class="str">'articles'</span>,
+]);
+
+<span class="cm">// Sau direct cu curl (util pentru debugging)</span>
+<span class="cm">// curl http://localhost:9200/articles/_mapping?pretty</span></code></pre>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="B">
+    <p>1. Vrei să filtrezi articolele după <code>status = 'published'</code>. Ce tip de câmp folosești?</p>
+    <button class="quiz-opt" data-val="A">text — că status este un șir de caractere</button>
+    <button class="quiz-opt" data-val="B">keyword — pentru că ai nevoie de filtru exact</button>
+    <button class="quiz-opt" data-val="C">string — tipul generic pentru orice text</button>
+    <button class="quiz-opt" data-val="D">integer — că statusul are valori numerice intern</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="C">
+    <p>2. Ce se întâmplă dacă schimbi tipul unui câmp în mapping-ul unui index existent?</p>
+    <button class="quiz-opt" data-val="A">Câmpul se convertește automat la noul tip</button>
+    <button class="quiz-opt" data-val="B">Documentele existente sunt re-indexate automat</button>
+    <button class="quiz-opt" data-val="C">Nu poți — trebuie să recreezi indexul și să re-indexezi</button>
+    <button class="quiz-opt" data-val="D">OpenSearch ignoră cererea și păstrează tipul vechi</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. Cum accesezi sub-câmpul <code>keyword</code> al câmpului <code>autor</code> într-un query?</p>
+    <button class="quiz-opt" data-val="A">autor_keyword</button>
+    <button class="quiz-opt" data-val="B">autor[keyword]</button>
+    <button class="quiz-opt" data-val="C">keyword.autor</button>
+    <button class="quiz-opt" data-val="D">autor.keyword</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>4. Un câmp <code>taguri</code> conține un array de string-uri: <code>["php", "laravel"]</code>. Ce tip îi dai?</p>
+    <button class="quiz-opt" data-val="A">keyword — array-urile sunt suportate nativ, fiecare element este tratat exact</button>
+    <button class="quiz-opt" data-val="B">array — există un tip dedicat pentru array-uri</button>
+    <button class="quiz-opt" data-val="C">nested — pentru orice array de valori</button>
+    <button class="quiz-opt" data-val="D">text — că sunt string-uri</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/field-types/" target="_blank">Field types (Mappings) — OpenSearch Documentation</a> — sursa principală recomandată</li>
+    <li><a href="https://docs.opensearch.org/latest/field-types/supported-field-types/keyword/" target="_blank">Keyword type — OpenSearch Documentation</a></li>
+    <li><a href="https://docs.opensearch.org/latest/field-types/supported-field-types/text/" target="_blank">Text type — OpenSearch Documentation</a></li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0004-cautare-full-text.html">← Lecția 4: Căutare full-text</a>
+  <a href="0006-filtre-sortare-paginatie.html">Lecția 6: Filtre, sortare, paginație →</a>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă nu ești sigur ce tip să dai unui câmp din proiectul tău specific, spune-mi ce date conține și îți recomand tipul corect.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

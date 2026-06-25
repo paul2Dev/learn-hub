@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 09 — Real-World Lab</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── lab step cards ── */
+    .lab-step {
+      border: 1.5px solid #e8e5e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1.75rem 0;
+    }
+    .lab-step-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1.5px solid #e8e5e0;
+    }
+    .lab-num {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: inline-block;
+      text-align: center;
+      line-height: 2rem;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .lab-step-header-text h3 {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin: 0 0 0.1rem;
+      color: #1e293b;
+    }
+    .lab-step-header-text .lesson-ref {
+      font-size: 0.72rem;
+      color: #9ca3af;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .lab-step-header-text .lesson-ref a {
+      color: #7c3aed;
+      text-decoration: none;
+    }
+    .lab-step-header-text .lesson-ref a:hover { text-decoration: underline; }
+    .lab-body {
+      padding: 1rem 1.1rem;
+    }
+    .lab-body p {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0 0 0.8rem;
+    }
+    .lab-body p:last-child { margin-bottom: 0; }
+
+    /* ── command blocks ── */
+    pre.cmd {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 7px;
+      padding: 0.8rem 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.65rem 0;
+    }
+    .c  { color: #64748b; }   /* comment */
+    .k  { color: #7dd3fc; }   /* key/flag */
+    .s  { color: #fbbf24; }   /* string */
+    .v  { color: #86efac; }   /* value */
+    .h  { color: #f9a8d4; }   /* highlight */
+
+    /* ── file content blocks ── */
+    pre.file-block {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 0.8rem 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.79rem;
+      line-height: 1.65;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.65rem 0;
+      color: #374151;
+    }
+    .fk { color: #1d4ed8; }
+    .fv { color: #059669; }
+    .fc { color: #9ca3af; }
+    .fh { color: #7c3aed; font-weight: 700; }
+
+    /* ── checklist ── */
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0.6rem 0;
+    }
+    .checklist li {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      margin-bottom: 0.45rem;
+      color: #374151;
+    }
+    .chk {
+      width: 1rem;
+      height: 1rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 3px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+      background: white;
+    }
+
+    /* ── expect block ── */
+    .expect {
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 7px;
+      padding: 0.65rem 0.9rem;
+      margin: 0.65rem 0;
+      font-size: 0.83rem;
+      line-height: 1.5;
+      color: #166534;
+    }
+    .expect strong { display: block; margin-bottom: 0.2rem; font-family: system-ui, sans-serif; }
+
+    /* ── warning block ── */
+    .warn {
+      background: #fffbeb;
+      border: 1.5px solid #fde68a;
+      border-radius: 7px;
+      padding: 0.65rem 0.9rem;
+      margin: 0.65rem 0;
+      font-size: 0.83rem;
+      line-height: 1.5;
+      color: #92400e;
+    }
+    .warn strong { display: block; margin-bottom: 0.2rem; font-family: system-ui, sans-serif; }
+
+    /* ── conflict block (re-used from lesson 02 style) ── */
+    .conflict-block {
+      background: #1e293b;
+      border-radius: 7px;
+      padding: 0.8rem 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.8rem;
+      line-height: 1.65;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.65rem 0;
+      color: #e2e8f0;
+    }
+    .cf-head { color: #f87171; }
+    .cf-sep  { color: #94a3b8; }
+    .cf-tail { color: #60a5fa; }
+    .cf-keep { color: #86efac; }
+
+    /* ── progress tracker ── */
+    .progress-bar {
+      display: flex;
+      gap: 0.3rem;
+      margin: 1.5rem 0 0.5rem;
+      flex-wrap: wrap;
+    }
+    .pb-seg {
+      height: 4px;
+      flex: 1;
+      min-width: 1.5rem;
+      border-radius: 2px;
+      background: #e8e5e0;
+    }
+
+    @media (max-width: 500px) {
+      .lab-step-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 09 &middot; Git &amp; GitHub Fluency</p>
+      <h1>Real-World Lab</h1>
+      <p class="tagline">Apply every lesson on your own repository — step by step</p>
+    </header>
+
+    <section>
+      <p>
+        This lab walks you through all eight topics on your own GitHub repository:
+        <strong>paul2Dev/git-tests</strong>. Each step references the lesson that
+        taught the concept, so you can go back and re-read if anything feels unclear.
+        By the end, your repository will have a working CI pipeline, branch protection,
+        a PR template, and all the daily productivity tools in place.
+      </p>
+      <div class="progress-bar">
+        <div class="pb-seg" style="background:#3b82f6;"></div>
+        <div class="pb-seg" style="background:#7c3aed;"></div>
+        <div class="pb-seg" style="background:#f59e0b;"></div>
+        <div class="pb-seg" style="background:#059669;"></div>
+        <div class="pb-seg" style="background:#ef4444;"></div>
+        <div class="pb-seg" style="background:#0ea5e9;"></div>
+        <div class="pb-seg" style="background:#8b5cf6;"></div>
+        <div class="pb-seg" style="background:#10b981;"></div>
+      </div>
+      <p style="font-size:0.78rem; color:#9ca3af; font-family: system-ui, sans-serif;">
+        8 labs — work through them in order
+      </p>
+    </section>
+
+    <!-- ── LAB 1: Setup ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#eff6ff;">
+        <div class="lab-num" style="background:#3b82f6;">1</div>
+        <div class="lab-step-header-text">
+          <h3>Setup — clone, configure, orient yourself</h3>
+          <div class="lesson-ref">Covers: <a href="0001-git-mental-model.html">Lesson 01</a> · <a href="0008-workflow-automations.html">Lesson 08</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>Clone the repository and immediately add the aliases you will use throughout this lab.</p>
+<pre class="cmd"><span class="c"># Clone your repo</span>
+git clone git@github.com:paul2Dev/git-tests.git
+cd git-tests
+
+<span class="c"># Orient yourself — see the current history graph</span>
+git log --oneline --graph --decorate --all
+
+<span class="c"># Add the aliases from Lesson 08 (run these once, they are global)</span>
+git config --global alias.st status
+git config --global alias.lg <span class="s">"log --oneline --graph --decorate --all"</span>
+git config --global alias.undo <span class="s">"reset HEAD~1 --soft"</span>
+
+<span class="c"># Verify your remote is set correctly</span>
+git remote -v</pre>
+        <div class="expect">
+          <strong>What to expect</strong>
+          After <code>git lg</code> you should see your branch graph. After <code>git remote -v</code> you should see two lines — fetch and push — both pointing to <code>git@github.com:paul2Dev/git-tests.git</code>.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> Repository cloned successfully</li>
+          <li><span class="chk"></span> <code>git lg</code> alias works</li>
+          <li><span class="chk"></span> Remote points to paul2Dev/git-tests</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 2: Merge conflict ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#fdf4ff;">
+        <div class="lab-num" style="background:#7c3aed;">2</div>
+        <div class="lab-step-header-text">
+          <h3>Merge conflict — create one and resolve it</h3>
+          <div class="lesson-ref">Covers: <a href="0002-merge-conflicts.html">Lesson 02</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>
+          You will deliberately create a merge conflict by editing the same line on two
+          different branches, then resolve it. This is the scenario you used to be afraid
+          of — let's make it routine.
+        </p>
+<pre class="cmd"><span class="c"># Make sure you are on main and it is clean</span>
+git checkout main
+git pull
+
+<span class="c"># Create a file to work with</span>
+echo <span class="s">"Hello from main"</span> > greeting.txt
+git add greeting.txt
+git commit -m <span class="s">"add greeting.txt"</span>
+
+<span class="c"># Create a feature branch and change the same line</span>
+git checkout -b feature/greeting
+echo <span class="s">"Hello from feature branch"</span> > greeting.txt
+git add greeting.txt
+git commit -m <span class="s">"update greeting on feature branch"</span>
+
+<span class="c"># Go back to main and make a DIFFERENT change to the same line</span>
+git checkout main
+echo <span class="s">"Hello from main — updated"</span> > greeting.txt
+git add greeting.txt
+git commit -m <span class="s">"update greeting on main"</span>
+
+<span class="c"># Now try to merge — this will conflict</span>
+git merge feature/greeting</pre>
+
+        <div class="warn">
+          <strong>You will see this message</strong>
+          <code>CONFLICT (content): Merge conflict in greeting.txt — Automatic merge failed; fix conflicts and then commit the result.</code>
+          This is expected. The conflict is working as intended.
+        </div>
+
+        <p>Open <code>greeting.txt</code> — you will see conflict markers:</p>
+<pre class="conflict-block"><span class="cf-head">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span>
+<span class="cf-keep">Hello from main — updated</span>
+<span class="cf-sep">=======</span>
+<span class="cf-tail">Hello from feature branch</span>
+<span class="cf-head">&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/greeting</span></pre>
+
+        <p>Edit the file to the version you actually want — for example:</p>
+<pre class="file-block">Hello from main — updated and feature merged</pre>
+
+<pre class="cmd"><span class="c"># After editing the file, mark it resolved and complete the merge</span>
+git add greeting.txt
+git commit -m <span class="s">"merge feature/greeting — resolve greeting conflict"</span>
+
+<span class="c"># Verify the history now shows a merge commit</span>
+git lg</pre>
+        <div class="expect">
+          <strong>What to expect</strong>
+          <code>git lg</code> should show a branch diverging and then converging — two lines meeting at a merge commit (the dark node with two parents you saw in Lesson 03's diagram).
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> Conflict created and markers visible in file</li>
+          <li><span class="chk"></span> Conflict resolved by editing the file manually</li>
+          <li><span class="chk"></span> <code>git lg</code> shows the merge commit with two parents</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 3: Rebase ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#fff7ed;">
+        <div class="lab-num" style="background:#f59e0b;">3</div>
+        <div class="lab-step-header-text">
+          <h3>Rebase — keep your branch up to date, linearly</h3>
+          <div class="lesson-ref">Covers: <a href="0003-rebase-vs-merge.html">Lesson 03</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>
+          The real-world scenario: you are on a feature branch, main has moved forward,
+          and you want to update your branch without a merge commit.
+        </p>
+<pre class="cmd"><span class="c"># Start a new feature branch from current main</span>
+git checkout main
+git checkout -b feature/about-page
+
+<span class="c"># Make a commit on your feature branch</span>
+echo <span class="s">"About this project"</span> > about.txt
+git add about.txt
+git commit -m <span class="s">"add about.txt"</span>
+
+<span class="c"># Simulate main moving forward (another developer pushed something)</span>
+git checkout main
+echo <span class="s">"new file from colleague"</span> > colleague-work.txt
+git add colleague-work.txt
+git commit -m <span class="s">"colleague adds colleague-work.txt"</span>
+
+<span class="c"># Back on your feature branch — rebase onto the updated main</span>
+git checkout feature/about-page
+git rebase main</pre>
+
+<pre class="cmd"><span class="c"># See the result — notice your commit is now AFTER main's new commit</span>
+git lg</pre>
+        <div class="expect">
+          <strong>What to expect</strong>
+          The graph should be completely linear — your <code>feature/about-page</code> commit sits on top of main's latest commit, with no merge bubble. Your commit has a new hash (it was replayed) but the same message and changes.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> Feature branch rebased onto updated main</li>
+          <li><span class="chk"></span> History is linear — no merge commit visible</li>
+          <li><span class="chk"></span> <code>about.txt</code> and <code>colleague-work.txt</code> both exist in your branch</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 4: GitHub Actions ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#f0fdf4;">
+        <div class="lab-num" style="background:#059669;">4</div>
+        <div class="lab-step-header-text">
+          <h3>GitHub Actions — add a real CI workflow</h3>
+          <div class="lesson-ref">Covers: <a href="0004-github-actions.html">Lesson 04</a> · <a href="0006-cicd-pipelines.html">Lesson 06</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>
+          You will create the <code>.github/workflows/</code> directory and add a CI
+          workflow. Since <code>git-tests</code> may not have a specific test framework,
+          we will use a shell check that always passes — the goal is to see the workflow
+          run and produce a green check on GitHub.
+        </p>
+<pre class="cmd"><span class="c"># Go back to main first</span>
+git checkout main
+
+<span class="c"># Create the workflows directory</span>
+mkdir -p .github/workflows</pre>
+
+        <p>Create the file <code>.github/workflows/ci.yml</code> with this content:</p>
+<pre class="file-block"><span class="fk">name</span>: <span class="fv">CI</span>
+
+<span class="fk">on</span>:
+  <span class="fk">push</span>:
+    <span class="fk">branches</span>: <span class="fv">[main]</span>
+  <span class="fk">pull_request</span>:
+    <span class="fk">branches</span>: <span class="fv">[main]</span>
+
+<span class="fk">jobs</span>:
+  <span class="fk">check</span>:
+    <span class="fk">runs-on</span>: <span class="fv">ubuntu-latest</span>
+    <span class="fk">steps</span>:
+      - <span class="fk">uses</span>: <span class="fv">actions/checkout@v4</span>
+
+      - <span class="fk">name</span>: <span class="fv">Verify repository files</span>
+        <span class="fk">run</span>: <span class="fv">|</span>
+          <span class="fc">echo "Files in repo:"</span>
+          <span class="fv">ls -la</span>
+          <span class="fc">echo "CI passed!"</span></pre>
+
+<pre class="cmd"><span class="c"># Commit and push the workflow</span>
+git add .github/workflows/ci.yml
+git commit -m <span class="s">"add CI workflow"</span>
+git push origin main</pre>
+
+        <div class="expect">
+          <strong>What to expect on GitHub</strong>
+          Go to <strong>github.com/paul2Dev/git-tests → Actions tab</strong>. You should see a workflow run triggered by your push. Click it — you should see the <code>check</code> job with a green checkmark and the file list printed in the logs.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> <code>.github/workflows/ci.yml</code> committed and pushed</li>
+          <li><span class="chk"></span> Workflow run visible in the Actions tab</li>
+          <li><span class="chk"></span> <code>check</code> job shows green</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 5: PR Template ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#fef2f2;">
+        <div class="lab-num" style="background:#ef4444;">5</div>
+        <div class="lab-step-header-text">
+          <h3>PR Template — every PR gets the right structure</h3>
+          <div class="lesson-ref">Covers: <a href="0007-pull-requests.html">Lesson 07</a> · <a href="0008-workflow-automations.html">Lesson 08</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>Create the PR template file so every new pull request is pre-filled with the right sections.</p>
+
+        <p>Create <code>.github/PULL_REQUEST_TEMPLATE.md</code>:</p>
+<pre class="file-block"><span class="fh">## What changed</span>
+<span class="fc">&lt;!-- One paragraph describing what this PR does --&gt;</span>
+
+<span class="fh">## Why</span>
+<span class="fc">&lt;!-- Link the issue: Fixes #123 --&gt;</span>
+
+<span class="fh">## How to test</span>
+- [ ] Step one
+- [ ] Step two
+
+<span class="fh">## Notes for reviewer</span>
+<span class="fc">&lt;!-- Non-obvious decisions, trade-offs, or things to watch out for --&gt;</span></pre>
+
+<pre class="cmd"><span class="c"># Commit the template</span>
+git add .github/PULL_REQUEST_TEMPLATE.md
+git commit -m <span class="s">"add PR template"</span>
+git push origin main</pre>
+
+        <p>
+          Now open a pull request on GitHub to test it. Create a new branch, make any
+          small change, push it, and open a PR — the description box should be pre-filled
+          with your template.
+        </p>
+<pre class="cmd"><span class="c"># Create a test branch to open a PR with</span>
+git checkout -b feature/test-pr-template
+echo <span class="s">"testing PR template"</span> > pr-test.txt
+git add pr-test.txt
+git commit -m <span class="s">"test: verify PR template appears"</span>
+git push origin feature/test-pr-template</pre>
+
+        <div class="expect">
+          <strong>What to expect</strong>
+          Go to <strong>github.com/paul2Dev/git-tests → Pull Requests → New pull request</strong>, choose <code>feature/test-pr-template</code> as the source. The description box should already contain your template text.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> <code>PULL_REQUEST_TEMPLATE.md</code> committed and pushed</li>
+          <li><span class="chk"></span> Opened a test PR and saw the template pre-filled</li>
+          <li><span class="chk"></span> CI workflow ran automatically on the PR</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 6: Branch Protection ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#f0f9ff;">
+        <div class="lab-num" style="background:#0ea5e9;">6</div>
+        <div class="lab-step-header-text">
+          <h3>Branch protection — enforce CI before any merge</h3>
+          <div class="lesson-ref">Covers: <a href="0006-cicd-pipelines.html">Lesson 06</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>
+          This step is done entirely on GitHub — there is no command to run. You are
+          configuring a gate that makes CI mandatory for every PR targeting main.
+        </p>
+        <p><strong>Steps on GitHub:</strong></p>
+        <ol style="font-size:0.88rem; line-height:1.8; padding-left:1.3rem; margin: 0.5rem 0;">
+          <li>Go to <strong>github.com/paul2Dev/git-tests → Settings → Branches</strong></li>
+          <li>Click <strong>Add branch protection rule</strong></li>
+          <li>In "Branch name pattern" type <code>main</code></li>
+          <li>Check <strong>Require status checks to pass before merging</strong></li>
+          <li>In the search box that appears, search for and select <strong>check</strong> (your CI job name)</li>
+          <li>Check <strong>Require branches to be up to date before merging</strong></li>
+          <li>Optionally check <strong>Require a pull request before merging</strong> to prevent direct pushes to main</li>
+          <li>Click <strong>Create</strong> at the bottom</li>
+        </ol>
+        <div class="warn">
+          <strong>One-person repo note</strong>
+          If you are the only contributor and you also enable "Require pull request reviews", you will need to approve your own PRs — GitHub allows this for repo owners. You can leave the review requirement off for solo repos and only require CI.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> Branch protection rule created for <code>main</code></li>
+          <li><span class="chk"></span> <code>check</code> job selected as required status check</li>
+          <li><span class="chk"></span> Merge button on your test PR is now gated behind CI</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 7: GitHub CLI ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#f5f3ff;">
+        <div class="lab-num" style="background:#8b5cf6;">7</div>
+        <div class="lab-step-header-text">
+          <h3>GitHub CLI — manage PRs from the terminal</h3>
+          <div class="lesson-ref">Covers: <a href="0008-workflow-automations.html">Lesson 08</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>
+          If you have not installed the GitHub CLI yet, do it now. Then authenticate
+          against your account and use it to interact with the PR you created in Lab 5.
+        </p>
+<pre class="cmd"><span class="c"># Install (Windows — run once)</span>
+winget install GitHub.cli
+
+<span class="c"># Authenticate (follow the prompts — choose SSH or HTTPS)</span>
+gh auth login
+
+<span class="c"># Check the status of PRs on your repo</span>
+gh pr list
+
+<span class="c"># See the detailed status of your open test PR (CI checks included)</span>
+gh pr status
+
+<span class="c"># View the PR in the browser from the terminal</span>
+gh pr view --web
+
+<span class="c"># Create a new PR from the current branch (if you are on one)</span>
+<span class="c"># gh pr create --title "your title" --body "Fixes #1"</span>
+
+<span class="c"># Merge the test PR from the terminal (after CI passes)</span>
+gh pr merge feature/test-pr-template --squash --delete-branch</pre>
+
+        <div class="expect">
+          <strong>What to expect</strong>
+          <code>gh pr status</code> shows your open PRs with their CI check results inline — green or red — without opening a browser. <code>gh pr merge --squash</code> merges the PR using squash strategy and deletes the feature branch automatically.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> <code>gh auth login</code> completed</li>
+          <li><span class="chk"></span> <code>gh pr status</code> shows CI check results</li>
+          <li><span class="chk"></span> PR merged from the terminal using <code>gh pr merge</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── LAB 8: Auto-labeler ── -->
+    <div class="lab-step">
+      <div class="lab-step-header" style="background:#f0fdf4;">
+        <div class="lab-num" style="background:#10b981;">8</div>
+        <div class="lab-step-header-text">
+          <h3>Auto-labeler — label PRs by what files changed</h3>
+          <div class="lesson-ref">Covers: <a href="0008-workflow-automations.html">Lesson 08</a> · <a href="0004-github-actions.html">Lesson 04</a></div>
+        </div>
+      </div>
+      <div class="lab-body">
+        <p>
+          Add the auto-labeler. This is a two-file setup: a workflow that runs the action,
+          and a config file that defines the label rules.
+        </p>
+        <p>First, create the labels on GitHub — go to <strong>github.com/paul2Dev/git-tests → Issues → Labels → New label</strong> and create these three: <code>docs</code>, <code>ci</code>, <code>config</code>.</p>
+
+        <p>Create <code>.github/workflows/labeler.yml</code>:</p>
+<pre class="file-block"><span class="fk">name</span>: <span class="fv">Label PR</span>
+<span class="fk">on</span>: <span class="fv">[pull_request_target]</span>
+<span class="fk">jobs</span>:
+  <span class="fk">label</span>:
+    <span class="fk">runs-on</span>: <span class="fv">ubuntu-latest</span>
+    <span class="fk">permissions</span>:
+      <span class="fk">contents</span>: <span class="fv">read</span>
+      <span class="fk">pull-requests</span>: <span class="fv">write</span>
+    <span class="fk">steps</span>:
+      - <span class="fk">uses</span>: <span class="fv">actions/labeler@v5</span>
+        <span class="fk">with</span>:
+          <span class="fk">repo-token</span>: <span class="fv">${{ secrets.GITHUB_TOKEN }}</span></pre>
+
+        <p>Create <code>.github/labeler.yml</code>:</p>
+<pre class="file-block"><span class="fk">docs</span>:
+  - changed-files:
+    - any-glob-to-any-file: <span class="fv">["*.md", "*.txt"]</span>
+
+<span class="fk">ci</span>:
+  - changed-files:
+    - any-glob-to-any-file: <span class="fv">[".github/workflows/**"]</span>
+
+<span class="fk">config</span>:
+  - changed-files:
+    - any-glob-to-any-file: <span class="fv">[".github/**"]</span></pre>
+
+<pre class="cmd"><span class="c"># Commit both files and push</span>
+git add .github/workflows/labeler.yml .github/labeler.yml
+git commit -m <span class="s">"add auto-labeler workflow"</span>
+git push origin main</pre>
+
+        <div class="expect">
+          <strong>What to expect</strong>
+          The next time you open a PR that touches <code>.md</code> or <code>.txt</code> files, GitHub will automatically apply the <code>docs</code> label. PRs touching <code>.github/workflows/</code> get the <code>ci</code> label.
+        </div>
+        <ul class="checklist">
+          <li><span class="chk"></span> Labels <code>docs</code>, <code>ci</code>, <code>config</code> created on GitHub</li>
+          <li><span class="chk"></span> Labeler workflow and config committed and pushed</li>
+          <li><span class="chk"></span> Opened a test PR touching <code>.txt</code> — saw <code>docs</code> label applied automatically</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── Final state ── -->
+    <section>
+      <h2>What your repository now has</h2>
+      <ul style="font-size:0.9rem; line-height:2; padding-left:1.3rem;">
+        <li><code>.github/workflows/ci.yml</code> — CI runs on every push and PR</li>
+        <li><code>.github/workflows/labeler.yml</code> — PRs get labelled automatically</li>
+        <li><code>.github/labeler.yml</code> — labeling rules</li>
+        <li><code>.github/PULL_REQUEST_TEMPLATE.md</code> — every PR is pre-structured</li>
+        <li>Branch protection on <code>main</code> — CI must pass before merging</li>
+        <li>Git aliases globally configured — <code>git st</code>, <code>git lg</code>, <code>git undo</code></li>
+        <li>GitHub CLI authenticated — create and merge PRs from the terminal</li>
+      </ul>
+
+      <div class="callout">
+        <p>
+          This is a real, production-grade setup. Larger teams add more steps to the CI
+          workflow (linting, security scans, coverage gates), more labeler rules, and
+          multiple environments for deployment — but the structure is exactly what you
+          have now. You built it yourself, on your own repository, from scratch.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Final check</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <section class="primary-source">
+      <h2>Your repository</h2>
+      <p>
+        Everything you built is at
+        <a href="https://github.com/paul2Dev/git-tests" target="_blank" rel="noopener noreferrer">
+          github.com/paul2Dev/git-tests
+        </a>.
+        Use it as a sandbox — break things, experiment, and refer back to the earlier
+        lessons any time something feels unclear.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Stuck on a step?</strong>
+        Paste the exact error message or the output of <code>git status</code> into the
+        chat and your teacher will help you get unstuck immediately.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0008-workflow-automations.html">← Lesson 08: Workflow Automations</a>
+        <span style="color:#9ca3af; font-family: system-ui, sans-serif; font-size: 0.88rem;">End of course &#x1F3C1;</span>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'CI triggers on a PR automatically because your workflow has…',
+        options: [
+          '<code>on: pull_request</code> in the trigger',
+          '<code>on: push</code> pointing to the PR',
+          '<code>on: merge</code> set in the config',
+          '<code>on: branch</code> with PR enabled'
+        ],
+        correct: 0,
+        explain:
+          'The <code>pull_request</code> trigger tells GitHub Actions to run the ' +
+          'workflow whenever a PR is opened, updated, or synchronised against the ' +
+          'target branch. Without this trigger, CI only runs on direct pushes — ' +
+          'PRs would not be tested before merging.'
+      },
+      {
+        q: 'Branch protection without a required status check means…',
+        options: [
+          'PRs can merge even if CI fails',
+          'CI is blocked from running on PRs',
+          'The merge button is always locked',
+          'CI runs twice before any merge'
+        ],
+        correct: 0,
+        explain:
+          'Branch protection rules and CI workflows are independent. The workflow runs ' +
+          'regardless, but without a <em>required status check</em> configured in the ' +
+          'protection rule, GitHub does not enforce that it passes. You can have CI ' +
+          'running and still merge a failing PR if the check is not required.'
+      },
+      {
+        q: '<code>gh pr merge --squash --delete-branch</code> does what after merging?',
+        options: [
+          'Deletes the feature branch automatically',
+          'Deletes all commits from main branch',
+          'Removes the PR from GitHub history',
+          'Squashes main into the feature branch'
+        ],
+        correct: 0,
+        explain:
+          'The <code>--delete-branch</code> flag tells <code>gh</code> to delete the ' +
+          'remote feature branch after a successful merge — the same as ticking ' +
+          '"Delete branch" in the GitHub UI. Combined with <code>--squash</code>, ' +
+          'you get a clean merge and a tidy branch list in one command.'
+      }
+    ]);
+  </script>
+</body>
+</html>

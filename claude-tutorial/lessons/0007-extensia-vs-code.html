@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>07 · Extensia VS Code — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 7 din 12</p>
+  <h1>Extensia VS Code</h1>
+  <p class="tagline">Același Claude Code, direct în editorul tău — fără să schimbi contextul între terminal și VS Code.</p>
+
+  <section>
+    <h2>Instalare</h2>
+    <p>Deschide VS Code și instalează extensia oficial:</p>
+    <ol class="steps">
+      <li>Apasă <kbd>Ctrl+Shift+X</kbd> (Extensions)</li>
+      <li>Caută <strong>Claude Code</strong> — publisher: Anthropic</li>
+      <li>Click Install</li>
+      <li>Reload VS Code dacă e cerut</li>
+    </ol>
+    <p>Alternativ, din terminal:</p>
+    <pre><code>code --install-extension anthropic.claude-code</code></pre>
+    <div class="callout">
+      <p><strong>Autentificare:</strong> Extensia folosește aceeași autentificare ca și CLI-ul. Dacă ai rulat deja <code>claude</code> în terminal, ești autentificat automat.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Interfața extensiei</h2>
+    <p>Extensia adaugă un <strong>panou lateral Claude Code</strong> în VS Code. Îl deschizi din bara de activitate (iconița Claude) sau cu scurtătura <kbd>Ctrl+Shift+C</kbd> (Windows/Linux) / <kbd>Cmd+Shift+C</kbd> (Mac).</p>
+    <p>Panoul conține:</p>
+    <ul>
+      <li>Un câmp de input pentru mesaje</li>
+      <li>Istoricul conversației curente</li>
+      <li>Buton de reset sesiune</li>
+      <li>Status autentificare</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Superputerea extensiei: selecția ca context</h2>
+    <p>Acesta e motivul principal pentru care extensia bate terminalul în fluxul zilnic: poți selecta cod direct din editor și îl trimiți automat ca context.</p>
+    <p><strong>Cum funcționează:</strong></p>
+    <ol class="steps">
+      <li>Selectezi un bloc de cod în editor (o funcție, o clasă, un fișier)</li>
+      <li>Apesi <kbd>Ctrl+Shift+C</kbd> sau click dreapta → "Ask Claude Code"</li>
+      <li>Scrii întrebarea — codul selectat e deja atașat ca context</li>
+    </ol>
+    <pre><code># Nu mai trebuie să faci asta:
+&gt; Uite funcția: [paste manual de 50 de linii]
+   Ce face ea?
+
+# Selectezi funcția, apesi shortcut, și scrii direct:
+&gt; Ce face această funcție și ce returnează?</code></pre>
+    <div class="callout callout--tip">
+      <p><strong>Pattern eficient:</strong> Selectează funcția cu bug-ul, apasă shortcut-ul, paste eroarea. Contextul e complet fără nicio copiere manuală.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Scurtături esențiale</h2>
+    <p>Cele mai importante scurtături din extensia VS Code:</p>
+    <ul>
+      <li><kbd>Ctrl+Shift+C</kbd> — Deschide panoul / trimite selecția ca context</li>
+      <li><kbd>Ctrl+Enter</kbd> — Trimite mesajul din câmpul de input</li>
+      <li><kbd>Esc</kbd> — Oprește generarea curentă</li>
+      <li><kbd>Alt+L</kbd> — Inserează codul sugerat direct în fișierul activ</li>
+    </ul>
+    <p>Toate scurtăturile sunt vizibile și modificabile în <em>File → Preferences → Keyboard Shortcuts</em> → caută "Claude".</p>
+    <p>Vezi referința completă în <a href="../reference/scurtaturi-vs-code.html">Scurtături VS Code Extension</a>.</p>
+  </section>
+
+  <section>
+    <h2>Terminal integrat vs. panou lateral</h2>
+    <p>O întrebare frecventă: când folosești panoul lateral și când deschizi terminalul VS Code pentru <code>claude</code> CLI?</p>
+    <ul>
+      <li><strong>Panou lateral</strong> — Când lucrezi activ în editor și vrei să întrebi despre codul pe care îl vezi. Selecție → context → întrebare.</li>
+      <li><strong>Terminal (CLI)</strong> — Când vrei să rulezi comenzi complexe cu mai mulți pași, să execuți scripturi sau să ai o sesiune lungă de implementare. CLI-ul are acces complet la toate uneltele (git, npm, etc.).</li>
+    </ul>
+    <div class="callout">
+      <p>Poți folosi ambele simultan — o sesiune CLI în terminalul integrat și panoul lateral pentru întrebări punctuale. Sunt instanțe independente.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Command Palette</h2>
+    <p>Apasă <kbd>Ctrl+Shift+P</kbd> și caută "Claude" pentru toate comenzile disponibile:</p>
+    <ul>
+      <li><em>Claude Code: New Session</em> — resetează conversația curentă</li>
+      <li><em>Claude Code: Open Panel</em> — deschide panoul lateral</li>
+      <li><em>Claude Code: Explain Selection</em> — explică codul selectat</li>
+      <li><em>Claude Code: Fix Selection</em> — repară codul selectat</li>
+    </ul>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-7"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://marketplace.visualstudio.com/items?itemName=Anthropic.claude-code" target="_blank" rel="noopener">Claude Code Extension — VS Code Marketplace</a><br/>
+    Pagina oficială a extensiei cu instrucțiuni de instalare, changelog și toate funcționalitățile.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Selectează codul care te nedumerește în VS Code, apasă <kbd>Ctrl+Shift+C</kbd> și întreabă direct.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0006-git-workflow.html">← Lecția 6: Git Workflow</a>
+    <a class="nav-next" href="0008-productivitate-zilnica.html">Lecția 8: Productivitate Zilnică →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-7', [
+  {
+    q: 'Care este avantajul principal al extensiei VS Code față de CLI-ul din terminal?',
+    options: [
+      'Extensia are acces la un model AI mai puternic decât CLI-ul',
+      'Poți selecta cod din editor și îl trimiți automat ca context, fără copiere manuală',
+      'Extensia e gratuită, pe când CLI-ul necesită abonament separat',
+      'Extensia poate rula comenzi bash pe care CLI-ul nu le poate executa'
+    ],
+    correct: 1,
+    explain: 'Selecția de cod ca context e superputerea extensiei. Selectezi o funcție, apeși shortcut-ul și codul e deja atașat conversației — fără copy-paste manual.'
+  },
+  {
+    q: 'Ce scurtătură deschide panoul Claude Code în VS Code (Windows/Linux)?',
+    options: [
+      'Ctrl+Alt+C',
+      'Ctrl+Shift+P → "Claude"',
+      'Ctrl+Shift+C',
+      'Alt+Shift+C'
+    ],
+    correct: 2,
+    explain: 'Ctrl+Shift+C (Windows/Linux) sau Cmd+Shift+C (Mac) deschide panoul lateral Claude Code și, dacă ai cod selectat, îl include automat în context.'
+  },
+  {
+    q: 'Când e mai potrivit să folosești CLI-ul (<code>claude</code> în terminal) față de panoul lateral?',
+    options: [
+      'Când ai selecții mici de cod și întrebări punctuale despre editor',
+      'Când vrei să explici o singură funcție rapid',
+      'Când ai sesiuni lungi de implementare cu mai mulți pași și comenzi complexe',
+      'CLI-ul e depășit — extensia VS Code îl înlocuiește complet'
+    ],
+    correct: 2,
+    explain: 'CLI-ul e ideal pentru sesiuni lungi cu mai mulți pași: implementare, teste, git, debug iterativ. Panoul e ideal pentru întrebări punctuale despre codul vizibil în editor.'
+  }
+]);
+</script>
+</body>
+</html>

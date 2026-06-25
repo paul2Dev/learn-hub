@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenSearch + Laravel — Cursul tău</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .course-grid {
+      display: grid;
+      gap: 16px;
+      margin: 2em 0;
+    }
+    .lesson-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      border: 2px solid var(--gray-2);
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+    .lesson-card:hover {
+      border-color: var(--blue);
+      background: var(--blue-lt);
+      color: var(--text);
+      text-decoration: none;
+    }
+    .lesson-num {
+      font-family: monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--blue);
+      min-width: 2rem;
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .lesson-info h3 { margin: 0 0 4px; color: var(--text); font-size: 1rem; }
+    .lesson-info p  { margin: 0; font-size: .88rem; color: var(--muted); }
+    .badge {
+      display: inline-block;
+      font-size: .75rem;
+      font-family: monospace;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .badge-done    { background: var(--green-lt);  color: var(--green); }
+    .badge-concept { background: var(--blue-lt);   color: var(--blue);  }
+    .badge-skill   { background: var(--orange-lt); color: var(--orange);}
+  </style>
+</head>
+<body>
+
+<div style="max-width:660px;margin:0 auto 1rem;padding-top:1.5rem;">
+  <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">OpenSearch + Laravel · Cursul tău personal</span>
+  <h1>OpenSearch cu Laravel</h1>
+  <p class="subtitle">De la zero la integrare completă — 9 lecții, cod concret, quiz-uri interactive</p>
+</div>
+
+<h2>Lecții</h2>
+
+<div class="course-grid">
+
+  <a class="lesson-card" href="lessons/0001-ce-este-opensearch.html">
+    <span class="lesson-num">01</span>
+    <div class="lesson-info">
+      <h3>Ce este OpenSearch? <span class="badge badge-concept">concepte</span></h3>
+      <p>Arhitectura, cluster, index, document, mapping, shard. Rolul OpenSearch față de MongoDB în proiectul tău.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0002-instalare-si-conectare.html">
+    <span class="lesson-num">02</span>
+    <div class="lesson-info">
+      <h3>Instalare și conectare din Laravel <span class="badge badge-skill">cod</span></h3>
+      <p>Docker Compose pentru OpenSearch, pachete PHP, configurare .env, Service class, comandă Artisan de ping.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0003-crud.html">
+    <span class="lesson-num">03</span>
+    <div class="lesson-info">
+      <h3>CRUD — indexare, citire, actualizare, ștergere <span class="badge badge-skill">cod</span></h3>
+      <p>Creare index, indexare document, get, partial update, delete, bulk indexing. Pattern MongoDB + OpenSearch.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0004-cautare-full-text.html">
+    <span class="lesson-num">04</span>
+    <div class="lesson-info">
+      <h3>Căutare full-text — Query DSL <span class="badge badge-skill">cod</span></h3>
+      <p>match, multi_match cu boost, match_phrase, fuzziness, structura răspunsului, extractHits helper.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0005-mapping.html">
+    <span class="lesson-num">05</span>
+    <div class="lesson-info">
+      <h3>Mapping — schema indexului tău <span class="badge badge-concept">concepte</span></h3>
+      <p>text vs keyword, tipuri de câmpuri, multi-fields, mapping complet pentru articles, comandă Artisan migrate.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0006-filtre-sortare-paginatie.html">
+    <span class="lesson-num">06</span>
+    <div class="lesson-info">
+      <h3>Filtre, sortare și paginație <span class="badge badge-skill">cod</span></h3>
+      <p>bool query (must/filter/should/must_not), term, terms, range, sortare, paginare from/size, query complet parametrizabil.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0007-eloquent-pdphilip.html">
+    <span class="lesson-num">07</span>
+    <div class="lesson-info">
+      <h3>Integrare Eloquent cu pdphilip/opensearch <span class="badge badge-skill">cod</span></h3>
+      <p>Modele Eloquent pe OpenSearch, CRUD, whereMatch, paginate, Eloquent Observer pentru sincronizare MongoDB → OpenSearch.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0008-highlight.html">
+    <span class="lesson-num">08</span>
+    <div class="lesson-info">
+      <h3>Highlight — evidențierea termenilor căutați <span class="badge badge-skill">cod</span></h3>
+      <p>pre_tags/post_tags, fragment_size, number_of_fragments, Blade template cu {!! !!}, CSS pentru stilizarea match-urilor.</p>
+    </div>
+  </a>
+
+  <a class="lesson-card" href="lessons/0009-agregari.html">
+    <span class="lesson-num">09</span>
+    <div class="lesson-info">
+      <h3>Agregări — statistici și filtre laterale <span class="badge badge-skill">cod</span></h3>
+      <p>terms, date_histogram, range aggregation. Pattern faceted search pentru sidebar-uri cu contoare. Combini query + highlight + agregări într-un singur request.</p>
+    </div>
+  </a>
+
+</div>
+
+<h2>Resurse</h2>
+<ul>
+  <li><a href="RESOURCES.md">RESOURCES.md</a> — surse recomandate și comunități</li>
+  <li><a href="https://docs.opensearch.org/latest/" target="_blank">Documentație oficială OpenSearch</a></li>
+  <li><a href="https://opensearch.pdphilip.com/" target="_blank">pdphilip/opensearch — documentație</a></li>
+</ul>
+
+<div class="ask-teacher" style="margin-top:2em">
+  <strong>Continui cu un profesor.</strong> La sesiunea viitoare putem aprofunda:
+  autocomplete, suggest, more like this, percolate queries, sau orice scenarii concrete din proiectul tău.
+  Deschide o sesiune nouă și spune ce vrei să înveți.
+</div>
+
+</body>
+</html>

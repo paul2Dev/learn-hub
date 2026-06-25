@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecția 9 — Agregări</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    /* Demo vizual facete */
+    .facet-demo {
+      display: flex;
+      gap: 24px;
+      margin: 1.5em 0;
+      flex-wrap: wrap;
+    }
+    .facet-box {
+      flex: 1;
+      min-width: 180px;
+      border: 1px solid var(--gray-2);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .facet-box h4 {
+      margin: 0;
+      padding: 8px 14px;
+      background: var(--blue);
+      color: #fff;
+      font-family: monospace;
+      font-size: .85rem;
+    }
+    .facet-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--gray-2);
+      font-size: .88rem;
+    }
+    .facet-item:last-child { border-bottom: none; }
+    .facet-count {
+      background: var(--blue-lt);
+      color: var(--blue);
+      font-family: monospace;
+      font-size: .78rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .facet-bar {
+      height: 4px;
+      background: var(--blue);
+      border-radius: 2px;
+      margin-top: 4px;
+      opacity: .4;
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+
+<div class="lesson-header">
+  <span class="meta">Lecția 09 · OpenSearch + Laravel</span>
+  <h1>Agregări — statistici din rezultate</h1>
+  <p class="subtitle">terms, range, date_histogram — filtre laterale, contoare, grafice</p>
+</div>
+
+<!-- ══════════════════════════════════════════ CE SUNT ══ -->
+<h2>1. Ce sunt agregările și de ce le vrei</h2>
+
+<p>
+  Agregările sunt <strong>calcule statistice</strong> pe setul de rezultate.
+  Cel mai vizibil exemplu: filtrele laterale din e-commerce.
+</p>
+
+<div class="facet-demo">
+  <div class="facet-box">
+    <h4>Taguri</h4>
+    <div class="facet-item">
+      php
+      <span class="facet-count">47</span>
+    </div>
+    <div class="facet-item">
+      laravel
+      <span class="facet-count">31</span>
+    </div>
+    <div class="facet-item">
+      javascript
+      <span class="facet-count">18</span>
+    </div>
+    <div class="facet-item">
+      mysql
+      <span class="facet-count">12</span>
+    </div>
+  </div>
+  <div class="facet-box">
+    <h4>Autor</h4>
+    <div class="facet-item">
+      Paul
+      <span class="facet-count">23</span>
+    </div>
+    <div class="facet-item">
+      Ana
+      <span class="facet-count">15</span>
+    </div>
+    <div class="facet-item">
+      Mihai
+      <span class="facet-count">9</span>
+    </div>
+  </div>
+  <div class="facet-box">
+    <h4>An publicare</h4>
+    <div class="facet-item">
+      2025
+      <span class="facet-count">34</span>
+    </div>
+    <div class="facet-item">
+      2024
+      <span class="facet-count">28</span>
+    </div>
+    <div class="facet-item">
+      2023
+      <span class="facet-count">14</span>
+    </div>
+  </div>
+</div>
+
+<p>
+  Toate aceste numere vin dintr-un singur request OpenSearch care combină
+  <strong>query</strong> (ce cauți) cu <strong>aggregations</strong> (statistici despre rezultate).
+</p>
+
+<div class="box box-info">
+  <span class="box-title">Diferența față de GROUP BY din SQL</span>
+  <code>SELECT tag, COUNT(*) FROM articles GROUP BY tag</code> în SQL → <code>terms aggregation</code> în OpenSearch.<br/>
+  Dar OpenSearch aplică agregarea <strong>pe rezultatele filtrului curent</strong> — dacă utilizatorul filtrează după „php",
+  numerele din celelalte facete reflectă automat doar articolele cu „php".
+</div>
+
+<!-- ══════════════════════════════════════════ STRUCTURA ══ -->
+<h2>2. Structura unui request cu agregări</h2>
+
+<p>
+  Agregările se adaugă în câmpul <code>aggs</code> (sau <code>aggregations</code>), paralel cu <code>query</code>.
+  Poți combina oricâte agregări într-un singur request.
+</p>
+
+<pre><code>$response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+    <span class="str">'index'</span> => <span class="str">'articles'</span>,
+    <span class="str">'body'</span>  => [
+        <span class="str">'size'</span>  => <span class="num">10</span>,         <span class="cm">// documentele efective (0 dacă vrei doar statistici)</span>
+
+        <span class="str">'query'</span> => [ ... ],   <span class="cm">// query normal din Lecțiile 4-6</span>
+
+        <span class="str">'aggs'</span>  => [           <span class="cm">// agregările — calculele statistice</span>
+            <span class="str">'per_tag'</span>  => [ ... ],   <span class="cm">// tu dai un nume fiecărei agregări</span>
+            <span class="str">'per_autor'</span> => [ ... ],
+            <span class="str">'pe_luna'</span>  => [ ... ],
+        ],
+    ],
+]);</code></pre>
+
+<!-- ══════════════════════════════════════════ TERMS ══ -->
+<h2>3. terms — count per valoare de câmp</h2>
+
+<p>
+  Cea mai folosită agregare. Numără câte documente există per valoare unică a unui câmp.
+  Câmpul trebuie să fie <code>keyword</code> (nu <code>text</code>).
+</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchWithFacets</span>(string $query, array $filters = []): array
+{
+    <span class="cm">// Filtrele active (din URL: ?tag=php&autor=Paul)</span>
+    $filterClauses = [[<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]]];
+    <span class="kw">foreach</span> ($filters <span class="kw">as</span> $field => $value) {
+        $filterClauses[] = [<span class="str">'term'</span> => [$field => $value]];
+    }
+
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => <span class="num">10</span>,
+            <span class="str">'query'</span> => [<span class="str">'bool'</span> => [
+                <span class="str">'must'</span>   => [[<span class="str">'multi_match'</span> => [
+                    <span class="str">'query'</span>  => $query,
+                    <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>],
+                ]]],
+                <span class="str">'filter'</span> => $filterClauses,
+            ]],
+
+            <span class="str">'aggs'</span> => [
+
+                <span class="str">'per_tag'</span> => [
+                    <span class="str">'terms'</span> => [
+                        <span class="str">'field'</span> => <span class="str">'taguri'</span>,  <span class="cm">// trebuie keyword</span>
+                        <span class="str">'size'</span>  => <span class="num">10</span>,       <span class="cm">// max 10 taguri returnate</span>
+                    ],
+                ],
+
+                <span class="str">'per_autor'</span> => [
+                    <span class="str">'terms'</span> => [
+                        <span class="str">'field'</span> => <span class="str">'autor.keyword'</span>,  <span class="cm">// sub-câmpul keyword</span>
+                        <span class="str">'size'</span>  => <span class="num">10</span>,
+                    ],
+                ],
+
+            ],
+        ],
+    ]);
+
+    <span class="kw">return</span> $<span class="kw">this</span>-><span class="fn">extractWithAggs</span>($response);
+}</code></pre>
+
+<h3>Structura răspunsului pentru agregări</h3>
+
+<pre><code><span class="cm">// $response['aggregations'] conține rezultatele:</span>
+[
+    <span class="str">'aggregations'</span> => [
+        <span class="str">'per_tag'</span> => [
+            <span class="str">'buckets'</span> => [
+                [<span class="str">'key'</span> => <span class="str">'php'</span>,        <span class="str">'doc_count'</span> => <span class="num">47</span>],
+                [<span class="str">'key'</span> => <span class="str">'laravel'</span>,    <span class="str">'doc_count'</span> => <span class="num">31</span>],
+                [<span class="str">'key'</span> => <span class="str">'javascript'</span>, <span class="str">'doc_count'</span> => <span class="num">18</span>],
+            ],
+        ],
+        <span class="str">'per_autor'</span> => [
+            <span class="str">'buckets'</span> => [
+                [<span class="str">'key'</span> => <span class="str">'Paul'</span>,  <span class="str">'doc_count'</span> => <span class="num">23</span>],
+                [<span class="str">'key'</span> => <span class="str">'Ana'</span>,   <span class="str">'doc_count'</span> => <span class="num">15</span>],
+            ],
+        ],
+    ],
+]</code></pre>
+
+<pre><code><span class="kw">protected function</span> <span class="fn">extractWithAggs</span>(array $response): array
+{
+    <span class="cm">// Extrage bucket-urile într-un format simplu [label => count]</span>
+    $agg = <span class="kw">fn</span>(string $name) => <span class="fn">collect</span>($response[<span class="str">'aggregations'</span>][$name][<span class="str">'buckets'</span>] ?? [])
+        -><span class="fn">mapWithKeys</span>(<span class="kw">fn</span>($b) => [$b[<span class="str">'key'</span>] => $b[<span class="str">'doc_count'</span>]])
+        -><span class="fn">toArray</span>();
+
+    <span class="kw">return</span> [
+        <span class="str">'total'</span>   => $response[<span class="str">'hits'</span>][<span class="str">'total'</span>][<span class="str">'value'</span>],
+        <span class="str">'results'</span> => <span class="fn">collect</span>($response[<span class="str">'hits'</span>][<span class="str">'hits'</span>])
+            -><span class="fn">map</span>(<span class="kw">fn</span>($h) => <span class="fn">array_merge</span>([<span class="str">'_id'</span> => $h[<span class="str">'_id'</span>]], $h[<span class="str">'_source'</span>]))-><span class="fn">toArray</span>(),
+        <span class="str">'facets'</span>  => [
+            <span class="str">'taguri'</span>  => $agg(<span class="str">'per_tag'</span>),    <span class="cm">// ['php' => 47, 'laravel' => 31]</span>
+            <span class="str">'autori'</span>  => $agg(<span class="str">'per_autor'</span>),  <span class="cm">// ['Paul' => 23, 'Ana' => 15]</span>
+        ],
+    ];
+}
+
+<span class="cm">// Utilizare în controller:</span>
+$data = $search-><span class="fn">searchWithFacets</span>(<span class="str">'laravel'</span>);
+<span class="cm">// $data['facets']['taguri']  = ['php' => 47, 'laravel' => 31, ...]
+// $data['facets']['autori']  = ['Paul' => 23, 'Ana' => 15, ...]</span></code></pre>
+
+<!-- ══════════════════════════════════════════ DATE HISTOGRAM ══ -->
+<h2>4. date_histogram — distribuție în timp</h2>
+
+<p>
+  Util pentru grafice de tip „articole publicate per lună" sau filtrare cronologică.
+</p>
+
+<pre><code><span class="str">'aggs'</span> => [
+
+    <span class="str">'pe_luna'</span> => [
+        <span class="str">'date_histogram'</span> => [
+            <span class="str">'field'</span>             => <span class="str">'publicat_la'</span>,
+            <span class="str">'calendar_interval'</span> => <span class="str">'month'</span>,  <span class="cm">// 'day', 'week', 'month', 'year'</span>
+            <span class="str">'format'</span>            => <span class="str">'yyyy-MM'</span>, <span class="cm">// formatul cheii returnate</span>
+            <span class="str">'min_doc_count'</span>     => <span class="num">1</span>,          <span class="cm">// ascunde lunile fără articole</span>
+        ],
+    ],
+
+    <span class="str">'pe_an'</span> => [
+        <span class="str">'date_histogram'</span> => [
+            <span class="str">'field'</span>             => <span class="str">'publicat_la'</span>,
+            <span class="str">'calendar_interval'</span> => <span class="str">'year'</span>,
+            <span class="str">'format'</span>            => <span class="str">'yyyy'</span>,
+        ],
+    ],
+
+],</code></pre>
+
+<pre><code><span class="cm">// Răspuns pentru 'pe_luna':</span>
+[
+    <span class="str">'buckets'</span> => [
+        [<span class="str">'key_as_string'</span> => <span class="str">'2024-11'</span>, <span class="str">'key'</span> => <span class="num">1730419200000</span>, <span class="str">'doc_count'</span> => <span class="num">8</span>],
+        [<span class="str">'key_as_string'</span> => <span class="str">'2024-12'</span>, <span class="str">'key'</span> => <span class="num">1733011200000</span>, <span class="str">'doc_count'</span> => <span class="num">12</span>],
+        [<span class="str">'key_as_string'</span> => <span class="str">'2025-01'</span>, <span class="str">'key'</span> => <span class="num">1735689600000</span>, <span class="str">'doc_count'</span> => <span class="num">19</span>],
+    ],
+]
+
+<span class="cm">// Extras pentru grafic:</span>
+$lunare = <span class="fn">collect</span>($response[<span class="str">'aggregations'</span>][<span class="str">'pe_luna'</span>][<span class="str">'buckets'</span>])
+    -><span class="fn">mapWithKeys</span>(<span class="kw">fn</span>($b) => [$b[<span class="str">'key_as_string'</span>] => $b[<span class="str">'doc_count'</span>]])
+    -><span class="fn">toArray</span>();
+<span class="cm">// ['2024-11' => 8, '2024-12' => 12, '2025-01' => 19]</span></code></pre>
+
+<!-- ══════════════════════════════════════════ RANGE ══ -->
+<h2>5. range — grupare în intervale numerice</h2>
+
+<pre><code><span class="str">'aggs'</span> => [
+
+    <span class="str">'dupa_vizualizari'</span> => [
+        <span class="str">'range'</span> => [
+            <span class="str">'field'</span>  => <span class="str">'vizualizari'</span>,
+            <span class="str">'ranges'</span> => [
+                [<span class="str">'key'</span> => <span class="str">'Puțin citite'</span>,  <span class="str">'to'</span>   => <span class="num">100</span>],
+                [<span class="str">'key'</span> => <span class="str">'Populare'</span>,      <span class="str">'from'</span> => <span class="num">100</span>,  <span class="str">'to'</span> => <span class="num">1000</span>],
+                [<span class="str">'key'</span> => <span class="str">'Virale'</span>,        <span class="str">'from'</span> => <span class="num">1000</span>],
+            ],
+        ],
+    ],
+
+],
+
+<span class="cm">// Răspuns:
+// ['Puțin citite' => 34, 'Populare' => 18, 'Virale' => 5]</span></code></pre>
+
+<!-- ══════════════════════════════════════════ COMPLET ══ -->
+<h2>6. Request complet — search + highlight + agregări</h2>
+
+<p>Poți combina tot ce ai învățat în Lecțiile 4–9 într-un singur request:</p>
+
+<pre><code><span class="kw">public function</span> <span class="fn">searchComplete</span>(array $params): array
+{
+    $query   = $params[<span class="str">'q'</span>]      ?? <span class="str">''</span>;
+    $tag     = $params[<span class="str">'tag'</span>]    ?? <span class="kw">null</span>;
+    $page    = $params[<span class="str">'page'</span>]   ?? <span class="num">1</span>;
+    $perPage = <span class="num">10</span>;
+
+    $filters = [[<span class="str">'term'</span> => [<span class="str">'status'</span> => <span class="str">'published'</span>]]];
+    <span class="kw">if</span> ($tag) $filters[] = [<span class="str">'term'</span> => [<span class="str">'taguri'</span> => $tag]];
+
+    $response = $<span class="kw">this</span>->client-><span class="fn">search</span>([
+        <span class="str">'index'</span> => <span class="str">'articles'</span>,
+        <span class="str">'body'</span>  => [
+            <span class="str">'size'</span>  => $perPage,
+            <span class="str">'from'</span>  => ($page - <span class="num">1</span>) * $perPage,
+
+            <span class="cm">// 1. Query + filtre</span>
+            <span class="str">'query'</span> => [<span class="str">'bool'</span> => [
+                <span class="str">'must'</span>   => $query
+                    ? [[<span class="str">'multi_match'</span> => [<span class="str">'query'</span> => $query, <span class="str">'fields'</span> => [<span class="str">'titlu^3'</span>, <span class="str">'continut'</span>], <span class="str">'fuzziness'</span> => <span class="str">'AUTO'</span>]]]
+                    : [[<span class="str">'match_all'</span> => (object)[]]],
+                <span class="str">'filter'</span> => $filters,
+            ]],
+
+            <span class="cm">// 2. Highlight</span>
+            <span class="str">'highlight'</span> => [
+                <span class="str">'pre_tags'</span>  => [<span class="str">'&lt;em class="hl"&gt;'</span>],
+                <span class="str">'post_tags'</span> => [<span class="str">'&lt;/em&gt;'</span>],
+                <span class="str">'fields'</span>    => [
+                    <span class="str">'titlu'</span>    => [<span class="str">'number_of_fragments'</span> => <span class="num">0</span>],
+                    <span class="str">'continut'</span> => [<span class="str">'fragment_size'</span> => <span class="num">150</span>, <span class="str">'number_of_fragments'</span> => <span class="num">2</span>, <span class="str">'no_match_size'</span> => <span class="num">100</span>],
+                ],
+            ],
+
+            <span class="cm">// 3. Agregări</span>
+            <span class="str">'aggs'</span> => [
+                <span class="str">'per_tag'</span>  => [<span class="str">'terms'</span> => [<span class="str">'field'</span> => <span class="str">'taguri'</span>,         <span class="str">'size'</span> => <span class="num">10</span>]],
+                <span class="str">'per_autor'</span> => [<span class="str">'terms'</span> => [<span class="str">'field'</span> => <span class="str">'autor.keyword'</span>,  <span class="str">'size'</span> => <span class="num">10</span>]],
+                <span class="str">'pe_an'</span>    => [<span class="str">'date_histogram'</span> => [<span class="str">'field'</span> => <span class="str">'publicat_la'</span>, <span class="str">'calendar_interval'</span> => <span class="str">'year'</span>, <span class="str">'format'</span> => <span class="str">'yyyy'</span>, <span class="str">'min_doc_count'</span> => <span class="num">1</span>]],
+            ],
+
+            <span class="str">'sort'</span> => [[<span class="str">'_score'</span> => [<span class="str">'order'</span> => <span class="str">'desc'</span>]]],
+        ],
+    ]);
+
+    $agg = <span class="kw">fn</span>(string $k) => <span class="fn">collect</span>($response[<span class="str">'aggregations'</span>][$k][<span class="str">'buckets'</span>])
+        -><span class="fn">mapWithKeys</span>(<span class="kw">fn</span>($b) => [($b[<span class="str">'key_as_string'</span>] ?? $b[<span class="str">'key'</span>]) => $b[<span class="str">'doc_count'</span>]])-><span class="fn">toArray</span>();
+
+    $total = $response[<span class="str">'hits'</span>][<span class="str">'total'</span>][<span class="str">'value'</span>];
+
+    <span class="kw">return</span> [
+        <span class="str">'total'</span>        => $total,
+        <span class="str">'current_page'</span> => $page,
+        <span class="str">'last_page'</span>    => (int) <span class="fn">ceil</span>($total / $perPage),
+        <span class="str">'results'</span>      => <span class="fn">collect</span>($response[<span class="str">'hits'</span>][<span class="str">'hits'</span>])-><span class="fn">map</span>(<span class="kw">fn</span>($h) => [
+            <span class="str">'_id'</span>            => $h[<span class="str">'_id'</span>],
+            ...$h[<span class="str">'_source'</span>],
+            <span class="str">'titlu_display'</span>  => $h[<span class="str">'highlight'</span>][<span class="str">'titlu'</span>][<span class="num">0</span>] ?? $h[<span class="str">'_source'</span>][<span class="str">'titlu'</span>],
+            <span class="str">'fragmente'</span>      => $h[<span class="str">'highlight'</span>][<span class="str">'continut'</span>] ?? [],
+        ])-><span class="fn">toArray</span>(),
+        <span class="str">'facets'</span> => [
+            <span class="str">'taguri'</span>  => $agg(<span class="str">'per_tag'</span>),
+            <span class="str">'autori'</span>  => $agg(<span class="str">'per_autor'</span>),
+            <span class="str">'ani'</span>     => $agg(<span class="str">'pe_an'</span>),
+        ],
+    ];
+}</code></pre>
+
+<!-- ══════════════════════════════════════════ QUIZ ══ -->
+<div class="quiz-section">
+  <h2>Verifică ce ai înțeles</h2>
+
+  <div class="quiz-q" data-answer="B">
+    <p>1. Ce tip de câmp trebuie să fie <code>taguri</code> pentru a folosi <code>terms</code> aggregation?</p>
+    <button class="quiz-opt" data-val="A">text — pentru că tagurile sunt string-uri</button>
+    <button class="quiz-opt" data-val="B">keyword — aggregarea necesită valori exacte, neanalicate</button>
+    <button class="quiz-opt" data-val="C">integer — aggregarea numără, deci trebuie număr</button>
+    <button class="quiz-opt" data-val="D">nested — pentru că sunt mai multe taguri per document</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="C">
+    <p>2. Unde găsești rezultatele agregărilor în răspunsul de la OpenSearch?</p>
+    <button class="quiz-opt" data-val="A">$response['hits']['aggs']</button>
+    <button class="quiz-opt" data-val="B">$response['hits']['total']</button>
+    <button class="quiz-opt" data-val="C">$response['aggregations']</button>
+    <button class="quiz-opt" data-val="D">$response['aggs']['results']</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="D">
+    <p>3. Vrei să afișezi numărul de articole per lună, pentru un grafic. Ce tip de agregare folosești?</p>
+    <button class="quiz-opt" data-val="A">terms — pentru că luna este o valoare de câmp</button>
+    <button class="quiz-opt" data-val="B">range — pentru că e un interval de timp</button>
+    <button class="quiz-opt" data-val="C">stats — pentru statistici temporale</button>
+    <button class="quiz-opt" data-val="D">date_histogram — cu calendar_interval: 'month'</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-q" data-answer="A">
+    <p>4. Dacă utilizatorul filtrează după <code>tag=php</code>, cum se comportă agregarea <code>per_autor</code>?</p>
+    <button class="quiz-opt" data-val="A">Returnează autori și contoare doar pentru articolele cu tag php</button>
+    <button class="quiz-opt" data-val="B">Returnează toți autorii din index, ignorând filtrul</button>
+    <button class="quiz-opt" data-val="C">Dă eroare — nu poți combina filtre cu agregări</button>
+    <button class="quiz-opt" data-val="D">Returnează 0 pentru toți autorii dacă filtrul e activ</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-score"></div>
+</div>
+
+<div class="sources">
+  <h3>Surse</h3>
+  <ul>
+    <li><a href="https://docs.opensearch.org/latest/aggregations/" target="_blank">Aggregations — OpenSearch Documentation</a> — sursa principală recomandată</li>
+    <li><a href="https://docs.opensearch.org/latest/aggregations/bucket/terms/" target="_blank">Terms aggregation</a></li>
+    <li><a href="https://docs.opensearch.org/latest/aggregations/bucket/date-histogram/" target="_blank">Date histogram aggregation</a></li>
+  </ul>
+</div>
+
+<div class="lesson-nav">
+  <a href="0008-highlight.html">← Lecția 8: Highlight</a>
+  <span class="disabled">Lecția 10: în curând →</span>
+</div>
+
+<div class="ask-teacher">
+  <strong>Ai întrebări?</strong> Dacă vrei să construiești un anumit tip de filtru lateral sau grafic specific proiectului tău, descrie-mi structura datelor și îți scriu exact agregarea de care ai nevoie.
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

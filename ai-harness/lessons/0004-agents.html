@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4: Agents — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 4 din 8</span>
+    <span class="tag">~20 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Agents &amp; Fluxuri Multi-Agent</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Lansează sub-agenți specializați pentru lucru în paralel, protecția contextului sau aport de expertiză de domeniu.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: CE ESTE UN SUBAGENT ══════ -->
+  <h2>Ce este un subagent?</h2>
+
+  <p>
+    Un <strong>subagent</strong> este un agent independent lansat de agentul curent prin tool-ul
+    <code>Agent</code>. Pornește cu o <em>fereastră de context proaspătă</em> — nu are nicio memorie
+    a sesiunii părinte, niciun istoric de conversație și niciun acces la tool-uri pe care agentul părinte
+    nu le-a descris explicit în promptul său.
+  </p>
+
+  <p>
+    Când subagentul termină, returnează un <em>singur mesaj</em> înapoi la părinte.
+    Părintele poate folosi acel rezultat pentru a-și continua propria activitate.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce să lansezi un subagent?</div>
+    Două motive: <strong>paralelism</strong> (rularea simultană a lucrului independent) și
+    <strong>protecția contextului</strong> (menținerea rezultatelor mari de căutare în afara ferestrei de context a părintelui,
+    care ar încetini inferența și ar crește costul).
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: TOOL-UL AGENT ══════ -->
+  <h2>Tool-ul Agent</h2>
+
+  <p>
+    Tool-ul <code>Agent</code> acceptă câțiva parametri cheie:
+  </p>
+
+  <pre><code>Agent({
+  description: "Găsește toate comentariile TODO din src/",   // etichetă scurtă
+  subagent_type: "Explore",                                   // specializare opțională
+  prompt: "Caută în src/ comentariile TODO. Raportează fiecare cu calea fișierului și numărul liniei.",
+  run_in_background: false,                                   // foreground implicit
+  isolation: "worktree"                                       // izolare git opțională
+})</code></pre>
+
+  <h3>Parametrii explicați</h3>
+  <ul>
+    <li>
+      <strong><code>description</code></strong> — o etichetă de 3–5 cuvinte afișată în UI cât timp agentul rulează.
+      Scrie-o ca o acțiune: <em>"Caută comentarii TODO"</em>.
+    </li>
+    <li>
+      <strong><code>subagent_type</code></strong> — selectează o variantă de agent specializat.
+      Dacă este omis, se folosește agentul de uz general.
+    </li>
+    <li>
+      <strong><code>prompt</code></strong> — briefing-ul complet pentru subagent. Scrie-l ca și cum
+      ai da instrucțiuni unui coleg care nu a văzut niciodată conversația ta. Include căi de fișiere, obiective și context.
+    </li>
+    <li>
+      <strong><code>run_in_background</code></strong> — <code>true</code> pentru a rula în paralel cât timp
+      părintele continuă. Părintele este notificat când subagentul termină.
+    </li>
+    <li>
+      <strong><code>isolation: "worktree"</code></strong> — creează un worktree git temporar pentru ca
+      subagentul să poată face modificări fără a afecta arborele tău de lucru.
+    </li>
+  </ul>
+
+
+  <!-- ══════ SECȚIUNEA 3: TIPURI DE AGENT ══════ -->
+  <h2>Tipuri de agent specializat</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>claude (implicit)</h4>
+        <p>Uz general. Acces complet la tool-uri. Folosit când niciun alt tip nu se potrivește sau când sarcina acoperă mai multe domenii.</p>
+      </div>
+      <div class="arch-tag">toate tool-urile</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Explore</h4>
+        <p>Agent de căutare rapid, read-only. Optimizat pentru "găsește fișiere după pattern" și "grep după simbol." Folosit pentru căutări țintite, nu analiză amplă.</p>
+      </div>
+      <div class="arch-tag">read-only</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Plan</h4>
+        <p>Arhitect software. Returnează planuri de implementare pas cu pas, identifică fișierele critice, ia în considerare compromisurile. Nu scrie cod.</p>
+      </div>
+      <div class="arch-tag">doar design</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>code-reviewer</h4>
+        <p>Revizuiește codul pentru corectitudine, bug-uri și oportunități de simplificare. Util ca a doua opinie independentă pe un diff.</p>
+      </div>
+      <div class="arch-tag">doar review</div>
+    </div>
+  </div>
+
+  <p>
+    Agenții specializați au un set mai restrâns de tool-uri și instrucțiuni mai stricte, ceea ce îi face mai rapizi
+    și mai ieftini de rulat decât agentul general pentru sarcina lor specifică.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 4: FOREGROUND VS BACKGROUND ══════ -->
+  <h2>Foreground vs. background</h2>
+
+  <p>
+    Implicit este <strong>foreground</strong>: părintele așteaptă ca subagentul să termine înainte de a continua.
+    Folosește foreground când ai nevoie de rezultatul subagentului pentru a decide ce să faci mai departe.
+  </p>
+
+  <p>
+    Cu <code>run_in_background: true</code>, părintele continuă imediat.
+    Subagentul rulează în concurență și părintele este notificat când se termină.
+    Folosește background când ai muncă cu adevărat independentă de făcut în paralel.
+  </p>
+
+  <pre><code>// Foreground — așteaptă rezultatul
+const result = Agent({
+  description: "Auditează dependențele",
+  prompt: "Citește package.json și listează toate dependențele cu probleme de securitate cunoscute."
+});
+// părintele așteaptă aici, apoi folosește rezultatul
+
+// Background — continuă în paralel
+Agent({
+  description: "Generează docs în background",
+  prompt: "Generează documentația API pentru src/api/. Salvează în docs/api.md.",
+  run_in_background: true
+});
+// părintele continuă imediat; notificat când agentul termină</code></pre>
+
+
+  <!-- ══════ SECȚIUNEA 5: SCRIERE DE PROMPTURI BUNE ══════ -->
+  <h2>Scrierea prompturilor eficiente pentru subagent</h2>
+
+  <p>
+    Deoarece subagentul pornește rece — fără memorie a conversației tale — promptul trebuie să fie
+    complet autonom. Un prompt slab produce rezultate vagi și nefolositoare.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-label">Anti-pattern</div>
+    <em>"Pe baza descoperirilor tale, repară bug-ul."</em> — Subagentul nu are descoperiri.
+    Nu delega niciodată sinteza informațiilor pe care agentul nu le deține.
+  </div>
+
+  <p>Un prompt puternic pentru subagent include:</p>
+  <ul>
+    <li><strong>Obiectiv</strong> — ce trebuie realizat și de ce</li>
+    <li><strong>Context</strong> — căi de fișiere relevante, nume de variabile, constrângeri pe care agentul trebuie să le cunoască</li>
+    <li><strong>Format output</strong> — cum ar trebui să arate răspunsul ("raport în sub 200 de cuvinte", "returnează o listă JSON")</li>
+    <li><strong>Ce să omiți</strong> — ce NU ar trebui să facă agentul, pentru a menține scopul strict</li>
+  </ul>
+
+  <pre><code>// Slab
+prompt: "Găsește bug-ul din modulul de autentificare"
+
+// Puternic
+prompt: "Endpoint-ul de login din src/auth/login.ts:47 returnează 401 pentru tokeni valizi.
+  Citește acel fișier și logica de validare a tokenilor din src/auth/validate.ts.
+  Identifică linia specifică care cauzează respingerea incorectă.
+  Raportează: cauza rădăcină, numărul liniei și o sugestie de corectare pe o singură linie.
+  NU modifica niciun fișier — doar cercetare."</code></pre>
+
+
+  <!-- ══════ PRACTIC ══════ -->
+  <h2>Practic: rulează agenți de cercetare în paralel</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Lansează doi agenți în background</div>
+    <p style="font-size:0.9rem;margin-bottom:0.8rem;">
+      Folosește doi agenți Explore în background pentru a cerceta două lucruri în același timp, apoi combină rezultatele.
+    </p>
+    <ol>
+      <li>În Claude Code, cere:
+        <pre><code>Lansează doi agenți în background:
+1. Găsește toate fișierele din acest proiect care importă din 'react'
+2. Găsește toate fișierele care au comentarii TODO
+Raportează ambele rezultate când sunt gata.</code></pre>
+      </li>
+      <li>
+        Claude ar trebui să lanseze doi sub-agenți <code>Explore</code> în paralel.
+        Urmărește cum etichetele agenților apar în UI cât timp rulează.
+      </li>
+      <li>
+        Când ambii termină, vei primi două mesaje de rezultat separate.
+        Apoi întreabă: <em>"Rezumă ambele descoperiri într-un singur tabel."</em>
+      </li>
+      <li>
+        Observă că contextul sesiunii părintelui nu a fost poluat cu outputul brut de căutare
+        al fiecărui agent — au sosit doar rezumatele.
+      </li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Izolare worktree</div>
+    <p style="font-size:0.9rem;margin-bottom:0.8rem;">
+      Lansează un agent cu <code>isolation: "worktree"</code> pentru a-l lăsa să facă modificări în siguranță.
+    </p>
+    <ol>
+      <li>Cere lui Claude: <em>"Lansează un agent într-un worktree pentru a adăuga comentarii JSDoc la fiecare funcție din src/utils/. Raportează numele branch-ului când termină."</em></li>
+      <li>Agentul lucrează pe o copie izolată. Arborele tău de lucru rămâne neatins.</li>
+      <li>Dacă îți plac modificările, mergi branch-ul worktree-ului; altfel, renunță la el fără nicio curățare necesară.</li>
+    </ol>
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/sub-agents" target="_blank">
+        Claude Code Sub-agents — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Referința completă pentru parametrii tool-ului <code>Agent</code>, tipurile disponibile de agent,
+        modurile de izolare și pattern-urile pentru fluxuri multi-agent.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Un subagent este lansat. Are acces la istoricul conversației sesiunii părintelui?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Da — moștenește contextul complet al părintelui</button></li>
+        <li><button data-correct="false">Da — dar numai ultimele 10 mesaje</button></li>
+        <li><button data-correct="true">Nu — pornește cu o fereastră de context proaspătă</button></li>
+        <li><button data-correct="false">Numai dacă părintele pasează <code>share_context: true</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Subagentii pornesc întotdeauna rece. Acesta este o caracteristică, nu un bug —
+        protejează contextul părintelui și forțează promptul subagentului să fie autonom.
+        Tot ce are nevoie subagentul trebuie scris în promptul său.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Trebuie să cauți o funcție specifică în întreaga bază de cod. Ce tip de agent este cel mai bun?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">claude (uz general)</button></li>
+        <li><button data-correct="true">Explore</button></li>
+        <li><button data-correct="false">Plan</button></li>
+        <li><button data-correct="false">code-reviewer</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>Explore</code> este optimizat pentru căutări țintite de fișiere/simboluri.
+        Este mai rapid și mai ieftin decât agentul general pentru această clasă de sarcini.
+        Rezervă <code>claude</code> pentru sarcini care necesită scrierea de cod sau analiză transversală.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Când ar trebui să folosești <code>run_in_background: true</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când sarcina este lungă și vrei să se termine mai repede</button></li>
+        <li><button data-correct="false">Pentru toți subagentii — background-ul este întotdeauna mai eficient</button></li>
+        <li><button data-correct="true">Când părintele are muncă cu adevărat independentă de făcut cât timp subagentul rulează</button></li>
+        <li><button data-correct="false">Când subagentul trebuie să modifice fișiere</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Background-ul este util doar când există muncă paralelă reală.
+        Dacă părintele are nevoie de rezultatul subagentului pentru a decide pasul următor, folosește foreground.
+        Lansarea unui agent în background și așteptarea imediată a lui este overhead irosit.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce face <code>isolation: "worktree"</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Rulează subagentul fără acces la internet</button></li>
+        <li><button data-correct="false">Împiedică subagentul să apeleze tool-ul Bash</button></li>
+        <li><button data-correct="true">Creează un worktree git temporar astfel încât modificările să nu afecteze arborele de lucru</button></li>
+        <li><button data-correct="false">Oferă subagentului propriul <code>settings.json</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un worktree este un checkout separat al aceluiași repo pe un branch nou.
+        Subagentul poate scrie fișiere liber; branch-ul tău principal rămâne neatins.
+        Dacă agentul nu face nicio modificare, worktree-ul este curățat automat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Câte mesaje trimite un subagent terminat înapoi la părinte?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un mesaj per apel de tool pe care l-a făcut</button></li>
+        <li><button data-correct="false">Transcriptul complet al conversației</button></li>
+        <li><button data-correct="true">Un singur mesaj final</button></li>
+        <li><button data-correct="false">Depinde de tipul de agent</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un subagent returnează exact un mesaj — rezumatul sau răspunsul său final.
+        Părintele nu vede niciodată apelurile interne de tool ale subagentului sau raționamentul intermediar.
+        Aceasta este ceea ce face fluxurile multi-agent gestionabile: fiecare agent este o cutie neagră care returnează un singur rezultat.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Vrei ajutor în proiectarea unui flux multi-agent pentru o sarcină specifică? Nu ești sigur când să folosești
+    izolarea worktree? Întreabă-mă.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0003-skills.html">← Lecția 3: Skills</a>
+    <a href="0005-scheduling.html">Lecția 5: Scheduling →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

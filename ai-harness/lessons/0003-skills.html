@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3: Skills — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 3 din 8</span>
+    <span class="tag">~20 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Skills</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Împachetează instrucțiuni reutilizabile în slash commands pe care le poți invoca în orice proiect.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: CE SUNT SKILLS-URILE ══════ -->
+  <h2>Ce este un skill?</h2>
+
+  <p>
+    Un <strong>skill</strong> este un set de instrucțiuni cu nume, reutilizabil, pe care îl invoci cu un slash command —
+    de exemplu, <code>/teach</code>, <code>/code-review</code> sau <code>/deploy</code>.
+    Când tastezi <code>/skill-name</code>, harness-ul încarcă conținutul skill-ului și îl injectează în
+    sesiune ca un prompt structurat, opțional cu resurse bundled, fișiere de format și sub-prompturi.
+  </p>
+
+  <p>
+    Skills-urile sunt răspunsul harness-ului la întrebarea: <em>"Cum să nu mai scriu același prompt lung de fiecare dată?"</em>
+    Fac fluxurile de lucru experților repetabile și partajabile între proiecte.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Skills vs. hooks</div>
+    Hooks-urile se declanșează automat la evenimente ale harness-ului. Skills-urile sunt invocate explicit de utilizator.
+    Un hook este mereu activ; un skill este mereu la cerere.
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: STRUCTURA FIȘIERELOR ══════ -->
+  <h2>Structura fișierelor</h2>
+
+  <p>
+    Skills-urile se află în directorul <code>~/.claude/skills/</code> la nivel de utilizator,
+    sau în <code>.claude/skills/</code> în interiorul unui proiect pentru skills-uri cu scope de proiect.
+    Fiecare skill este un folder numit după comandă:
+  </p>
+
+  <pre><code>~/.claude/skills/
+├── deploy/
+│   ├── deploy.md          ← entry point (același nume cu folderul)
+│   ├── checklist.html     ← resursă bundled
+│   └── schema.json        ← altă resursă
+├── code-review/
+│   └── code-review.md
+└── teach/
+    ├── teach.md
+    ├── MISSION-FORMAT.md
+    └── assets/
+        └── style.css</code></pre>
+
+  <p>
+    <strong>Entry point-ul</strong> este fișierul markdown cu același nume ca folderul.
+    Harness-ul îl încarcă când skill-ul este invocat. Toate celelalte fișiere din folder sunt
+    disponibile ca resurse bundled la care entry point-ul poate face referire.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 3: FORMATUL ENTRY POINT-ULUI ══════ -->
+  <h2>Entry point-ul</h2>
+
+  <p>
+    Entry point-ul este un fișier markdown cu un bloc de frontmatter YAML urmat de instrucțiunile skill-ului.
+  </p>
+
+  <pre><code>---
+name: greet
+description: Salută utilizatorul cald și întreabă cu ce are nevoie de ajutor astăzi.
+---
+
+Ai fost invocat cu /greet. Rolul tău este să:
+
+1. Îl saluți pe utilizator pe nume dacă îl știi, altfel generic.
+2. Pui o singură întrebare clară: care este cel mai important lucru pe care vor să îl realizeze astăzi?
+3. Asculți răspunsul, apoi sugerezi un prim pas clar.
+
+Menține răspunsul scurt — sub 100 de cuvinte. Fii cald dar direct.
+
+ARGUMENTS: {{args}}</code></pre>
+
+  <p>
+    Placeholder-ul <code>{{args}}</code> este înlocuit cu tot ceea ce utilizatorul a tastat după
+    comandă, de ex. <code>/greet bună dimineața</code> pasează <code>"bună dimineața"</code> ca args.
+  </p>
+
+  <h3>Câmpuri cheie frontmatter</h3>
+  <ul>
+    <li><code>name</code> — numele slash command-ului (fără slash)</li>
+    <li><code>description</code> — afișat în lista de skills; folosit de harness pentru a decide relevanța</li>
+  </ul>
+
+
+  <!-- ══════ SECȚIUNEA 4: PROGRESSIVE DISCLOSURE ══════ -->
+  <h2>Progressive disclosure</h2>
+
+  <p>
+    Skills-urile complexe nu ar trebui să reverse toată logica lor în prima interacțiune a utilizatorului.
+    Un design bun de skill folosește <strong>progressive disclosure</strong>: începe cu instrucțiunea cea mai importantă,
+    apoi dezvăluie detaliile doar când este nevoie.
+  </p>
+
+  <p>
+    Practic, asta înseamnă structurarea unui skill ca o serie de etape.
+    Un skill <code>/plan</code> ar putea funcționa astfel:
+  </p>
+
+  <pre><code>---
+name: plan
+description: Ajută utilizatorul să planifice o implementare înainte de a scrie orice cod.
+---
+
+# Etapa 1: Înțelege obiectivul
+Întreabă utilizatorul: ce încerci să construiești și de ce?
+NU scrie cod sau plan încă. Ascultă și pune întrebări clarificatoare.
+
+# Etapa 2: Identifică constrângerile
+Odată ce înțelegi obiectivul, întreabă despre constrângeri:
+timp, stack tehnologic, cod existent, dimensiunea echipei.
+
+# Etapa 3: Produce planul
+Numai după ce etapele 1 și 2 sunt complete, produce un plan de implementare numerotat.
+Fiecare pas trebuie să fie suficient de concret pentru a acționa fără clarificări suplimentare.</code></pre>
+
+  <p>
+    Modelul citește toate etapele deodată, dar conversația le desfășoară natural în ordine.
+    Utilizatorul experimentează adâncime progresivă în loc de un zid de instrucțiuni.
+  </p>
+
+
+  <!-- ══════ PRACTIC ══════ -->
+  <h2>Practic: construiește un skill /standup</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Creează și invocă /standup</div>
+    <p style="font-size:0.9rem;margin-bottom:0.8rem;">
+      Construiește un skill care îți pune trei întrebări de standup și formatează răspunsurile ca un mesaj gata pentru Slack.
+    </p>
+    <ol>
+      <li>
+        Creează directorul:
+        <pre><code>mkdir -p ~/.claude/skills/standup</code></pre>
+        Pe Windows: <code>New-Item -ItemType Directory ~/.claude/skills/standup</code>
+      </li>
+      <li>
+        Creează <code>~/.claude/skills/standup/standup.md</code>:
+        <pre><code>---
+name: standup
+description: Rulează standup-ul zilnic și formatează outputul ca mesaj Slack.
+---
+
+Rulezi standup-ul zilnic al utilizatorului. Pune aceste trei întrebări una câte una,
+așteptând fiecare răspuns înainte de a pune următoarea:
+
+1. Ce ai terminat ieri?
+2. La ce lucrezi astăzi?
+3. Ai blocanți?
+
+După colectarea tuturor celor trei răspunsuri, formatează-le ca mesaj Slack:
+
+*Daily Standup — {{today's date}}*
+✅ Ieri: [răspuns 1]
+🔨 Astăzi: [răspuns 2]
+🚧 Blocanți: [răspuns 3 — sau "Niciunul" dacă nu sunt]</code></pre>
+      </li>
+      <li>
+        În Claude Code, tastează <code>/standup</code>. Skill-ul ar trebui să se încarce și să înceapă fluxul cu trei întrebări.
+      </li>
+      <li>
+        Verifică lista de skills cu <code>/help</code> — noul tău skill ar trebui să apară acolo.
+      </li>
+    </ol>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Sfat — Bundling assets</div>
+    Dacă skill-ul tău are nevoie de fișiere de referință (o schemă JSON, un șablon HTML, o listă de verificare),
+    pune-le în același folder. Referențiază-le în entry point cu numele lor relativ:
+    <code>Consultă [checklist.html](./checklist.html) pentru lista de verificare completă a deployment-ului.</code>
+    Harness-ul rezolvă calea relativ la folderul skill-ului.
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/slash-commands" target="_blank">
+        Claude Code Slash Commands — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Referința oficială pentru formatul fișierelor de skill, câmpurile frontmatter, pasarea argumentelor și
+        diferența dintre skills-urile la nivel de utilizator și la nivel de proiect.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Unde trebuie să se afle fișierul entry point și cum trebuie denumit?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Oriunde în folderul skill-ului, denumit <code>index.md</code></button></li>
+        <li><button data-correct="true">În folderul skill-ului, cu același nume ca folderul</button></li>
+        <li><button data-correct="false">În <code>~/.claude/</code>, denumit <code>skills.md</code></button></li>
+        <li><button data-correct="false">În rădăcina proiectului, denumit după comandă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un folder de skill denumit <code>deploy</code> trebuie să conțină un fișier
+        numit <code>deploy.md</code>. Astfel harness-ul identifică entry point-ul când
+        utilizatorul tastează <code>/deploy</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce primește placeholder-ul <code>{{args}}</code> dintr-un entry point de skill?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Întregul istoric al conversației utilizatorului</button></li>
+        <li><button data-correct="false">Numele skill-ului invocat</button></li>
+        <li><button data-correct="true">Tot ce a tastat utilizatorul după slash command</button></li>
+        <li><button data-correct="false">Calea directorului de lucru curent</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Dacă utilizatorul tastează <code>/deploy production</code>,
+        atunci <code>{{args}}</code> este înlocuit cu <code>"production"</code>.
+        Dacă nu se dau argumente, este gol. Folosește-l pentru a face skills-urile context-aware.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Un skill în <code>.claude/skills/</code> (la nivel de proiect) față de unul în <code>~/.claude/skills/</code> (la nivel de utilizator) — care este diferența cheie?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Skills-urile la nivel de proiect pot folosi frontmatter; cele la nivel de utilizator nu pot</button></li>
+        <li><button data-correct="false">Skills-urile la nivel de utilizator rulează mai repede</button></li>
+        <li><button data-correct="true">Skills-urile la nivel de proiect sunt disponibile doar în acel proiect; cele la nivel de utilizator sunt disponibile oriunde</button></li>
+        <li><button data-correct="false">Nu există diferență — funcționează identic</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Skills-urile la nivel de utilizator te urmăresc în fiecare proiect.
+        Skills-urile la nivel de proiect sunt limitate la acel repo — utile pentru fluxuri specifice proiectului
+        (cum ar fi o listă de verificare pentru deploy) pe care vrei să le comizi alături de cod.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Progressive disclosure într-un skill înseamnă…</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Skill-ul își dezvăluie codul sursă când este întrebat</button></li>
+        <li><button data-correct="false">Instrucțiunile sunt ascunse până când utilizatorul le deblochează</button></li>
+        <li><button data-correct="true">Skill-ul desfășoară adâncimea prin conversație în loc să încarce toată logica dintr-o dată</button></li>
+        <li><button data-correct="false">Skill-ul devine disponibil doar după finalizarea unui skill prerechizit</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Progressive disclosure menține conversația gestionabilă.
+        În loc să copleșești utilizatorul cu totul deodată, un skill bine conceput pune
+        întrebări, ascultă și dezvăluie următorul strat de comportament pe baza răspunsurilor.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Skills-urile sunt invocate automat de harness când sunt relevante. Adevărat sau fals?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Adevărat — harness-ul potrivește skills-urile cu intenția utilizatorului</button></li>
+        <li><button data-correct="true">Fals — skills-urile trebuie invocate explicit cu un slash command</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect — fals.</strong> Skills-urile sunt întotdeauna inițiate de utilizator.
+        Harness-ul <em>poate</em> sugera skills-uri când se potrivesc cu sarcina, dar utilizatorul trebuie
+        să tasteze slash command-ul pentru a invoca unul. Aceasta este diferența față de hooks-uri,
+        care se declanșează automat.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Vrei ajutor în proiectarea unui skill specific? Nu ești sigur cum să structurezi instrucțiuni pe mai multe etape?
+    Întreabă-mă și te voi ajuta să îl schițezi.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0002-hooks.html">← Lecția 2: Hooks</a>
+    <a href="0004-agents.html">Lecția 4: Agents →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

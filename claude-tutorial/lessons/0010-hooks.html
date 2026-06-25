@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10 · Claude Hooks — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 10 din 12</p>
+  <h1>Claude Hooks — Automatizare la Nivel de Sistem</h1>
+  <p class="tagline">Comenzi shell care rulează automat înainte sau după acțiunile lui Claude — format, teste și notificări fără nicio intervenție manuală.</p>
+
+  <section>
+    <h2>Ce sunt Hooks?</h2>
+    <p>Hooks sunt <strong>comenzi shell pe care le definești tu</strong> și care rulează automat în răspuns la evenimentele Claude Code. Când Claude editează un fișier, când rulează o comandă bash, când termină o sarcină — poți atașa comenzi care se execută automat, independent de el.</p>
+    <p>Diferența esențială față de skills: skills sunt instrucțiuni pentru Claude (ce să facă el). Hooks sunt comenzi de sistem care rulează <em>în paralel cu</em> Claude, declanșate de acțiunile lui — Claude nu le controlează și nu le poate ocoli.</p>
+    <div class="callout">
+      <p><strong>Analogie:</strong> Hooks funcționează ca git hooks (<code>pre-commit</code>, <code>post-merge</code>) — rulează automat la anumite evenimente, indiferent de ce face Claude în acel moment.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>De ce să folosești Hooks?</h2>
+    <ul>
+      <li><strong>Format automat</strong> — Prettier sau ESLint rulează după fiecare editare, fără să îi spui lui Claude "și acum formatează". Codul e mereu curat.</li>
+      <li><strong>Teste automate</strong> — Testele se declanșează automat după modificări. Claude vede output-ul și poate itera fără să îi ceri explicit să ruleze testele.</li>
+      <li><strong>Notificări</strong> — O notificare desktop când Claude termină o sarcină lungă. Nu mai stai cu ochii pe terminal.</li>
+      <li><strong>Audit trail</strong> — Loghezi automat ce comenzi bash execută Claude — util pentru debugging și securitate în echipă.</li>
+      <li><strong>Garduri de siguranță</strong> — Blochezi comenzi periculoase înainte ca ele să fie executate, indiferent ce a decis Claude.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Tipuri de Hooks</h2>
+    <p>Claude Code oferă 4 tipuri de hooks, corespunzând evenimentelor din ciclul de viață al unei sesiuni:</p>
+    <ul>
+      <li><strong>PreToolUse</strong> — Rulează <em>înainte</em> ca Claude să folosească un tool. Poți inspecta acțiunea și, dacă returnezi exit code non-zero, blochezi execuția.</li>
+      <li><strong>PostToolUse</strong> — Rulează <em>după</em> ce Claude a folosit un tool. Ideal pentru format, teste, logging.</li>
+      <li><strong>Notification</strong> — Rulează când Claude trimite o notificare (ex: termină și așteaptă input de la tine).</li>
+      <li><strong>Stop</strong> — Rulează când Claude termină complet o sarcină și se oprește din proprie inițiativă.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Configurare — settings.json</h2>
+    <p>Hooks se definesc în <code>.claude/settings.json</code> (project-level, commituit în git) sau <code>~/.claude/settings.json</code> (global, doar pe mașina ta). Structura de bază:</p>
+    <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write \"$CLAUDE_TOOL_INPUT_FILE_PATH\""
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    <p>Componentele cheie:</p>
+    <ul>
+      <li><code>"matcher"</code> — Ce tool declanșează hook-ul: <code>"Edit"</code>, <code>"Bash"</code>, <code>"Write"</code>, <code>"Read"</code> sau <code>"*"</code> pentru toate</li>
+      <li><code>"type": "command"</code> — Tipul hook-ului (în prezent doar <code>command</code> e disponibil)</li>
+      <li><code>"command"</code> — Comanda shell de executat; are acces la variabilele de mediu Claude</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Variabile de mediu disponibile</h2>
+    <p>Claude Code injectează automat variabile în mediul hook-ului, pe care le poți folosi în comanda ta:</p>
+    <ul>
+      <li><code>$CLAUDE_TOOL_NAME</code> — Numele tool-ului declanșator (<code>Edit</code>, <code>Bash</code>, <code>Write</code> etc.)</li>
+      <li><code>$CLAUDE_TOOL_INPUT_FILE_PATH</code> — Calea absolută a fișierului editat (pentru hooks pe Edit/Write)</li>
+      <li><code>$CLAUDE_TOOL_INPUT_COMMAND</code> — Comanda bash ce urmează să fie executată (pentru hooks pe Bash)</li>
+    </ul>
+    <div class="callout callout--tip">
+      <p><strong>Debug tip:</strong> Adaugă un hook temporar care face echo cu variabilele pentru a vedea exact ce primești: <code>"command": "echo \"Tool: $CLAUDE_TOOL_NAME | File: $CLAUDE_TOOL_INPUT_FILE_PATH\""</code></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exemple concrete</h2>
+    <p><strong>1. Format automat cu Prettier după fiecare editare:</strong></p>
+    <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    <p><strong>2. Notificare desktop când Claude termină (Windows):</strong></p>
+    <pre><code>{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Claude a terminat!')\""
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    <p><strong>3. Audit trail — logging comenzi bash:</strong></p>
+    <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date +%Y-%m-%dT%H:%M:%S)] $CLAUDE_TOOL_INPUT_COMMAND\" >> ~/.claude/bash-audit.log"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    <p><strong>4. Rulare automată a testelor pentru fișierele de test modificate:</strong></p>
+    <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [[ \"$CLAUDE_TOOL_INPUT_FILE_PATH\" == *.test.* ]]; then npm test -- --testPathPattern=\"$(basename $CLAUDE_TOOL_INPUT_FILE_PATH .test.js)\" --passWithNoTests; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>Hooks care blochează execuția (PreToolUse)</h2>
+    <p>Un hook <strong>PreToolUse</strong> poate opri acțiunea lui Claude returnând exit code non-zero. Claude primește output-ul hook-ului ca feedback și poate decide să nu continue sau să reformuleze.</p>
+    <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if echo \"$CLAUDE_TOOL_INPUT_COMMAND\" | grep -qE \"rm -rf|DROP TABLE|truncate\"; then echo \"BLOCKED: comandă distructivă detectată. Confirmă manual.\"; exit 1; fi'"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    <div class="callout callout--warning">
+      <p><strong>Atenție:</strong> Hooks rulează cu permisiunile tale de utilizator și au acces complet la sistem. Testează-le cu atenție. O comandă greșită într-un PostToolUse rulează după fiecare editare — poate deveni costisitoare rapid.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Mai multe hook-uri pe același eveniment</h2>
+    <p>Poți atașa mai multe hook-uri la același matcher — rulează toate în ordine:</p>
+    <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx prettier --write \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "npx eslint --fix \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-10"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/hooks" target="_blank" rel="noopener">Claude Code Hooks — documentație oficială Anthropic</a><br/>
+    Referința completă pentru toate tipurile de hooks, variabilele disponibile, comportamentul la blocare și exemple de configurare.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide <code>claude</code> și spune: <em>"Ajută-mă să configurez un hook care formatează automat fișierele după fiecare editare cu Prettier."</em> El va scrie configurația potrivită pentru stack-ul tău.
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0009-skills.html">← Lecția 9: Skills</a>
+    <a class="nav-next" href="0011-agenti.html">Lecția 11: Agenți →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-10', [
+  {
+    q: 'Care este diferența principală dintre un hook și un skill?',
+    options: [
+      'Hook-urile sunt mai rapide decât skills-urile',
+      'Skills sunt instrucțiuni pentru Claude, hook-urile sunt comenzi de sistem care rulează automat la evenimente',
+      'Hook-urile se definesc în CLAUDE.md, skills în settings.json',
+      'Nu există diferență, sunt același lucru cu denumiri diferite'
+    ],
+    correct: 1,
+    explain: 'Skills = instrucțiuni pentru Claude (ce să facă el). Hooks = comenzi de sistem independente (bash, PowerShell) care rulează automat când Claude face anumite acțiuni. Claude nu controlează și nu poate ocoli hook-urile.'
+  },
+  {
+    q: 'Ce tip de hook rulează ÎNAINTE ca Claude să execute o acțiune și poate să o blocheze?',
+    options: [
+      'PostToolUse',
+      'Stop',
+      'PreToolUse',
+      'Notification'
+    ],
+    correct: 2,
+    explain: 'PreToolUse rulează înainte de acțiunea lui Claude. Dacă returnează exit code non-zero, Claude e informat și poate decide să nu execute acțiunea. Ideal pentru garduri de siguranță și validări.'
+  },
+  {
+    q: 'Unde se configurează hooks la nivel de proiect, disponibile pentru toată echipa?',
+    options: [
+      'În CLAUDE.md din rădăcina proiectului',
+      'În .claude/settings.json, commituit în git',
+      'În package.json sub câmpul "claude-hooks"',
+      'În ~/.claude/settings.json pe fiecare mașină'
+    ],
+    correct: 1,
+    explain: '.claude/settings.json commituit în git = disponibil tuturor din echipă. ~/.claude/settings.json e local pe mașina ta. Alege în funcție de dacă hook-ul e specific echipei (proiect) sau preferinței tale personale (global).'
+  }
+]);
+</script>
+</body>
+</html>

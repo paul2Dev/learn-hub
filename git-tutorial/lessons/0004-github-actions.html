@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 04 — GitHub Actions</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* ── vocabulary grid ── */
+    .vocab-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin: 1.25rem 0;
+    }
+    .vocab-card {
+      background: white;
+      border: 1px solid #e8e5e0;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+    }
+    .vocab-term {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 0.2rem;
+    }
+    .vocab-term code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 0.88em;
+      color: #4338ca;
+    }
+    .vocab-def {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #374151;
+      margin: 0;
+    }
+
+    /* ── annotated code ── */
+    .annotated-yaml {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.75;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 1.25rem 0 0;
+    }
+    .annotated-yaml .y-comment { color: #6c7086; }
+    .annotated-yaml .y-key     { color: #89b4fa; }
+    .annotated-yaml .y-value   { color: #a6e3a1; }
+    .annotated-yaml .y-string  { color: #f9e2af; }
+    .annotated-yaml .y-annot   { color: #f38ba8; font-weight: 700; }
+    .annotated-yaml .y-action  { color: #cba6f7; }
+
+    /* ── annotation list ── */
+    .annot-list {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0 0;
+    }
+    .annot-list li {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      margin-bottom: 0.65rem;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .annot-num {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #f38ba8;
+      background: #1e1e2e;
+      min-width: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .annot-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── triggers table ── */
+    .triggers-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.86rem;
+      margin: 1.25rem 0;
+    }
+    .triggers-table th {
+      text-align: left;
+      padding: 0.5rem 0.85rem;
+      background: #f2efe9;
+      border: 1px solid #e8e5e0;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .triggers-table td {
+      padding: 0.5rem 0.85rem;
+      border: 1px solid #e8e5e0;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    .triggers-table tr:nth-child(even) td { background: #fafaf8; }
+
+    /* ── use-case list ── */
+    .use-cases {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0;
+    }
+    .use-cases li {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.9rem;
+      align-items: flex-start;
+    }
+    .uc-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .uc-body strong {
+      display: block;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.1rem;
+    }
+    .uc-body span {
+      font-size: 0.88rem;
+      color: #374151;
+      line-height: 1.45;
+    }
+
+    /* ── flow steps ── */
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1.25rem 0;
+      padding-left: 0.5rem;
+      border-left: 2px solid #e8e5e0;
+    }
+    .flow-step {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.45rem 0 0.45rem 0.85rem;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .flow-num {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+      background: #4338ca;
+      width: 1.4rem;
+      height: 1.4rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    @media (max-width: 520px) {
+      .vocab-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+  <article>
+
+    <header>
+      <p class="lesson-meta">Lesson 04 &middot; Git &amp; GitHub Fluency</p>
+      <h1>GitHub Actions</h1>
+      <p class="tagline">What it is, how it works, and a real workflow you can use today</p>
+    </header>
+
+    <section>
+      <h2>Why Actions exist</h2>
+      <p>
+        Every team has repetitive tasks that run after every commit: run the tests, check
+        code style, build the project, deploy to staging. Before automation, someone had
+        to remember to do these manually — or a broken commit would slip into the main branch.
+      </p>
+      <p>
+        GitHub Actions is the automation platform built directly into GitHub. You describe
+        what you want to happen, and when — in a YAML file that lives inside your repository.
+        GitHub runs it for you on its own servers, free for public repos and up to 2,000
+        minutes per month on private ones.
+      </p>
+    </section>
+
+    <section>
+      <h2>The vocabulary</h2>
+      <p>Six terms cover everything you need to read and write a workflow:</p>
+
+      <div class="vocab-grid">
+        <div class="vocab-card">
+          <p class="vocab-term"><code>workflow</code></p>
+          <p class="vocab-def">
+            The whole automated process. One YAML file = one workflow.
+            A repo can have many workflows.
+          </p>
+        </div>
+        <div class="vocab-card">
+          <p class="vocab-term">trigger <code>(on:)</code></p>
+          <p class="vocab-def">
+            The event that starts the workflow — a push, a pull request,
+            a schedule, or a manual click.
+          </p>
+        </div>
+        <div class="vocab-card">
+          <p class="vocab-term">job</p>
+          <p class="vocab-def">
+            A group of steps that run together on the same machine.
+            Jobs in one workflow can run in parallel or in sequence.
+          </p>
+        </div>
+        <div class="vocab-card">
+          <p class="vocab-term">step</p>
+          <p class="vocab-def">
+            A single task inside a job. Either a shell command
+            (<code>run:</code>) or a pre-built action (<code>uses:</code>).
+          </p>
+        </div>
+        <div class="vocab-card">
+          <p class="vocab-term">action</p>
+          <p class="vocab-def">
+            A reusable, shareable step from the GitHub Marketplace.
+            <code>actions/checkout</code> clones your repo. Thousands exist.
+          </p>
+        </div>
+        <div class="vocab-card">
+          <p class="vocab-term">runner</p>
+          <p class="vocab-def">
+            The virtual machine that runs a job. GitHub provides
+            Ubuntu, Windows, and macOS runners for free.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Where the files live</h2>
+      <p>
+        GitHub only reads workflow files from one place — the <code>.github/workflows/</code>
+        directory in your repository. You can have as many <code>.yml</code> files there as
+        you like, one per workflow.
+      </p>
+      <pre>my-project/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          ← runs tests on every push
+│       └── deploy.yml      ← deploys when main is updated
+├── src/
+└── package.json</pre>
+      <p>
+        Create the directory, add a file, push — GitHub picks it up immediately.
+        No registration or setup required.
+      </p>
+    </section>
+
+    <section>
+      <h2>Anatomy of a real workflow</h2>
+      <p>
+        Here is a complete CI workflow that runs your test suite on every push and
+        every pull request targeting <code>main</code>. Read the numbered comments,
+        then check the explanations below.
+      </p>
+
+      <pre class="annotated-yaml"><span class="y-key">name</span>: <span class="y-string">Run Tests</span>                        <span class="y-annot"># [1]</span>
+
+<span class="y-key">on</span>:                                          <span class="y-annot"># [2]</span>
+  <span class="y-key">push</span>:
+    <span class="y-key">branches</span>: <span class="y-value">[main]</span>
+  <span class="y-key">pull_request</span>:
+    <span class="y-key">branches</span>: <span class="y-value">[main]</span>
+
+<span class="y-key">jobs</span>:
+  <span class="y-key">test</span>:                                        <span class="y-annot"># [3]</span>
+    <span class="y-key">runs-on</span>: <span class="y-string">ubuntu-latest</span>                   <span class="y-annot"># [4]</span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-action">actions/checkout@v4</span>              <span class="y-annot"># [5]</span>
+      - <span class="y-key">uses</span>: <span class="y-action">actions/setup-node@v4</span>            <span class="y-annot"># [6]</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">node-version</span>: <span class="y-string">'20'</span>
+      - <span class="y-key">run</span>: <span class="y-value">npm install</span>                       <span class="y-annot"># [7]</span>
+      - <span class="y-key">run</span>: <span class="y-value">npm test</span>                           <span class="y-annot"># [8]</span></pre>
+
+      <ol class="annot-list">
+        <li>
+          <span class="annot-num">1</span>
+          <span class="annot-body"><strong>name</strong> — the display name shown in GitHub's Actions tab. Choose something descriptive.</span>
+        </li>
+        <li>
+          <span class="annot-num">2</span>
+          <span class="annot-body"><strong>on</strong> — the triggers. This workflow fires on a push to <code>main</code> and whenever a pull request targeting <code>main</code> is opened or updated.</span>
+        </li>
+        <li>
+          <span class="annot-num">3</span>
+          <span class="annot-body"><strong>test</strong> — the name of this job. You could name it anything. A workflow can have multiple jobs (e.g., <code>test</code> and <code>lint</code> running in parallel).</span>
+        </li>
+        <li>
+          <span class="annot-num">4</span>
+          <span class="annot-body"><strong>runs-on: ubuntu-latest</strong> — the virtual machine type. GitHub spins up a fresh Ubuntu VM for every run. It is discarded when the job finishes.</span>
+        </li>
+        <li>
+          <span class="annot-num">5</span>
+          <span class="annot-body"><strong>actions/checkout@v4</strong> — a pre-built action that clones your repository into the runner. Without this, the VM has no access to your code. <code>@v4</code> pins the version.</span>
+        </li>
+        <li>
+          <span class="annot-num">6</span>
+          <span class="annot-body"><strong>actions/setup-node@v4</strong> — installs Node.js on the runner. The <code>with:</code> block passes configuration — here, the Node version.</span>
+        </li>
+        <li>
+          <span class="annot-num">7</span>
+          <span class="annot-body"><strong>run: npm install</strong> — a plain shell command. Runs in the repository directory. Any shell command works here.</span>
+        </li>
+        <li>
+          <span class="annot-num">8</span>
+          <span class="annot-body"><strong>run: npm test</strong> — runs your test suite. If this command exits with a non-zero code, the step fails, the job fails, and GitHub shows a red&nbsp;&#x2717; on the commit and blocks the PR from merging.</span>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>What happens when you push</h2>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="flow-num">1</span>
+          <span>You push a commit (or open a PR). GitHub detects the <code>push</code> or
+          <code>pull_request</code> event.</span>
+        </div>
+        <div class="flow-step">
+          <span class="flow-num">2</span>
+          <span>GitHub reads <code>.github/workflows/ci.yml</code> and matches the event
+          against the <code>on:</code> block.</span>
+        </div>
+        <div class="flow-step">
+          <span class="flow-num">3</span>
+          <span>A fresh virtual machine (runner) is provisioned. Your steps run in order.</span>
+        </div>
+        <div class="flow-step">
+          <span class="flow-num">4</span>
+          <span>If every step exits cleanly: green &#x2713; on the commit. If any step fails:
+          red &#x2717;. On a PR, GitHub can block merging until the check passes.</span>
+        </div>
+        <div class="flow-step">
+          <span class="flow-num">5</span>
+          <span>The VM is thrown away. The next run starts completely fresh.</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Common triggers</h2>
+      <table class="triggers-table">
+        <thead>
+          <tr>
+            <th>Trigger</th>
+            <th>When it fires</th>
+            <th>Real-world use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>push</code></td>
+            <td>A commit is pushed to a branch</td>
+            <td>Run tests on every commit to main</td>
+          </tr>
+          <tr>
+            <td><code>pull_request</code></td>
+            <td>A PR is opened, updated, or merged</td>
+            <td>Block merging until tests pass</td>
+          </tr>
+          <tr>
+            <td><code>schedule</code></td>
+            <td>A cron schedule (e.g., every Monday at 9am)</td>
+            <td>Nightly builds, weekly dependency audits</td>
+          </tr>
+          <tr>
+            <td><code>workflow_dispatch</code></td>
+            <td>Manual — you click "Run workflow" in GitHub</td>
+            <td>Deploy to staging on demand</td>
+          </tr>
+          <tr>
+            <td><code>release</code></td>
+            <td>A GitHub Release is created</td>
+            <td>Build binaries and attach to the release</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>What teams actually use this for</h2>
+      <ul class="use-cases">
+        <li>
+          <span class="uc-icon">&#x2705;</span>
+          <div class="uc-body">
+            <strong>Continuous Integration (CI)</strong>
+            <span>Run tests and linting on every push and PR. The most common use. Broken code cannot silently reach main.</span>
+          </div>
+        </li>
+        <li>
+          <span class="uc-icon">&#x1F680;</span>
+          <div class="uc-body">
+            <strong>Continuous Deployment (CD)</strong>
+            <span>When a PR merges to main, automatically deploy to production or staging. No manual deploy step.</span>
+          </div>
+        </li>
+        <li>
+          <span class="uc-icon">&#x1F4E6;</span>
+          <div class="uc-body">
+            <strong>Publish packages</strong>
+            <span>When you create a Release on GitHub, automatically build and publish to npm, PyPI, or Docker Hub.</span>
+          </div>
+        </li>
+        <li>
+          <span class="uc-icon">&#x1F4AC;</span>
+          <div class="uc-body">
+            <strong>Notifications</strong>
+            <span>Post a Slack message when a deploy succeeds or a build breaks. Keep the whole team informed without checking GitHub.</span>
+          </div>
+        </li>
+        <li>
+          <span class="uc-icon">&#x1F3F7;&#xFE0F;</span>
+          <div class="uc-body">
+            <strong>Auto-labeling PRs</strong>
+            <span>Automatically add labels (e.g., "frontend", "breaking change") based on which files changed.</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ── Quiz ── -->
+    <section class="quiz-section">
+      <h2>Check your understanding</h2>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- ── Primary source ── -->
+    <section class="primary-source">
+      <h2>Primary source</h2>
+      <p>
+        Read
+        <a href="https://docs.github.com/en/actions/get-started/quickstart"
+           target="_blank" rel="noopener noreferrer">
+          GitHub Actions Quickstart
+        </a>
+        — the official five-minute guide that creates your first workflow file end-to-end.
+        Then bookmark the
+        <a href="https://docs.github.com/actions/using-workflows/workflow-syntax-for-github-actions"
+           target="_blank" rel="noopener noreferrer">
+          Workflow Syntax Reference
+        </a>
+        for when you need to look up a specific key.
+      </p>
+    </section>
+
+    <footer>
+      <p class="ask-teacher">
+        <strong>Got a question?</strong>
+        Paste your workflow YAML or error message into the chat and your teacher will
+        diagnose it and explain exactly what to fix.
+      </p>
+      <nav class="lesson-nav">
+        <a href="0003-rebase-vs-merge.html">← Lesson 03: Rebase vs. Merge</a>
+        <a class="nav-next" href="0005-github-webhooks.html">Lesson 05: GitHub Webhooks →</a>
+      </nav>
+    </footer>
+
+  </article>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    buildQuiz('quiz', [
+      {
+        q: 'GitHub Actions looks for workflow files in…',
+        options: [
+          'The .github/workflows directory',
+          'The .actions/workflows directory',
+          'The root of the repository',
+          'Any folder you name workflows'
+        ],
+        correct: 0,
+        explain:
+          'GitHub only reads workflow files from <code>.github/workflows/</code>. ' +
+          'The directory name and location are fixed — GitHub will not find workflows ' +
+          'anywhere else. Each <code>.yml</code> file there becomes one workflow.'
+      },
+      {
+        q: 'A "job" in a GitHub Actions workflow is…',
+        options: [
+          'Steps that run on one machine',
+          'A single terminal command to run',
+          'The event that starts the workflow',
+          'A reusable action from the marketplace'
+        ],
+        correct: 0,
+        explain:
+          'A job is a collection of steps that run sequentially on the same runner ' +
+          '(virtual machine). Multiple jobs in one workflow can run in parallel ' +
+          'by default, or you can use <code>needs:</code> to make them sequential.'
+      },
+      {
+        q: 'The <code>on:</code> key in a workflow file defines…',
+        options: [
+          'Which events trigger this workflow',
+          'Which commands each step runs',
+          'Which runner hosts the workflow',
+          'Which files can start actions'
+        ],
+        correct: 0,
+        explain:
+          '<code>on:</code> is the trigger declaration. It tells GitHub which events ' +
+          '(push, pull_request, schedule, etc.) should start this workflow. ' +
+          'Without it, the workflow never runs.'
+      }
+    ]);
+  </script>
+</body>
+</html>

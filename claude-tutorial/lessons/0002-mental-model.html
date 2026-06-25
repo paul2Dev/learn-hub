@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>02 · Mental Model — Claude Code Tutorial</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div style="max-width:660px;margin:0 auto 0.5rem;padding-top:1.25rem;font-family:system-ui,sans-serif;">
+  <a href="../../index.html" style="font-size:0.82rem;color:#6b7280;text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+</div>
+<article>
+
+  <p class="lesson-meta">Claude Code Tutorial · Lecția 2 din 12</p>
+  <h1>Mental Model — Cum Gândește Claude Code</h1>
+  <p class="tagline">Dacă îl tratezi ca pe un chatbot, îl vei folosi la 20% din capacitate. Iată cum să gândești cu el.</p>
+
+  <section>
+    <h2>Nu e un chatbot. E un agent.</h2>
+    <p>Un chatbot primește text și returnează text. Claude Code primește o sarcină și <strong>o execută</strong>: citește fișiere reale, scrie cod real, rulează comenzi reale în terminalul tău.</p>
+    <p>Gândește-l ca pe un <em>coleg programator senior</em> care are acces deplin la mașina ta și poate:</p>
+    <ul>
+      <li>Citi orice fișier din proiectul tău</li>
+      <li>Scrie și modifica fișiere</li>
+      <li>Rula comenzi în terminal (<code>npm test</code>, <code>git log</code>, etc.)</li>
+      <li>Interacționa cu git</li>
+      <li>Căuta în codebase cu grep/glob</li>
+    </ul>
+    <div class="callout">
+      <p><strong>Schimbarea de paradigmă:</strong> Nu îi explica <em>cum să facă</em> — spune-i <em>ce vrei să obții</em>. El va găsi calea.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Context Window — Memoria lui Claude Code</h2>
+    <p>Claude Code are o <strong>fereastră de context</strong> — o cantitate maximă de informație pe care o poate "ține minte" într-o sesiune. Această fereastră se umple cu:</p>
+    <ul>
+      <li>Conversația voastră (mesajele tale + răspunsurile lui)</li>
+      <li>Fișierele pe care le-a citit</li>
+      <li>Output-ul comenzilor rulate</li>
+    </ul>
+    <p>Când contextul se umple, Claude Code îl comprimă automat (<code>/compact</code>). Implicație practică: <strong>sesiunile lungi devin mai puțin precise</strong>. Soluția? Sesiuni scurte, focusate pe o singură sarcină.</p>
+    <div class="callout callout--tip">
+      <p><strong>Regula de aur:</strong> O sesiune = o sarcină. Termină, fă commit, pornește o sesiune nouă pentru sarcina următoare.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Modul interactiv vs. one-shot</h2>
+    <p>Claude Code are două moduri de utilizare:</p>
+    <ul>
+      <li><strong>Interactiv</strong> (<code>claude</code>) — o sesiune continuă cu mai multe mesaje. Ideal pentru sarcini complexe care necesită iterații: "implementează X", "acum testează", "acum refactorizează".</li>
+      <li><strong>One-shot</strong> (<code>claude "prompt"</code>) — un singur schimb, fără sesiune. Ideal pentru întrebări rapide sau automatizări.</li>
+    </ul>
+    <pre><code># Interactiv
+claude
+
+# One-shot
+claude "Câte linii de cod are src/?"</code></pre>
+  </section>
+
+  <section>
+    <h2>Când Claude Code strălucește</h2>
+    <ul>
+      <li>Explorarea unui codebase necunoscut ("Ce face această funcție?")</li>
+      <li>Implementarea unui feature cu mai multe fișiere implicate</li>
+      <li>Debugging pe un stack trace de neînțeles</li>
+      <li>Refactorizare cu impact larg în proiect</li>
+      <li>Automatizarea fluxului git (commit, PR, review)</li>
+    </ul>
+    <h2 style="margin-top:1.5rem">Când NU e potrivit</h2>
+    <ul>
+      <li>Sarcini care necesită browsing web sau date în timp real</li>
+      <li>Generarea de conținut creativ neconectat la codul tău</li>
+      <li>Întrebări rapide fără legătură cu proiectul — pentru asta e mai rapid un chatbot simplu</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Permisiunile — Ce poate face fără să te întrebe</h2>
+    <p>Claude Code funcționează cu un <strong>sistem de permisiuni</strong>. Implicit, te va întreba înainte de acțiuni potențial distructive (ștergere fișiere, push la remote, etc.). Acțiunile de citire sunt permise automat.</p>
+    <p>Poți vedea și ajusta permisiunile cu comanda <code>/settings</code> din sesiunea interactivă. Mai multe detalii în <a href="0008-productivitate-zilnica.html">Lecția 8</a>.</p>
+  </section>
+
+  <section class="quiz-section">
+    <div id="quiz-2"></div>
+  </section>
+
+  <section class="primary-source">
+    <h2>Sursă primară</h2>
+    <p><a href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener">Claude Code Overview — documentație oficială Anthropic</a><br/>
+    Prezentarea generală a arhitecturii și capabilităților Claude Code, inclusiv modelul de permisiuni.</p>
+  </section>
+
+  <div class="ask-teacher">
+    <strong>Ai întrebări?</strong><br/>
+    Deschide o sesiune <code>claude</code> și întreabă: <em>"Explică-mi mai detaliat cum funcționează context window-ul."</em>
+  </div>
+
+  <nav class="lesson-nav">
+    <a href="0001-instalare-si-autentificare.html">← Lecția 1: Instalare</a>
+    <a class="nav-next" href="0003-explorarea-codului.html">Lecția 3: Explorare Cod →</a>
+  </nav>
+
+</article>
+<script src="../assets/quiz.js"></script>
+<script>
+buildQuiz('quiz-2', [
+  {
+    q: 'Ce diferențiază Claude Code de un chatbot obișnuit?',
+    options: [
+      'Claude Code are un model AI mai mare și mai precis',
+      'Claude Code poate citi, scrie și rula comenzi în proiectul tău real',
+      'Claude Code funcționează fără conexiune la internet',
+      'Claude Code memorează conversații între sesiuni diferite'
+    ],
+    correct: 1,
+    explain: 'Claude Code este un agent: acționează în mediul tău de dezvoltare. Citește fișiere, modifică cod și rulează comenzi — nu doar răspunde cu text.'
+  },
+  {
+    q: 'Care este regula de aur pentru sesiunile Claude Code?',
+    options: [
+      'O sesiune trebuie să dureze cel puțin 30 de minute',
+      'Folosește /compact frecvent pentru a păstra tot istoricul',
+      'O sesiune = o sarcină, apoi pornești o sesiune nouă',
+      'Deschide mai multe sesiuni în paralel pentru același proiect'
+    ],
+    correct: 2,
+    explain: 'Context window-ul se umple și sesiunile lungi devin imprecise. Sesiuni scurte, focusate, cu commit între ele — acesta e ritmul optim.'
+  },
+  {
+    q: 'Când este cel mai potrivit să folosești modul one-shot (<code>claude "prompt"</code>)?',
+    options: [
+      'Când vrei să implementezi un feature complex în mai mulți pași',
+      'Când ai nevoie de iterații și feedback de la Claude în aceeași sesiune',
+      'Pentru întrebări rapide sau automatizări scriptate',
+      'Când contextul proiectului e complex și necesită mult context'
+    ],
+    correct: 2,
+    explain: 'Modul one-shot e ideal pentru comenzi rapide sau scripturi automatizate. Pentru sarcini complexe cu mai mulți pași, modul interactiv e mai potrivit.'
+  }
+]);
+</script>
+</body>
+</html>

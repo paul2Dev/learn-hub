@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6: Memory — AI Harness — Curs</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 6 din 8</span>
+    <span class="tag">~15 min</span>
+    <span>AI Harness — Curs</span>
+  </div>
+
+  <h1>Sistemul de memorie</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Oferă lui Claude context persistent între sesiuni — fără să te explici de fiecare dată de la zero.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 1: PROBLEMA ══════ -->
+  <h2>Problema: fiecare sesiune pornește rece</h2>
+
+  <p>
+    În mod implicit, fiecare sesiune Claude Code începe fără nicio memorie a conversațiilor anterioare.
+    Îți explici rolul, preferințele și contextul proiectului — iar la sesiunea următoare,
+    o iei de la capăt.
+  </p>
+
+  <p>
+    Harness-ul rezolvă asta cu un <strong>sistem de memorie bazat pe fișiere</strong>: un folder de
+    fișiere markdown pe care harness-ul le încarcă în fereastra de context la începutul fiecărei sesiuni.
+    Modelul le citește și se comportă ca și cum și-ar aminti.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Distincție cheie</div>
+    Memoria nu este o rechemare magică — este <em>context injectat</em>. Harness-ul citește fișierele tale de memorie
+    și le adaugă la începutul conversației. Cu cât fișierele tale de memorie sunt mai bune, cu atât mai bună este
+    continuitatea lui Claude între sesiuni.
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 2: LOCAȚIE ══════ -->
+  <h2>Unde se află memoria</h2>
+
+  <p>
+    Fișierele de memorie se află într-un folder specific proiectului:
+  </p>
+
+  <pre><code>~/.claude/projects/&lt;project-hash&gt;/memory/
+├── MEMORY.md          ← indexul (întotdeauna încărcat primul)
+├── user_role.md
+├── feedback_testing.md
+├── project_auth_rewrite.md
+└── reference_linear.md</code></pre>
+
+  <p>
+    Fișierul <strong><code>MEMORY.md</code></strong> este special — este un index, întotdeauna încărcat
+    în context. Ar trebui să conțină pointeri de o linie către fiecare alt fișier de memorie.
+    Harness-ul îl folosește pentru a decide ce fișiere complete de memorie să încarce pentru o anumită conversație.
+  </p>
+
+  <p>
+    Fișierele individuale de memorie sunt încărcate când conținutul lor este relevant.
+    Menține <code>MEMORY.md</code> sub 200 de linii — liniile de dincolo de aceasta sunt trunchiate.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 3: PATRU TIPURI ══════ -->
+  <h2>Cele patru tipuri de memorie</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>user</h4>
+        <p>Cine este utilizatorul: rol, expertiză, preferințe. Folosit pentru personalizarea explicațiilor și recomandărilor.
+        Exemplu: <em>"Inginer Go senior, nou pe frontend-ul React al acestui proiect."</em></p>
+      </div>
+      <div class="arch-tag">despre tine</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>feedback</h4>
+        <p>Cum ar trebui să se comporte Claude: ce să evite, ce a funcționat bine. Atât corecții CÂT ȘI abordări confirmate.
+        Exemplu: <em>"Nu folosi mock-uri pentru baza de date în teste — divergența față de prod ne-a ars înainte."</em></p>
+      </div>
+      <div class="arch-tag">reguli de comportament</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>project</h4>
+        <p>Muncă în desfășurare, decizii, termene limită. Se perimează rapid — include De ce și Cum se aplică.
+        Exemplu: <em>"Rescrierea autentificării este motivată de cerințe legale, nu de datorie tehnică. Prioritizează conformitatea față de ergonomie."</em></p>
+      </div>
+      <div class="arch-tag">context curent</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>reference</h4>
+        <p>Pointeri către sisteme externe. Exemplu: <em>"Bug-uri urmărite în proiectul Linear INGEST."</em></p>
+      </div>
+      <div class="arch-tag">unde să cauți</div>
+    </div>
+  </div>
+
+
+  <!-- ══════ SECȚIUNEA 4: FORMAT FIȘIER ══════ -->
+  <h2>Formatul fișierului de memorie</h2>
+
+  <p>Fiecare fișier de memorie are două părți: frontmatter YAML și un corp markdown.</p>
+
+  <pre><code>---
+name: feedback-no-trailing-summaries
+description: Utilizatorul nu îi plac rezumatele finale la sfârșitul răspunsurilor.
+metadata:
+  type: feedback
+---
+
+Nu rezuma ce ai făcut la sfârșitul răspunsurilor.
+
+**De ce:** Utilizatorul a spus "Pot citi diff-ul" — rezumatele finale adaugă zgomot fără valoare.
+
+**Cum se aplică:** Termină răspunsurile cu ultima modificare sau descoperire semnificativă.
+Nu adăuga niciodată un paragraf "Rezumat:" sau "Pe scurt:".
+
+[[user-role]]</code></pre>
+
+  <p>Elemente cheie:</p>
+  <ul>
+    <li><code>name</code> — un slug kebab-case, unic în rândul fișierelor tale de memorie</li>
+    <li><code>description</code> — o linie; folosit pentru a decide relevanța la încărcare</li>
+    <li><code>metadata.type</code> — unul din: <code>user</code>, <code>feedback</code>, <code>project</code>, <code>reference</code></li>
+    <li><code>[[alt-name]]</code> — linkuri către fișiere de memorie conexe după slug-ul lor</li>
+  </ul>
+
+  <p>
+    Pentru tipurile <code>feedback</code> și <code>project</code>, include întotdeauna
+    <strong>De ce:</strong> (motivul din spatele regulii) și
+    <strong>Cum se aplică:</strong> (când se aplică regula).
+    Fără motiv, sesiunile viitoare nu pot judeca cazurile limită.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 5: INDEXUL MEMORY.MD ══════ -->
+  <h2>Indexul MEMORY.md</h2>
+
+  <p>
+    <code>MEMORY.md</code> este o listă plată — o linie per fișier de memorie.
+    Nu are frontmatter și nicio secțiune dincolo de titlu.
+  </p>
+
+  <pre><code># Indice de memorie
+
+- [Fără rezumate finale](feedback-no-trailing-summaries.md) — utilizatorul nu îi plac rezumatele de la sfârșitul răspunsurilor
+- [Rol utilizator](user-role.md) — inginer Go senior, nou pe partea React a acestui repo
+- [Context rescriere autentificare](project-auth-rewrite.md) — motivată de cerințe legale, conformitate peste ergonomie
+- [Referință Linear](reference-linear.md) — bug-uri urmărite în proiectul Linear INGEST</code></pre>
+
+  <p>
+    Menține intrările sub ~150 de caractere fiecare. Indexul este pentru navigare — conținutul complet este în fișierele individuale.
+  </p>
+
+
+  <!-- ══════ SECȚIUNEA 6: CE SĂ NU SALVEZI ══════ -->
+  <h2>Ce să NU salvezi</h2>
+
+  <p>Fișierele de memorie ar trebui să captureze numai lucruri care nu sunt evidente și care nu pot fi derivate din baza de cod:</p>
+
+  <ul>
+    <li><strong>Nu salva:</strong> tipare de cod, convenții, structura fișierelor — citește codul</li>
+    <li><strong>Nu salva:</strong> istoricul git — folosește <code>git log</code></li>
+    <li><strong>Nu salva:</strong> soluții de debugging — corecția este în cod, contextul este în mesajul de commit</li>
+    <li><strong>Nu salva:</strong> detalii ale sarcinii în desfășurare — folosește în schimb o listă de sarcini sau un plan</li>
+    <li><strong>Nu salva:</strong> nimic ce există deja în <code>CLAUDE.md</code></li>
+  </ul>
+
+
+  <!-- ══════ PRACTIC ══════ -->
+  <h2>Practic: scrie primele tale fișiere de memorie</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Memorie utilizator</div>
+    <ol>
+      <li>
+        Găsește directorul tău de memorie:
+        <pre><code>ls ~/.claude/projects/</code></pre>
+        Alege directorul care corespunde proiectului tău curent (verifică după hash sau caută activitatea recentă).
+      </li>
+      <li>
+        Creează un fișier <code>user-role.md</code> în <code>memory/</code>:
+        <pre><code>---
+name: user-role
+description: Utilizatorul este un developer care învață harness-ul Claude Code.
+metadata:
+  type: user
+---
+
+Utilizatorul este un developer care se familiarizează cu harness-ul Claude Code —
+hooks, skills, agents, scheduling, memorie și servere MCP.
+Preferă exemple practice în locul teoriei.
+Lucrează pe Windows 11 cu Claude Code în VS Code.</code></pre>
+      </li>
+      <li>Adaugă o linie în <code>MEMORY.md</code>:
+        <pre><code>- [Rol utilizator](user-role.md) — developer care învață harness-ul, preferă exemple practice</code></pre>
+      </li>
+      <li>
+        Pornește o sesiune nouă și întreabă: <em>"Ce știi despre mine?"</em>
+        Claude ar trebui să descrie rolul tău din fișierul de memorie fără să fie spus.
+      </li>
+    </ol>
+  </div>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Memorie feedback</div>
+    <ol>
+      <li>Gândește-te la un lucru pe care Claude îl face și pe care îl găsești enervant sau nefolositor în sesiuni. Scrie o memorie de feedback pentru asta.</li>
+      <li>Include linia <strong>De ce:</strong> — chiar dacă motivul este pur și simplu "preferință personală."</li>
+      <li>Testează-l în sesiunea următoare.</li>
+    </ol>
+  </div>
+
+
+  <!-- ══════ SURSĂ PRIMARĂ ══════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.anthropic.com/en/docs/claude-code/memory" target="_blank">
+        Claude Code Memory — Documentația Anthropic
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Acoperă formatul complet al fișierului de memorie, convențiile MEMORY.md, când să salvezi vs. să omiti
+        și cum harness-ul încarcă memoria în context.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════ QUIZ ══════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce fișier este <em>întotdeauna</em> încărcat în context la începutul fiecărei sesiuni?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cel mai recent fișier de memorie modificat</button></li>
+        <li><button data-correct="false">Toate fișierele de memorie din director</button></li>
+        <li><button data-correct="true">MEMORY.md (indexul)</button></li>
+        <li><button data-correct="false">Fișierul marcat cu <code>type: user</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>MEMORY.md</code> este indexul — întotdeauna încărcat.
+        Fișierele individuale de memorie sunt încărcate selectiv când conținutul lor este relevant.
+        De aceea <code>MEMORY.md</code> trebuie să rămână concis: este mereu în bugetul de context.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Vrei ca Claude să rețină "nu folosi mock-uri în teste." Ce tip de memorie este corect?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">user — este despre cum îți place să lucrezi</button></li>
+        <li><button data-correct="true">feedback — este o regulă de comportament pentru cum ar trebui să acționeze Claude</button></li>
+        <li><button data-correct="false">project — este specific configurației de teste a acestui proiect</button></li>
+        <li><button data-correct="false">reference — este un pointer la documentația framework-ului de teste</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>feedback</code> captează cum ar trebui să se comporte Claude —
+        atât corecții ("nu faci X") cât și abordări confirmate ("continuă să faci Y").
+        <code>project</code> ar fi corect dacă regula era context specific proiectului
+        (de ex., "baza de date de test a acestui proiect este populată cu X"), nu o constrângere comportamentală.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ar trebui să salvezi un rezumat al commit-urilor git recente în memorie?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Da — ajută Claude să înțeleagă ce s-a schimbat recent</button></li>
+        <li><button data-correct="true">Nu — istoricul git poate fi derivat; rulează în schimb <code>git log</code></button></li>
+        <li><button data-correct="false">Da — dar numai ultimele 5 commit-uri</button></li>
+        <li><button data-correct="false">Numai dacă commit-urile nu au fost încă push-uite</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fișierele de memorie sunt pentru lucruri care nu pot fi derivate din
+        baza de cod sau istoricul git. Un rezumat de commit în memorie se va perima imediat.
+        Claude poate rula întotdeauna <code>git log</code> pentru a obține istoricul curent. Salvează
+        <em>non-evidentul</em>: decizii, preferințe, constrângeri, pointeri externi.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">O memorie de feedback spune "nu rezuma." De ce ar trebui să incluzi o linie <strong>De ce:</strong>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Este cerut de formatul fișierului de memorie</button></li>
+        <li><button data-correct="false">Face fișierul mai lung și mai autoritar</button></li>
+        <li><button data-correct="true">Astfel sesiunile viitoare pot judeca cazurile limită în loc să urmeze regula orbit</button></li>
+        <li><button data-correct="false">Astfel Claude știe cine a scris fișierul de memorie</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> O regulă fără motiv devine fragilă.
+        Dacă știi <em>de ce</em> ("rezumatele adaugă zgomot, citesc diff-ul"), Claude poate
+        decide corect dacă regula se aplică atunci când o situație este ambiguă —
+        de exemplu, un output lung pe care utilizatorul cu siguranță nu l-a văzut încă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Memoria îi oferă lui Claude o rechemare reală între sesiuni. Adevărat sau fals?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Adevărat — modelul învață din fișierele de memorie în timp</button></li>
+        <li><button data-correct="true">Fals — memoria este context injectat, nu stare persistentă a modelului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect — fals.</strong> Modelul nu "își amintește" în niciun sens profund.
+        Harness-ul citește fișierele tale de memorie și le injectează în fereastra de context la
+        începutul fiecărei sesiuni. Modelul acționează pe acel context. Este gestionare de stare bazată pe fișiere,
+        nu fine-tuning al modelului. Dacă ștergi un fișier de memorie, cunoașterea dispare.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>Nu ești sigur dacă ceva aparține memoriei? Nu poți decide între tipul <code>feedback</code>
+    și <code>project</code>? Întreabă-mă — te voi ajuta să îl clasifici.</p>
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0005-scheduling.html">← Lecția 5: Scheduling</a>
+    <a href="0007-permissions.html">Lecția 7: Permissions →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> · <a href="../README.md">Prezentare curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
