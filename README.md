@@ -8,6 +8,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 |------|-----------|
 | [Git & GitHub Fluency](git-tutorial/) | Mental model, branches, PR-uri, GitHub Actions, CI/CD — 9 lecții |
 | [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lecții |
+| [Data Structures — PHP & JavaScript](data-structures/) | Big O, Array, Stack, Queue, Linked List, Hash Map, BST, Grafuri, Sortare — 9 lecții |
 | [Nuxt 3 cu Supabase și Vercel](nuxt/) | pages/ routing, Nitro server engine, @nuxtjs/supabase, Pinia, deploy Vercel/Netlify/Cloudflare — 9 lecții |
 | [Next.js cu Supabase și Vercel](next-js/) | App Router, Server Components, Supabase Auth + RLS, Server Actions, deploy Vercel, Next.js vs Nuxt — 9 lecții |
 | [OpenSearch cu Laravel](opensearch-tutorial/) | Căutare full-text, filtre, agregări, Eloquent — 9 lecții |
@@ -15,7 +16,6 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 | [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții |
 | [Workflow Agentic Complet](agentic-workflow/) | /verify, /code-review, Greptile, Greploop, CodeRabbit, GitHub Actions, gh CLI — 10 lecții |
 | [Embeddings](embedings/) | Vectori semantici, use cases, Python, JavaScript, Laravel, vector databases, RAG — 8 lecții |
-| [Data Structures — PHP & JavaScript](data-structures/) | Big O, Array, Stack, Queue, Linked List, Hash Map, BST, Grafuri, Sortare — 9 lecții |
 
 ## Cum clonezi
 
