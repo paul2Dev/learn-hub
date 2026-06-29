@@ -12,6 +12,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 | [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții |
 | [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lecții |
 | [Workflow Agentic Complet](agentic-workflow/) | /verify, /code-review, Greptile, Greploop, CodeRabbit, GitHub Actions, gh CLI — 10 lecții |
+| [Embeddings](embedings/) | Vectori semantici, use cases, Python, JavaScript, Laravel, vector databases, RAG — 8 lecții |
 
 ## Cum clonezi
 
@@ -41,7 +42,10 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── engineering-principles/     ← curs Engineering Principles
 │   ├── index.html
 │   └── lessons/
-└── agentic-workflow/           ← curs Workflow Agentic Complet
+├── agentic-workflow/           ← curs Workflow Agentic Complet
+│   ├── index.html
+│   └── lessons/
+└── embedings/                  ← curs Embeddings
     ├── index.html
     └── lessons/
 ```

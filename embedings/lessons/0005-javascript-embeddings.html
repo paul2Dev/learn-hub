@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5: JavaScript Embeddings — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 5 din 8</span>
+    <span class="tag">~25 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>JavaScript/TypeScript: embeddings în Node.js și browser</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Aceleași concepte din Lecția 4, dar în JavaScript — cu OpenAI SDK și Transformers.js pentru modele locale.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: SETUP NODE.JS
+  ══════════════════════════════════════ -->
+  <h2>Setup Node.js</h2>
+
+  <pre><code>mkdir embeddings-js && cd embeddings-js
+npm init -y
+
+# Client OpenAI oficial pentru Node.js
+npm install openai
+
+# Transformers.js — modele locale în Node.js sau browser
+npm install @xenova/transformers
+
+# Utilitare
+npm install dotenv</code></pre>
+
+  <p>
+    Creează un fișier <code>.env</code> cu API key-ul:
+  </p>
+
+  <pre><code>OPENAI_API_KEY=sk-proj-...tu-cheia-ta...</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: OPENAI SDK JAVASCRIPT
+  ══════════════════════════════════════ -->
+  <h2>Varianta 1: OpenAI SDK (Node.js)</h2>
+
+  <pre><code>// embed-openai.js
+import 'dotenv/config';
+import OpenAI from 'openai';
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function getEmbedding(text, model = 'text-embedding-3-small') {
+  const response = await client.embeddings.create({
+    input: text.replace(/\n/g, ' '),
+    model,
+  });
+  return response.data[0].embedding; // float[]
+}
+
+// Test
+const embedding = await getEmbedding('Pisica mea doarme pe canapea.');
+console.log('Dimensiuni:', embedding.length);   // 1536
+console.log('Primele 5:', embedding.slice(0, 5));</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">ESM vs CommonJS</div>
+    OpenAI SDK v4+ folosește ES Modules. Adaugă <code>"type": "module"</code> în <code>package.json</code>
+    sau folosește extensia <code>.mjs</code> pentru fișiere. Dacă preferi CommonJS, folosește <code>require()</code>
+    și importul <code>const OpenAI = require('openai').default</code>.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: COSINE SIMILARITY JS
+  ══════════════════════════════════════ -->
+  <h2>Cosine Similarity în JavaScript</h2>
+
+  <p>
+    JavaScript nu are NumPy, dar formula este simplă de implementat:
+  </p>
+
+  <pre><code>function cosineSimilarity(a, b) {
+  if (a.length !== b.length) throw new Error('Vectorii trebuie să aibă aceeași lungime');
+
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot   += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// Exemplu de utilizare
+const embA = await getEmbedding('Pisica mea doarme pe canapea.');
+const embB = await getEmbedding('Felina mea se odihnește pe fotoliu.');
+const embC = await getEmbedding('Factura de electricitate a crescut.');
+
+console.log('A vs B:', cosineSimilarity(embA, embB).toFixed(4)); // ~0.88
+console.log('A vs C:', cosineSimilarity(embA, embC).toFixed(4)); // ~0.15</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: SEMANTIC SEARCH COMPLET
+  ══════════════════════════════════════ -->
+  <h2>Semantic Search complet în Node.js</h2>
+
+  <pre><code>// search.js
+import 'dotenv/config';
+import OpenAI from 'openai';
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+function cosineSimilarity(a, b) {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i]; normA += a[i] ** 2; normB += b[i] ** 2;
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function embed(text) {
+  const res = await client.embeddings.create({ input: text, model: 'text-embedding-3-small' });
+  return res.data[0].embedding;
+}
+
+// Corpus
+const corpus = [
+  'Cum resetez parola contului meu?',
+  'Ghid de instalare a aplicației mobile.',
+  'Politica de retur și refund pentru comenzi online.',
+  'Cum schimb adresa de livrare după plasarea comenzii?',
+  'Suport pentru plăți cu cardul în aplicație.',
+];
+
+// Indexare — calculat O SINGURĂ DATĂ
+const corpusEmbeddings = await Promise.all(corpus.map(embed));
+
+// Funcție de search
+async function semanticSearch(query, topK = 3) {
+  const queryEmb = await embed(query);
+  const scores = corpusEmbeddings.map((docEmb, i) => ({
+    score: cosineSimilarity(queryEmb, docEmb),
+    doc: corpus[i],
+  }));
+  return scores.sort((a, b) => b.score - a.score).slice(0, topK);
+}
+
+// Test
+const results = await semanticSearch('vreau să returnez un produs');
+results.forEach(({ score, doc }) => {
+  console.log(`[${score.toFixed(3)}] ${doc}`);
+});</code></pre>
+
+  <p>Rulează cu:</p>
+
+  <pre><code>node search.js</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: TRANSFORMERS.JS LOCAL
+  ══════════════════════════════════════ -->
+  <h2>Varianta 2: Transformers.js (local, gratuit)</h2>
+
+  <p>
+    <code>@xenova/transformers</code> descarcă modelul prima oară și îl cachează local.
+    Funcționează atât în Node.js cât și în browser (via WebAssembly).
+  </p>
+
+  <pre><code>// embed-local.js
+import { pipeline } from '@xenova/transformers';
+
+// Pipeline-ul se inițializează O SINGURĂ DATĂ
+// Prima rulare: descarcă modelul (~90MB) și cachează
+const extractor = await pipeline(
+  'feature-extraction',
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2'
+);
+
+async function getEmbeddingLocal(text) {
+  const output = await extractor(text, { pooling: 'mean', normalize: true });
+  return Array.from(output.data); // convertim la array obișnuit
+}
+
+// Test
+const emb = await getEmbeddingLocal('Pisica mea doarme pe canapea.');
+console.log('Dimensiuni:', emb.length);   // 384
+console.log('Primele 5:', emb.slice(0, 5));</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Parametrul normalize: true</div>
+    Când folosești <code>normalize: true</code>, vectorul este normalizat la lungime unitară.
+    Asta simplifică calculul cosine similarity — devine simplu produs scalar:
+    <code>a.reduce((sum, v, i) => sum + v * b[i], 0)</code>.
+    Dacă omiți normalizarea, folosește formula completă cu norma.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 6: TYPESCRIPT
+  ══════════════════════════════════════ -->
+  <h2>TypeScript — tipuri pentru embeddings</h2>
+
+  <pre><code>// types.ts
+export type Embedding = number[];
+
+export interface EmbeddedDocument {
+  text: string;
+  embedding: Embedding;
+}
+
+export interface SearchResult {
+  doc: EmbeddedDocument;
+  score: number;
+}
+
+// embed.ts
+import OpenAI from 'openai';
+import type { Embedding, EmbeddedDocument, SearchResult } from './types.js';
+
+const client = new OpenAI();
+
+export async function embed(text: string): Promise&lt;Embedding&gt; {
+  const res = await client.embeddings.create({
+    input: text,
+    model: 'text-embedding-3-small',
+  });
+  return res.data[0].embedding;
+}
+
+export function cosineSimilarity(a: Embedding, b: Embedding): number {
+  return a.reduce((sum, v, i) => sum + v * b[i], 0) /
+    (Math.sqrt(a.reduce((s, v) => s + v * v, 0)) *
+     Math.sqrt(b.reduce((s, v) => s + v * v, 0)));
+}
+
+export async function semanticSearch(
+  query: string,
+  index: EmbeddedDocument[],
+  topK: number = 3,
+): Promise&lt;SearchResult[]&gt; {
+  const qEmb = await embed(query);
+  return index
+    .map(doc => ({ doc, score: cosineSimilarity(qEmb, doc.embedding) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU
+  ══════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Construiește un search pe propriile date</div>
+    <ol>
+      <li>Creează un array <code>corpus</code> cu 8–10 propoziții din domeniul tău (articole, produse, FAQ).</li>
+      <li>Vectorizează corpus-ul cu <code>Promise.all(corpus.map(embed))</code>.</li>
+      <li>Implementează funcția <code>semanticSearch</code> și testează cu 3 query-uri.</li>
+      <li>Încearcă query-uri în română chiar dacă documentele sunt în engleză — observă că funcționează cross-lingual cu OpenAI.</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://huggingface.co/docs/transformers.js/en/index" target="_blank">
+        Transformers.js — Documentație oficială Hugging Face
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Include tutorial de semantic search, lista modelelor suportate și ghid pentru integrare în
+        browser sau Node.js. Citește secțiunea „Getting Started" și „Pipelines".
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce returnează <code>client.embeddings.create()</code> din OpenAI SDK pentru Node.js?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un Float32Array nativ JavaScript</button></li>
+        <li><button data-correct="true">Un obiect cu <code>.data[0].embedding</code> — un array de float-uri</button></li>
+        <li><button data-correct="false">Un Buffer Node.js de bytes bruti</button></li>
+        <li><button data-correct="false">Un stream de tokeni pe rând</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Response-ul are structura <code>{ data: [{ embedding: number[], ... }] }</code>. Accesezi vectorul cu <code>response.data[0].embedding</code> — este un simplu array JavaScript de numere.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este avantajul principal al <code>@xenova/transformers</code> față de OpenAI SDK?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Produce vectori cu mai multe dimensiuni pentru precizie mai mare</button></li>
+        <li><button data-correct="false">Este mai rapid datorită WebGPU hardware acceleration</button></li>
+        <li><button data-correct="true">Rulează modele local — fără API key, fără cost, fără date trimise în cloud</button></li>
+        <li><button data-correct="false">Suportă mai multe limbaje de programare simultan</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Transformers.js rulează inferența local, în Node.js sau browser, via WebAssembly sau WebGPU. Zero cost API, zero date în cloud — ideal pentru date sensibile sau aplicații offline.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Dacă folosești <code>normalize: true</code> la Transformers.js, cum simplifici calculul cosine similarity?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu mai ai nevoie de cosine — poți folosi distanța euclidiană direct</button></li>
+        <li><button data-correct="true">Cosine similarity devine simplu produs scalar (dot product) al vectorilor</button></li>
+        <li><button data-correct="false">Poți compara vectorii direct cu operatorul === în JavaScript</button></li>
+        <li><button data-correct="false">Trebuie să folosești Math.acos() pentru a obține unghiul exact</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Când vectorii sunt normalizați (lungime 1), cosine similarity = dot product = <code>a.reduce((sum, v, i) => sum + v * b[i], 0)</code>. Nu mai calculezi normele. Asta e o optimizare frecventă în vector databases.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Cum vectorizezi eficient 100 de documente simultan în JavaScript (fără să faci call-uri secvențial)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>for...of corpus</code> cu <code>await embed(doc)</code> la fiecare</button></li>
+        <li><button data-correct="true"><code>Promise.all(corpus.map(embed))</code> pentru paralelism</button></li>
+        <li><button data-correct="false"><code>corpus.forEach(embed)</code> fără await</button></li>
+        <li><button data-correct="false"><code>setInterval(embed, 10)</code> cu un interval mic</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>Promise.all(corpus.map(embed))</code> lansează toate request-urile simultan și așteaptă finalizarea tuturor. Un <code>for...of</code> cu await ar face call-urile secvențial — de ~100x mai lent.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Un user din România trimite un query în română, dar corpus-ul tău de documente este în engleză. Ce se întâmplă la semantic search cu OpenAI <code>text-embedding-3-small</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Search-ul eșuează — modelul nu suportă query multilingv</button></li>
+        <li><button data-correct="false">Modelul traduce automat query-ul în engleză înainte de vectorizare</button></li>
+        <li><button data-correct="true">Funcționează — modelul are spațiu semantic multilingv, română și engleză coexistă</button></li>
+        <li><button data-correct="false">Returnează rezultate dar cu similarity artificially scăzut față de query în engleză</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modelele OpenAI de embedding sunt antrenate multilingv — aceeași idee exprimată în română și engleză produce vectori apropiați în spațiu. Nu ai nevoie de traducere. Sentence Transformers <code>multilingual</code> are același comportament.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să integrezi embeddings într-o aplicație Next.js? Ai întrebări despre rate limiting la OpenAI?
+      Vrei să înțelegi cum să cacheezi embedding-urile ca să nu le recalculezi la fiecare request?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0004-python-embeddings.html">← Lecția 4: Python Embeddings</a>
+    <a href="0006-vector-databases.html">Lecția 6: Vector Databases →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

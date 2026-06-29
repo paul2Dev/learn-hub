@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embeddings — Index curs</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; color: var(--muted); max-width: 560px; }
+
+    .lesson-grid { display: flex; flex-direction: column; gap: 0; margin: 0.5rem 0 2.5rem; }
+    .lesson-card {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      padding: 1rem 1.2rem; border: 1px solid var(--border);
+      border-bottom: none; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+    }
+    .lesson-card:first-child { border-radius: 8px 8px 0 0; }
+    .lesson-card:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .lesson-card:hover { background: var(--code-bg); }
+    .lesson-num {
+      width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold; flex-shrink: 0;
+    }
+    .lesson-card:nth-child(1) .lesson-num { background: #7c3aed; }
+    .lesson-card:nth-child(2) .lesson-num { background: #2563eb; }
+    .lesson-card:nth-child(3) .lesson-num { background: #0891b2; }
+    .lesson-card:nth-child(4) .lesson-num { background: #16a34a; }
+    .lesson-card:nth-child(5) .lesson-num { background: #f59e0b; }
+    .lesson-card:nth-child(6) .lesson-num { background: #dc2626; }
+    .lesson-card:nth-child(7) .lesson-num { background: #9333ea; }
+    .lesson-card:nth-child(8) .lesson-num { background: #0284c7; }
+    .lesson-info h3 { font-size: 0.97rem; margin: 0 0 0.15rem; }
+    .lesson-info p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .lesson-time {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono); white-space: nowrap; align-self: center;
+    }
+
+    .reference-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0 3rem; }
+    .ref-card {
+      flex: 1; min-width: 160px;
+      padding: 0.85rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+      text-decoration: none; color: var(--text);
+      transition: background 0.12s;
+    }
+    .ref-card:hover { background: var(--code-bg); }
+    .ref-card h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ref-card p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+    .quickref-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .quickref-table th {
+      text-align: left; padding: 0.5rem 0.8rem;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    }
+    .quickref-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .quickref-table tr:last-child td { border-bottom: none; }
+    .quickref-table code { font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="course-header">
+    <div class="lesson-meta">
+      <span class="tag">8 lecții</span>
+      <span class="tag">~3 ore total</span>
+      <span>Embeddings — Curs</span>
+    </div>
+    <h1>Învață Embeddings</h1>
+    <p>
+      De la conceptul de vector semantic la RAG în producție. Înveți ce sunt embeddings, când să le folosești,
+      cum să le implementezi în Python, JavaScript și Laravel, cum funcționează vector databases și cum construiești
+      un chatbot RAG pe documentele tale. 8 lecții cu cod concret și quiz-uri interactive.
+    </p>
+  </div>
+
+
+  <!-- ══════ LECȚII ══════ -->
+  <h2 style="margin-top:0;">Lecții</h2>
+
+  <div class="lesson-grid">
+
+    <a class="lesson-card" href="lessons/0001-ce-sunt-embeddings.html">
+      <div class="lesson-num">1</div>
+      <div class="lesson-info">
+        <h3>Ce sunt Embeddings?</h3>
+        <p>Vectori semantici, spațiu multidimensional, cosine similarity și intuiția din spatele numerelor</p>
+      </div>
+      <span class="lesson-time">~15 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0002-use-cases.html">
+      <div class="lesson-num">2</div>
+      <div class="lesson-info">
+        <h3>Use Cases: când și pentru ce</h3>
+        <p>Semantic search, RAG, clasificare, clustering, recomandări, deduplicare — cu exemple concrete</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0003-alegerea-tooling.html">
+      <div class="lesson-num">3</div>
+      <div class="lesson-info">
+        <h3>Alegerea limbajului și tooling-ului</h3>
+        <p>Python vs JavaScript vs PHP, comparație modele (OpenAI, MiniLM, multilingual), costuri API</p>
+      </div>
+      <span class="lesson-time">~15 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0004-python-embeddings.html">
+      <div class="lesson-num">4</div>
+      <div class="lesson-info">
+        <h3>Python: OpenAI și Sentence Transformers</h3>
+        <p>Setup, embeddings cu API plătit și modele locale gratuite, semantic search în ~20 linii</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0005-javascript-embeddings.html">
+      <div class="lesson-num">5</div>
+      <div class="lesson-info">
+        <h3>JavaScript/TypeScript Embeddings</h3>
+        <p>OpenAI SDK pentru Node.js, Transformers.js pentru modele locale, TypeScript cu tipuri complete</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0006-vector-databases.html">
+      <div class="lesson-num">6</div>
+      <div class="lesson-info">
+        <h3>Vector Databases</h3>
+        <p>De ce O(n) nu scalează, ChromaDB, pgvector, Qdrant, Pinecone, metadata filtering</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0007-rag.html">
+      <div class="lesson-num">7</div>
+      <div class="lesson-info">
+        <h3>RAG — Retrieval Augmented Generation</h3>
+        <p>Arhitectura completă: indexare offline, retrieval, prompt engineering, LLM, temperature</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0008-laravel-php.html">
+      <div class="lesson-num">8</div>
+      <div class="lesson-info">
+        <h3>Embeddings în Laravel / PHP</h3>
+        <p>openai-php/client, pgvector în Eloquent, semantic search cu SQL raw, RAG service complet</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+  </div>
+
+
+  <!-- ══════ REFERINȚE ══════ -->
+  <h2>Referințe</h2>
+
+  <div class="reference-links">
+    <a class="ref-card" href="reference/glossary.html">
+      <h4>Glosar</h4>
+      <p>Toți termenii cheie din curs — embedding, ANN, RAG, pgvector și altele</p>
+    </a>
+    <a class="ref-card" href="RESOURCES.md">
+      <h4>Resurse</h4>
+      <p>Documentații, ghiduri și comunități recomandate</p>
+    </a>
+  </div>
+
+
+  <!-- ══════ QUICK REFERENCE ══════ -->
+  <h2>Referință rapidă — modele și tooluri</h2>
+
+  <table class="quickref-table">
+    <thead>
+      <tr>
+        <th>Tool / Model</th>
+        <th>Limbaj</th>
+        <th>Cost</th>
+        <th>Dimensiuni</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>text-embedding-3-small</code></td>
+        <td>Python, JS, PHP</td>
+        <td>$0.02/1M tokens</td>
+        <td>1536</td>
+        <td><a href="lessons/0004-python-embeddings.html">4</a>, <a href="lessons/0005-javascript-embeddings.html">5</a></td>
+      </tr>
+      <tr>
+        <td><code>paraphrase-multilingual-MiniLM-L12-v2</code></td>
+        <td>Python, JS</td>
+        <td>Gratuit (local)</td>
+        <td>384</td>
+        <td><a href="lessons/0004-python-embeddings.html">4</a>, <a href="lessons/0005-javascript-embeddings.html">5</a></td>
+      </tr>
+      <tr>
+        <td><strong>ChromaDB</strong></td>
+        <td>Python</td>
+        <td>Open-source</td>
+        <td>—</td>
+        <td><a href="lessons/0006-vector-databases.html">6</a></td>
+      </tr>
+      <tr>
+        <td><strong>pgvector</strong></td>
+        <td>SQL / PHP / orice</td>
+        <td>Gratuit (extensie Postgres)</td>
+        <td>—</td>
+        <td><a href="lessons/0006-vector-databases.html">6</a>, <a href="lessons/0008-laravel-php.html">8</a></td>
+      </tr>
+      <tr>
+        <td><strong>Qdrant</strong></td>
+        <td>Python, JS, PHP</td>
+        <td>Open-source / Cloud</td>
+        <td>—</td>
+        <td><a href="lessons/0006-vector-databases.html">6</a></td>
+      </tr>
+      <tr>
+        <td><code>openai-php/client</code></td>
+        <td>PHP / Laravel</td>
+        <td>Gratuit (client)</td>
+        <td>—</td>
+        <td><a href="lessons/0008-laravel-php.html">8</a></td>
+      </tr>
+      <tr>
+        <td><code>@xenova/transformers</code></td>
+        <td>JavaScript / Browser</td>
+        <td>Gratuit (local)</td>
+        <td>—</td>
+        <td><a href="lessons/0005-javascript-embeddings.html">5</a></td>
+      </tr>
+      <tr>
+        <td><strong>RAG complet</strong></td>
+        <td>Python sau Laravel</td>
+        <td>Cost API LLM</td>
+        <td>—</td>
+        <td><a href="lessons/0007-rag.html">7</a>, <a href="lessons/0008-laravel-php.html">8</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    Embeddings — Curs · Începe de la <a href="lessons/0001-ce-sunt-embeddings.html">Lecția 1</a>
+  </p>
+
+</div>
+</body>
+</html>

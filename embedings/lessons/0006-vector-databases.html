@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6: Vector Databases — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 6 din 8</span>
+    <span class="tag">~20 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Vector Databases: stochează și caută vectori la scară</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    De ce nu poți folosi un loop simplu în producție și cum rezolvă vector databases problema nearest neighbor.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: PROBLEMA LA SCARĂ
+  ══════════════════════════════════════ -->
+  <h2>Problema: O(n) nu scalează</h2>
+
+  <p>
+    În lecțiile anterioare am calculat similaritatea față de fiecare document din corpus.
+    Asta funcționează pentru 100 documente. La 1 milion de documente:
+  </p>
+
+  <div class="vector-box">
+    <div class="vector-label">Comparație timp de răspuns</div>
+    <div class="vector-row" style="gap:0.8rem;align-items:center;margin-bottom:0.6rem;">
+      <span style="min-width:8rem;font-size:0.85rem;color:var(--muted);">1K documente</span>
+      <span class="vector-val">~2ms</span>
+      <span style="font-size:0.82rem;color:var(--correct);">✓ OK</span>
+    </div>
+    <div class="vector-row" style="gap:0.8rem;align-items:center;margin-bottom:0.6rem;">
+      <span style="min-width:8rem;font-size:0.85rem;color:var(--muted);">100K documente</span>
+      <span class="vector-val">~200ms</span>
+      <span style="font-size:0.82rem;color:var(--muted);">~ acceptabil</span>
+    </div>
+    <div class="vector-row" style="gap:0.8rem;align-items:center;margin-bottom:0.6rem;">
+      <span style="min-width:8rem;font-size:0.85rem;color:var(--muted);">1M documente</span>
+      <span class="vector-val">~2 secunde</span>
+      <span style="font-size:0.82rem;color:var(--wrong);">✗ prea lent</span>
+    </div>
+    <div class="vector-row" style="gap:0.8rem;align-items:center;">
+      <span style="min-width:8rem;font-size:0.85rem;color:var(--muted);">100M documente</span>
+      <span class="vector-val">~200 secunde</span>
+      <span style="font-size:0.82rem;color:var(--wrong);">✗ imposibil</span>
+    </div>
+  </div>
+
+  <p>
+    O <strong>vector database</strong> rezolvă asta cu algoritmi <em>approximate nearest neighbor (ANN)</em>:
+    returnează top-K cei mai apropiați vecini în sub-milisecundă, chiar și la sute de milioane de vectori.
+    Compromisul: nu garantează precizia 100% — poate rata 1–2% din cele mai bune rezultate.
+    În practică, diferența este imperceptibilă.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: OPȚIUNI
+  ══════════════════════════════════════ -->
+  <h2>Opțiuni de vector database</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>ChromaDB</h4>
+        <p>Open-source, rulează local sau în cloud. Cel mai simplu de pornit — zero configurație. Ideal pentru prototipuri și proiecte mici.</p>
+      </div>
+      <div class="arch-tag">local / simplu</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Qdrant</h4>
+        <p>Open-source, performant, are client PHP. Self-hosted sau cloud managed. Ideal pentru producție cu volum mediu-mare.</p>
+      </div>
+      <div class="arch-tag">producție / PHP</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Pinecone</h4>
+        <p>Cloud fully-managed, zero infrastructure. Scumpă la scale dar comodă. Cel mai folosit în aplicații SaaS.</p>
+      </div>
+      <div class="arch-tag">cloud / SaaS</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>pgvector (PostgreSQL)</h4>
+        <p>Extensie PostgreSQL — stochezi vectori în baza de date existentă. Zero infrastructură nouă dacă folosești deja Postgres.</p>
+      </div>
+      <div class="arch-tag">postgres / existent</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">5</div>
+      <div class="arch-info">
+        <h4>Weaviate / Milvus</h4>
+        <p>Vector databases enterprise — feature-rich, suport multi-modal, scalare orizontală la miliarde de vectori.</p>
+      </div>
+      <div class="arch-tag">enterprise</div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-label">Recomandare pentru start</div>
+    <strong>ChromaDB</strong> dacă vrei să înveți rapid — pornești fără configurație.
+    <strong>pgvector</strong> dacă folosești deja PostgreSQL — zero overhead de infrastructură.
+    <strong>Qdrant</strong> când ai nevoie de producție cu client PHP.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: CHROMADB PYTHON
+  ══════════════════════════════════════ -->
+  <h2>ChromaDB în Python — exemplu complet</h2>
+
+  <pre><code># pip install chromadb openai
+import chromadb
+from openai import OpenAI
+
+openai_client = OpenAI()
+chroma_client = chromadb.Client()  # in-memory, sau chromadb.PersistentClient("./chroma_db")
+
+# Creează o colecție (echivalentul unui tabel)
+collection = chroma_client.create_collection("faq")
+
+# Documentele tale
+documents = [
+    "Cum resetez parola contului meu?",
+    "Ghid de instalare a aplicației mobile.",
+    "Politica de retur și refund pentru comenzi online.",
+    "Cum schimb adresa de livrare după plasarea comenzii?",
+    "Suport pentru plăți cu cardul în aplicație.",
+]
+
+# Calculează embeddings
+def get_embedding(text):
+    res = openai_client.embeddings.create(input=text, model="text-embedding-3-small")
+    return res.data[0].embedding
+
+embeddings = [get_embedding(doc) for doc in documents]
+
+# Adaugă în ChromaDB
+collection.add(
+    documents=documents,
+    embeddings=embeddings,
+    ids=[f"doc_{i}" for i in range(len(documents))],
+)
+
+# Search
+query = "vreau să returnez un produs cumpărat online"
+query_emb = get_embedding(query)
+
+results = collection.query(
+    query_embeddings=[query_emb],
+    n_results=3,
+)
+
+print("Rezultate pentru:", query)
+for doc, dist in zip(results["documents"][0], results["distances"][0]):
+    print(f"  [distanță: {dist:.4f}] {doc}")</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Distance vs Similarity în ChromaDB</div>
+    ChromaDB returnează <code>distances</code> (nu similarities) — cu metrica L2 (euclidiană) implicit.
+    Valori <strong>mai mici</strong> = mai similar. Poți schimba la cosine la crearea colecției:
+    <code>chroma_client.create_collection("faq", metadata={"hnsw:space": "cosine"})</code>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: PGVECTOR
+  ══════════════════════════════════════ -->
+  <h2>pgvector — PostgreSQL cu suport vectori</h2>
+
+  <p>
+    Dacă folosești deja PostgreSQL (Laravel cu Postgres sau orice altă aplicație), poți stoca vectorii direct:
+  </p>
+
+  <pre><code>-- Activează extensia
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Tabel cu embeddings
+CREATE TABLE documents (
+    id          SERIAL PRIMARY KEY,
+    content     TEXT NOT NULL,
+    embedding   vector(1536)  -- dimensiunile modelului OpenAI
+);
+
+-- Index pentru căutare rapidă (HNSW)
+CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
+
+-- Inserare
+INSERT INTO documents (content, embedding)
+VALUES ('Politica de retur...', '[0.231, -0.847, ...]'::vector);
+
+-- Semantic search — cele mai similare 5 documente
+SELECT content, 1 - (embedding &lt;=&gt; '[0.123, ...]'::vector) AS similarity
+FROM documents
+ORDER BY embedding &lt;=&gt; '[0.123, ...]'::vector
+LIMIT 5;</code></pre>
+
+  <p>
+    Operatorul <code>&lt;=&gt;</code> calculează distanța cosinus. Sortezi ASC pentru cele mai apropiate.
+    Formula <code>1 - distanță</code> convertește la similarity (0–1).
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: METADATA FILTERING
+  ══════════════════════════════════════ -->
+  <h2>Metadata filtering — un feature esențial</h2>
+
+  <p>
+    Vector databases permit să combini căutarea semantică cu filtre structurate.
+    De exemplu: „găsește documentele similare semantice, dar DOAR din categoria 'facturare' și cu data > 2024":
+  </p>
+
+  <pre><code># ChromaDB cu metadata
+collection.add(
+    documents=documents,
+    embeddings=embeddings,
+    ids=[f"doc_{i}" for i in range(len(documents))],
+    metadatas=[
+        {"category": "cont", "lang": "ro"},
+        {"category": "tehnic", "lang": "ro"},
+        {"category": "comenzi", "lang": "ro"},
+        {"category": "comenzi", "lang": "ro"},
+        {"category": "plati", "lang": "ro"},
+    ]
+)
+
+# Search cu filtru
+results = collection.query(
+    query_embeddings=[query_emb],
+    n_results=3,
+    where={"category": "comenzi"},  # doar documente din categoria comenzi
+)</code></pre>
+
+  <p>
+    Asta este esențial în aplicații reale: un user caută ceva, dar vrei să returnezi rezultate
+    doar din departamentul lui, sau din ultimele 30 de zile, sau cu un anumit status.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU
+  ══════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Prima colecție ChromaDB</div>
+    <ol>
+      <li>Instalează ChromaDB: <code>pip install chromadb</code></li>
+      <li>Creează o colecție <code>PersistentClient</code> ca să se salveze pe disc.</li>
+      <li>Adaugă 10 documente din domeniul tău cu embeddings (folosește sentence-transformers gratuit).</li>
+      <li>Fă 3 query-uri diferite și observă că returnează documentele semantice cele mai apropiate.</li>
+      <li>Adaugă metadata (ex. <code>{"tip": "tutorial"}</code>) și testează filtrul <code>where</code>.</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://docs.trychroma.com/getting-started" target="_blank">
+        ChromaDB Getting Started — documentație oficială
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Ghid de pornire în sub 5 minute, tipuri de distanță, metadata filtering și ghid de deployment.
+        Este cel mai simplu punct de start pentru orice project cu vector database.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce un loop simplu de cosine similarity nu scalează la 1 milion de documente?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cosine similarity nu funcționează corect pe vectori mari</button></li>
+        <li><button data-correct="false">Python nu poate ține mai mult de 100K float-uri în RAM</button></li>
+        <li><button data-correct="true">Complexitatea este O(n) — la 1M documente durează secunde per query</button></li>
+        <li><button data-correct="false">Librăriile de embeddings limitează la 100K vectori per colecție</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fiecare query compară vectorul cu FIECARE din cele 1M documente. La 1M comparații × 1536 operații floating-point = lent. ANN (HNSW, IVF) reduce la O(log n) sau sub-liniar.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce compromis face Approximate Nearest Neighbor (ANN) față de căutarea exactă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Returnează mai puține rezultate decât specificat în top-K</button></li>
+        <li><button data-correct="true">Nu garantează că returnează 100% cele mai bune rezultate — poate rata câteva</button></li>
+        <li><button data-correct="false">Funcționează doar cu vectori de dimensiuni fixe (ex. 384)</button></li>
+        <li><button data-correct="false">Necesită re-indexarea completă la fiecare adăugare de document</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> ANN este „aproximativ" — poate rata 1–5% din cele mai bune rezultate. În schimb, este de sute de ori mai rapid. În practică (semantic search, RAG), precizia de 95%+ este mai mult decât suficientă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce întoarce ChromaDB în câmpul <code>distances</code> la un query?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cosine similarity — valori între 0 și 1, mai mare = mai similar</button></li>
+        <li><button data-correct="true">Distanța — valori mai mici înseamnă mai apropiat (mai similar)</button></li>
+        <li><button data-correct="false">Un scor percentil față de toate documentele din colecție</button></li>
+        <li><button data-correct="false">Numărul de token-uri în comun cu query-ul</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> ChromaDB returnează distanțe, nu similarități. Valori mai mici = mai similar. Pentru cosine similarity, convertești cu <code>1 - distance</code>. Asigură-te că colecția folosește metrica cosine dacă vrei valori între 0–1.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care vector database este cel mai ușor de integrat dacă folosești deja PostgreSQL?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">ChromaDB — are driver PostgreSQL nativ</button></li>
+        <li><button data="data-correct" data-correct="false">Pinecone — cloud managed, fără infrastructură</button></li>
+        <li><button data-correct="true">pgvector — extensie PostgreSQL, zero infrastructură nouă</button></li>
+        <li><button data-correct="false">Qdrant — are client PHP, deci compatibil cu Laravel + Postgres</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> pgvector este o extensie PostgreSQL — o activezi cu <code>CREATE EXTENSION vector</code> și stochezi vectorii în coloane de tip <code>vector(n)</code>. Nu adaugi niciun serviciu nou. Ideal pentru echipe care vor să minimizeze complexitatea infrastructurii.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">La ce folosești metadata filtering într-o vector database?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Să filtrezi vectorii cu valori negative sau outliers statistici</button></li>
+        <li><button data-correct="false">Să schimbi modelul de embedding folosit pentru un subset de documente</button></li>
+        <li><button data-correct="true">Să combini căutarea semantică cu filtre structurale (categorie, dată, user)</button></li>
+        <li><button data-correct="false">Să comprimezi vectorii mari pentru a reduce spațiul de stocare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Metadata filtering permite query-uri de forma „similar semantic cu X, dar DOAR din categoria Y și cu data > Z". Asta este esențial în aplicații reale: nu returnezi tot din baza de date, ci doar din contextul relevant al userului.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum să migrezi de la ChromaDB la Qdrant sau Pinecone?
+      Curioasă despre HNSW vs IVF ca algoritmi ANN?
+      Cum funcționează pgvector cu Laravel și Eloquent?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0005-javascript-embeddings.html">← Lecția 5: JavaScript Embeddings</a>
+    <a href="0007-rag.html">Lecția 7: RAG →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2: Use Cases — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 2 din 8</span>
+    <span class="tag">~20 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Use Cases: când și pentru ce folosești embeddings</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Șase scenarii concrete unde embeddings rezolvă probleme reale — cu exemple din aplicații web.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: OVERVIEW
+  ══════════════════════════════════════ -->
+  <h2>Harta use case-urilor</h2>
+
+  <p>
+    Embeddings nu sunt un scop în sine — sunt un <em>instrument</em> pentru șase categorii de probleme.
+    Toate se bazează pe același principiu: texte similare → vectori apropiați.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Semantic Search</h4>
+        <p>Caută prin înțeles, nu prin cuvinte exacte. Query-ul și documentele sunt vectorizate, returnezi cele mai apropiate.</p>
+      </div>
+      <div class="arch-tag">cel mai comun</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>RAG — Retrieval Augmented Generation</h4>
+        <p>Dă unui LLM acces la documentele tale. Embeddings găsesc contextul relevant, LLM-ul formulează răspunsul.</p>
+      </div>
+      <div class="arch-tag">AI apps</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Clasificare</h4>
+        <p>Categorizezi texte (spam/nu spam, sentimente, topic) fără să scrii reguli manuale.</p>
+      </div>
+      <div class="arch-tag">ML clasic</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>Clustering</h4>
+        <p>Grupezi automat texte similare fără etichete predefinite — utile pentru explorarea datelor.</p>
+      </div>
+      <div class="arch-tag">analiza date</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">5</div>
+      <div class="arch-info">
+        <h4>Recomandări</h4>
+        <p>„Articole similare", „produse similare" — găsești itemii cu embeddings apropiate față de ce a văzut userul.</p>
+      </div>
+      <div class="arch-tag">e-commerce / media</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: SEMANTIC SEARCH
+  ══════════════════════════════════════ -->
+  <h2>1. Semantic Search</h2>
+
+  <p>
+    <strong>Problema clasică:</strong> un user caută „cum repar o conductă spartă" și baza ta de date are articolul
+    „repararea unui țevi avariate" — căutarea by keyword nu găsește nimic.
+    Semantic search rezolvă asta.
+  </p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>La indexare: calculezi embedding-ul fiecărui document și îl stochezi într-o bază de date vectorială.</p>
+        <span class="layer-tag">o singură dată, la adăugarea conținutului</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>La căutare: calculezi embedding-ul query-ului utilizatorului.</p>
+        <span class="layer-tag">la fiecare request de search</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Returnezi documentele cu cosine similarity maximă față de query.</p>
+        <span class="layer-tag">vector nearest neighbor search</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-label">Când să folosești semantic search</div>
+    Când ai un corpus de documente (articole, FAQ, produse, cod) și vrei că utilizatorii să le găsească prin
+    descriere naturală, nu prin cuvinte exacte. Funcționează și cross-lingual — query în română, documente în engleză.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: RAG
+  ══════════════════════════════════════ -->
+  <h2>2. RAG — Retrieval Augmented Generation</h2>
+
+  <p>
+    Un LLM (ChatGPT, Claude) nu știe nimic despre documentele tale interne — bazele de date, documentațiile, ticketele.
+    <strong>RAG</strong> rezolvă asta: combini embeddings pentru a găsi contextul relevant, apoi îl dai LLM-ului.
+  </p>
+
+  <pre><code># Flux RAG simplificat
+User: "Care este politica de retur pentru produsul X?"
+
+1. Vectorizezi întrebarea
+2. Cauți în baza de documente vectorizate → găsești pagina de politici
+3. Trimiți LLM-ului: întrebarea + fragmentul relevant din politici
+4. LLM formulează răspunsul în limbaj natural
+
+# LLM-ul nu trebuie să „știe" nimic din antrenament —
+# tot contextul vine din documentele tale</code></pre>
+
+  <p>
+    Acesta este cel mai popular use case al embeddings în 2024–2025.
+    Orice chatbot care răspunde pe baza documentelor proprii (documentație, suport, knowledge base) folosește RAG.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: CLASIFICARE
+  ══════════════════════════════════════ -->
+  <h2>3. Clasificare</h2>
+
+  <p>
+    Categorizezi texte în clase predefinite (spam/legitim, pozitiv/negativ/neutru, tipul de suport).
+    Embeddings sunt mai bune decât regex sau keyword matching pentru că înțeleg nuanța.
+  </p>
+
+  <div class="callout">
+    <div class="callout-label">Exemplu real</div>
+    Un ticket de suport vine cu textul „aplicația se blochează când încerc să export PDF-ul".
+    Vrei să-l rutezi automat la echipa de bugs, nu la echipa de billing.
+    Un clasificator bazat pe embeddings face asta fără reguli hardcodate.
+  </div>
+
+  <p>
+    Abordare: calculezi embedding-ul textului, antrenezi un clasificator simplu (logistic regression, k-NN)
+    pe exemplele tale. Nu ai nevoie de mii de exemple — câteva sute funcționează bine.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: CLUSTERING
+  ══════════════════════════════════════ -->
+  <h2>4. Clustering</h2>
+
+  <p>
+    Ai 10.000 de review-uri de clienți și vrei să înțelegi ce teme apar frecvent — fără să le citești pe toate.
+    Clustering-ul pe embeddings grupează automat review-urile similare.
+  </p>
+
+  <pre><code>from sklearn.cluster import KMeans
+
+# Ai deja embeddings calculate pentru fiecare review
+kmeans = KMeans(n_clusters=10)
+kmeans.fit(embeddings)
+
+# Fiecare review primește un cluster (0-9)
+# Inspectezi câteva exemple din fiecare cluster și înțelegi tema</code></pre>
+
+  <p>
+    Util pentru: analiza feedback-ului, explorarea unui corpus mare de documente, deduplicarea conținutului similar.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 6: RECOMANDĂRI
+  ══════════════════════════════════════ -->
+  <h2>5. Recomandări</h2>
+
+  <p>
+    „Articole similare", „produse similare cu cel vizualizat", „cursuri recomandate pe baza istoricului".
+    Calculezi embedding-ul itemului curent și returnezi cei mai apropiați vecini din catalog.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-label">Când NU să folosești embeddings pentru recomandări</div>
+    Dacă ai date comportamentale bogate (ce a cumpărat userul, ce a dat click), collaborative filtering
+    (algoritmii tradiționali) bat embeddings pe text. Embeddings sunt excelente când ai conținut bogat
+    dar date comportamentale puține (catalog nou, useri noi).
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 7: DEDUPLICARE ȘI ANOMALII
+  ══════════════════════════════════════ -->
+  <h2>Bonus: Deduplicare și detectare anomalii</h2>
+
+  <p>
+    Două documente cu cosine similarity &gt; 0.95 sunt aproape identice — util pentru deduplicarea catalogului de produse,
+    detectarea plagiatelor sau identificarea ticketelor duplicate.
+  </p>
+
+  <p>
+    Un document cu similarity scăzută față de toți ceilalți este o anomalie —
+    util pentru detectarea review-urilor false sau a mesajelor suspecte.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU PRACTIC
+  ══════════════════════════════════════ -->
+  <h2>Mapează proiectele tale</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Identifică oportunități în proiectele tale</div>
+    <ol>
+      <li>Ai un câmp de căutare în vreo aplicație? → candidat pentru <strong>semantic search</strong></li>
+      <li>Ai un chatbot sau pagină de FAQ? → candidat pentru <strong>RAG</strong></li>
+      <li>Ai formulare de support sau review-uri de clienți? → candidat pentru <strong>clasificare automată</strong></li>
+      <li>Ai un catalog de produse sau articole? → candidat pentru <strong>recomandări</strong></li>
+      <li>Ai date duplicate sau vrei să găsești conținut similar? → candidat pentru <strong>deduplicare</strong></li>
+    </ol>
+    <p style="font-size:0.9rem;color:var(--muted);margin-top:0.8rem;">
+      Notează un caz concret din proiectele tale — îl vei implementa pas cu pas în lecțiile 4–8.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://platform.openai.com/docs/guides/embeddings#use-cases" target="_blank">
+        OpenAI Embeddings — secțiunea Use Cases
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Include exemple de cod pentru toate use case-urile principale: search, clustering, clasificare, recomandări.
+        Fiecare exemplu are cod Python complet.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Un utilizator caută „repararea unui aparat de uz casnic defect" și documentul relevant se numește „ghid de service electrocasnice". Ce abordare de search rezolvă această nepotrivire?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Indexare full-text cu BM25 și sinonime hardcodate</button></li>
+        <li><button data-correct="true">Semantic search bazat pe embeddings</button></li>
+        <li><button data-correct="false">Căutare exactă cu Levenshtein distance</button></li>
+        <li><button data-correct="false">Indexare pe meta-taguri editate manual</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Semantic search vectorizează atât query-ul cât și documentul. Deși cuvintele diferă, sensul este similar → cosine similarity mare → documentul apare în rezultate. BM25 clasic ar rata această potrivire.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">RAG (Retrieval Augmented Generation) combină embeddings cu ce alt component?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un algoritm de compresie pentru documente mari</button></li>
+        <li><button data-correct="false">O bază de date SQL pentru stocarea structurată</button></li>
+        <li><button data-correct="true">Un LLM care formulează răspunsul pe baza contextului găsit</button></li>
+        <li><button data-correct="false">Un sistem de caching pentru reducerea costurilor API</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> RAG = embeddings găsesc documentele relevante + LLM formulează răspunsul din ele. Fără LLM ai doar semantic search. Fără embeddings, LLM-ul nu are acces la documentele tale.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Vrei să grupezi automat 50.000 de review-uri de clienți după temă, fără etichete predefinite. Ce use case de embeddings folosești?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Clasificare supervizată cu regresie logistică</button></li>
+        <li><button data-correct="false">Semantic search cu nearest neighbor</button></li>
+        <li><button data-correct="true">Clustering nesupervizat (ex. k-means pe vectori)</button></li>
+        <li><button data-correct="false">RAG cu un LLM care citește toate review-urile</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Clustering-ul nesupervizat (k-means, DBSCAN etc.) pe embeddings grupează textele similare fără să știi de dinainte câte teme există. Clasificarea necesită etichete — nu le ai pentru review-uri noi.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Când sunt recomandările bazate pe embeddings MAI SLABE decât collaborative filtering?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când catalogul are mai mult de 10.000 de produse</button></li>
+        <li><button data-correct="true">Când ai date comportamentale bogate (click-uri, achiziții)</button></li>
+        <li><button data-correct="false">Când produsele au descrieri scurte de sub 50 cuvinte</button></li>
+        <li><button data-correct="false">Când userii sunt noi și nu au istoric de navigare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Collaborative filtering exploatează pattern-urile comportamentale ale multor useri și bate embeddings pe text când datele există. Embeddings strălucesc la cold start (useri noi, produse noi fără rating-uri).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Cum detectezi documentele duplicate dintr-un catalog cu embeddings?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Compari hash MD5 al textelor tokenizate</button></li>
+        <li><button data-correct="false">Folosești diff text clasic (Levenshtein) pe perechi</button></li>
+        <li><button data-correct="true">Identifici perechile cu cosine similarity peste un prag (ex. 0.95)</button></li>
+        <li><button data-correct="false">Antrenezi un clasificator binar „duplicat / unic"</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cosine similarity &gt; 0.95 indică texte aproape identice semantic, chiar dacă au cuvintele ușor reformulate. Levenshtein ar rata parafrazele; hash MD5 ar rata orice reformulare.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să înțelegi mai bine diferența dintre RAG și fine-tuning? Ai un use case specific pe care nu l-am acoperit?
+      Vrei să discuți ce ar funcționa cel mai bine pentru proiectul tău?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0001-ce-sunt-embeddings.html">← Lecția 1: Ce sunt Embeddings?</a>
+    <a href="0003-alegerea-tooling.html">Lecția 3: Alegerea tooling-ului →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-entry {
+      border-bottom: 1px solid var(--border);
+      padding: 1.1rem 0;
+    }
+    .glossary-entry:last-child { border-bottom: none; }
+    .glossary-term {
+      font-family: var(--mono); font-weight: bold; font-size: 1rem;
+      color: var(--accent); margin-bottom: 0.2rem;
+    }
+    .glossary-def { font-size: 0.92rem; margin-bottom: 0.3rem; }
+    .glossary-note { font-size: 0.83rem; color: var(--muted); font-style: italic; }
+    .glossary-section {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+      font-weight: bold; color: var(--muted); margin: 2.5rem 0 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">referință</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Glosar Embeddings</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Termenii cheie din toate cele 8 lecții, în ordine alfabetică.
+  </p>
+
+
+  <div class="glossary-section">A</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">ANN — Approximate Nearest Neighbor</div>
+    <div class="glossary-def">Algoritm de căutare care returnează cei mai apropiați vecini ai unui vector fără a parcurge tot indexul. Este mai rapid decât căutarea exactă cu un cost mic de precizie (~1–5%).</div>
+    <div class="glossary-note">Exemple de algoritmi ANN: HNSW, IVF, FAISS. → Lecția 6</div>
+  </div>
+
+
+  <div class="glossary-section">C</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">ChromaDB</div>
+    <div class="glossary-def">Vector database open-source, simplu de pornit local. Ideal pentru prototipuri și proiecte mici. Suportă storage în memorie sau persistent pe disc.</div>
+    <div class="glossary-note">→ Lecția 6</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Chunking</div>
+    <div class="glossary-def">Procesul de fragmentare a documentelor lungi în bucăți mai mici (chunk-uri) înainte de vectorizare. Necesar deoarece modelele de embedding au o limită de token-uri și chunk-urile mici produc retrieval mai precis.</div>
+    <div class="glossary-note">Valori tipice: 200–500 cuvinte cu overlap 50. → Lecția 7</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Clustering</div>
+    <div class="glossary-def">Gruparea automată a punctelor (documente, texte) similare fără etichete predefinite. Pe embeddings, k-means sau DBSCAN grupează textele cu sens similar în clustere.</div>
+    <div class="glossary-note">→ Lecția 2</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Cosine Distance</div>
+    <div class="glossary-def">Complementul cosine similarity: <code>1 - cosine_similarity(a, b)</code>. Valori mai mici = mai similar. Folosit de unele librării (scipy, ChromaDB cu metrica default) în loc de similarity.</div>
+    <div class="glossary-note">Atenție: scipy.cosine() returnează distanța, nu similarity! → Lecția 4</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Cosine Similarity</div>
+    <div class="glossary-def">Măsura similarității dintre doi vectori bazată pe unghiul dintre ei. Valori între -1 și 1: 1 = identici, 0 = fără legătură, -1 = opuși. Preferată față de distanța euclidiană pentru embeddings deoarece nu e afectată de magnitudinea vectorului.</div>
+    <div class="glossary-note">Formula: dot(a,b) / (norm(a) × norm(b)). → Lecțiile 1, 4, 5</div>
+  </div>
+
+
+  <div class="glossary-section">E</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Embedding</div>
+    <div class="glossary-def">O reprezentare numerică (vector de float-uri) a unui text, imagine sau alt conținut. Capturează semantica astfel încât texte cu sens similar produc vectori apropiați în spațiu.</div>
+    <div class="glossary-note">Dimensiuni tipice: 384 (MiniLM), 768 (BERT), 1536 (text-embedding-3-small). → Lecția 1</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Embedding Model</div>
+    <div class="glossary-def">O rețea neurală Transformer antrenată special să producă vectori cu proprietăți semantice. Nu o antrenezi tu — folosești unul preantrenat via API (OpenAI, Cohere) sau local (sentence-transformers).</div>
+    <div class="glossary-note">→ Lecțiile 1, 3</div>
+  </div>
+
+
+  <div class="glossary-section">F</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Fine-tuning</div>
+    <div class="glossary-def">Re-antrenarea unui model existent pe date specifice domeniului tău. Modifică weights-urile modelului. Alternativă la RAG — mai scump și mai lent de actualizat, dar poate produce rezultate mai bune în cazuri specializate.</div>
+    <div class="glossary-note">În 95% din cazuri, RAG este preferabil fine-tuning-ului. → Lecția 7</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Float32 / float[]</div>
+    <div class="glossary-def">Tipul de date al valorilor dintr-un vector de embedding. Fiecare dimensiune este un număr zecimal pe 32 biți. Un vector de 1536 dimensiuni ocupă 1536 × 4 bytes = 6KB.</div>
+    <div class="glossary-note">→ Lecțiile 1, 4</div>
+  </div>
+
+
+  <div class="glossary-section">H</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Hallucination</div>
+    <div class="glossary-def">Fenomenul în care un LLM generează informații false dar plauzibile din training data, în loc să recunoască că nu știe. RAG cu instrucțiuni de grounding reduce semnificativ hallucinations.</div>
+    <div class="glossary-note">→ Lecția 7</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">HNSW — Hierarchical Navigable Small World</div>
+    <div class="glossary-def">Algoritmul ANN cel mai popular pentru vector databases. Construiește o structură de grafuri ierarhică care permite căutarea nearest neighbor în timp sub-liniar.</div>
+    <div class="glossary-note">Suportat de pgvector, Qdrant, ChromaDB. → Lecțiile 6, 8</div>
+  </div>
+
+
+  <div class="glossary-section">I</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Indexare (vector indexing)</div>
+    <div class="glossary-def">Faza offline în RAG: calculezi embeddings pentru toate documentele și le stochezi în vector database. Se face o singură dată și se repetă doar la adăugarea sau modificarea documentelor.</div>
+    <div class="glossary-note">→ Lecțiile 6, 7</div>
+  </div>
+
+
+  <div class="glossary-section">K</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Knowledge Cutoff</div>
+    <div class="glossary-def">Data până la care un LLM a fost antrenat. Nu știe nimic despre evenimente sau documente apărute după acea dată. RAG rezolvă asta injectând informații actuale în context.</div>
+    <div class="glossary-note">→ Lecția 7</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">k-NN — k Nearest Neighbors</div>
+    <div class="glossary-def">Algoritmul de căutare a celor mai apropiați k vecini ai unui vector. Exact: compară cu toți vectorii (O(n)). Aproximativ (ANN): structuri de date eficiente reduc la O(log n).</div>
+    <div class="glossary-note">→ Lecțiile 4, 6</div>
+  </div>
+
+
+  <div class="glossary-section">L</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">LLM — Large Language Model</div>
+    <div class="glossary-def">Model de limbaj de mari dimensiuni (GPT-4, Claude, Gemini). Generează text, răspunde la întrebări, rezumă. În RAG, LLM-ul generează răspunsul pe baza contextului furnizat de retrieval.</div>
+    <div class="glossary-note">→ Lecțiile 2, 7</div>
+  </div>
+
+
+  <div class="glossary-section">M</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Metadata Filtering</div>
+    <div class="glossary-def">Combinarea căutării semantice cu filtre structurate (categorie, dată, user ID). Permite query-uri de tipul „similare cu X, dar DOAR din categoria Y".</div>
+    <div class="glossary-note">Suportat de ChromaDB, Qdrant, pgvector (WHERE clause). → Lecția 6</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">MiniLM</div>
+    <div class="glossary-def">Familie de modele de embedding compacte și rapide: <code>all-MiniLM-L6-v2</code> (engleză, 384 dim) și <code>paraphrase-multilingual-MiniLM-L12-v2</code> (50+ limbi, 384 dim). Disponibile gratuit pe Hugging Face.</div>
+    <div class="glossary-note">→ Lecțiile 3, 4</div>
+  </div>
+
+
+  <div class="glossary-section">N</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Normalizare vector</div>
+    <div class="glossary-def">Scalarea unui vector la lungime unitară (norma = 1). Când vectorii sunt normalizați, cosine similarity se reduce la produsul scalar. Parametrul <code>normalize=True</code> în sentence-transformers face asta automat.</div>
+    <div class="glossary-note">→ Lecția 5</div>
+  </div>
+
+
+  <div class="glossary-section">O</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Overlap (chunking)</div>
+    <div class="glossary-def">Numărul de cuvinte sau token-uri comune între chunk-uri consecutive. Previne pierderea contextului la granița dintre chunk-uri. Valoare tipică: 50–100 cuvinte.</div>
+    <div class="glossary-note">→ Lecția 7</div>
+  </div>
+
+
+  <div class="glossary-section">P</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">pgvector</div>
+    <div class="glossary-def">Extensie PostgreSQL care adaugă tipul de date <code>vector(n)</code> și operatori pentru cosine distance (<code>&lt;=&gt;</code>), distanță euclidiană (<code>&lt;-&gt;</code>) și inner product (<code>&lt;#&gt;</code>). Permite semantic search direct în Postgres.</div>
+    <div class="glossary-note">→ Lecțiile 6, 8</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Pinecone</div>
+    <div class="glossary-def">Vector database cloud fully-managed. Zero infrastructure de gestionat. Mai scump la scară mare, dar simplu de integrat prin API REST. Popular în aplicații SaaS.</div>
+    <div class="glossary-note">→ Lecția 6</div>
+  </div>
+
+
+  <div class="glossary-section">Q</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Qdrant</div>
+    <div class="glossary-def">Vector database open-source scris în Rust. Performant, self-hosted sau managed cloud. Are client PHP oficial, util pentru integrare Laravel.</div>
+    <div class="glossary-note">→ Lecțiile 6, 8</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Query Embedding</div>
+    <div class="glossary-def">Vectorul calculat pentru întrebarea/query-ul utilizatorului la momentul căutării. Se compară cu embeddings-urile documentelor din index pentru a găsi cele mai similare.</div>
+    <div class="glossary-note">→ Lecțiile 4, 5, 6, 7</div>
+  </div>
+
+
+  <div class="glossary-section">R</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">RAG — Retrieval Augmented Generation</div>
+    <div class="glossary-def">Paradigmă care combină semantic search (retrieval) cu generarea de text (LLM). Embeddings găsesc documentele relevante → context injectat în prompt → LLM generează răspunsul. Permite LLM-ului să „știe" despre documentele tale fără re-antrenare.</div>
+    <div class="glossary-note">→ Lecțiile 2, 7, 8</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Retrieval</div>
+    <div class="glossary-def">În contextul RAG, procesul de găsire a documentelor relevante semantic pentru o întrebare. Implică vectorizarea query-ului și nearest neighbor search în vector database.</div>
+    <div class="glossary-note">→ Lecțiile 6, 7</div>
+  </div>
+
+
+  <div class="glossary-section">S</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Semantic Search</div>
+    <div class="glossary-def">Căutare bazată pe înțelesul textului, nu pe potrivirea exactă de cuvinte cheie. Query-ul și documentele sunt vectorizate; se returnează documentele cu similarity maximă față de query. Funcționează cross-lingual.</div>
+    <div class="glossary-note">→ Lecțiile 2, 4, 5, 6, 8</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Sentence Transformers</div>
+    <div class="glossary-def">Librărie Python (sbert.net) pentru modele de embedding locale. Oferă zeci de modele preantrenate, inclusiv multilingve. <code>pip install sentence-transformers</code>. Zero cost de API.</div>
+    <div class="glossary-note">→ Lecțiile 3, 4</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Spațiu vectorial (Vector Space)</div>
+    <div class="glossary-def">Spațiul n-dimensional în care trăiesc vectorii de embedding. Texte semantice similare sunt „aproape" în acest spațiu. Nu are o vizualizare intuitivă la 1536 dimensiuni, dar proprietățile geometrice (distanță, unghi) funcționează matematic.</div>
+    <div class="glossary-note">→ Lecția 1</div>
+  </div>
+
+
+  <div class="glossary-section">T</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Temperature (LLM)</div>
+    <div class="glossary-def">Parametru care controlează aleatoria în generarea textului. Temperature = 0: determinist, același input → același output. Recomandat pentru RAG factual. Temperature = 1: variabilitate naturală.</div>
+    <div class="glossary-note">→ Lecția 7</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">text-embedding-3-small / text-embedding-3-large</div>
+    <div class="glossary-def">Modelele de embedding OpenAI din generația 3. <code>small</code>: 1536 dim, $0.02/1M tokens. <code>large</code>: 3072 dim, $0.13/1M tokens. Ambele suportă reducerea dimensiunilor fără pierderi mari de calitate.</div>
+    <div class="glossary-note">→ Lecțiile 3, 4, 8</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Token</div>
+    <div class="glossary-def">Unitatea de bază de procesare a modelelor NLP. Aproximativ ~4 caractere sau 3/4 dintr-un cuvânt în engleză. Modelele de embedding au limite de token-uri per input (ex. 8192 pentru text-embedding-3-small).</div>
+    <div class="glossary-note">→ Lecțiile 1, 7</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Tokenizare</div>
+    <div class="glossary-def">Procesul de descompunere a textului în token-uri înainte de procesarea de către model. Fiecare model are propriul tokenizer. Afectează numărul de token-uri dintr-un text și limita de input.</div>
+    <div class="glossary-note">→ Lecția 1</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Transformer</div>
+    <div class="glossary-def">Arhitectura de rețea neurală la baza modelelor moderne de NLP (BERT, GPT, etc.). Folosește mecanisme de „atenție" pentru a înțelege relațiile contextuale dintre cuvinte. Modelele de embedding sunt Transformers specializați.</div>
+    <div class="glossary-note">→ Lecția 1</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Transformers.js (@xenova/transformers)</div>
+    <div class="glossary-def">Port JavaScript al librăriei Hugging Face Transformers. Rulează modele ONNX local în Node.js sau browser (via WebAssembly/WebGPU). Permite embeddings fără server și fără cost API.</div>
+    <div class="glossary-note">→ Lecția 5</div>
+  </div>
+
+
+  <div class="glossary-section">V</div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Vector</div>
+    <div class="glossary-def">O listă ordonată de numere. În contextul embeddings, un vector de n numere float reprezintă un punct în spațiul n-dimensional. Proprietățile geometrice (distanță, unghi) capturează relații semantice.</div>
+    <div class="glossary-note">→ Lecția 1</div>
+  </div>
+
+  <div class="glossary-entry">
+    <div class="glossary-term">Vector Database</div>
+    <div class="glossary-def">Bază de date specializată în stocarea și căutarea eficientă a vectorilor. Folosește algoritmi ANN pentru nearest neighbor search sub-liniar. Exemple: ChromaDB, Qdrant, Pinecone, Weaviate, pgvector.</div>
+    <div class="glossary-note">→ Lecția 6</div>
+  </div>
+
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    Embeddings — Curs · <a href="../index.html">Index curs</a> · <a href="../../index.html">Toate cursurile</a>
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4: Python Embeddings — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 4 din 8</span>
+    <span class="tag">~25 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Python: embeddings cu OpenAI și Sentence Transformers</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cod complet, rulabil imediat: calculezi embeddings, măsori similaritatea și faci un prim semantic search.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: SETUP
+  ══════════════════════════════════════ -->
+  <h2>Setup mediu Python</h2>
+
+  <p>
+    Ai nevoie de Python 3.9+ instalat. Creează un mediu virtual și instalează dependențele:
+  </p>
+
+  <pre><code># Creează un folder pentru proiect
+mkdir embeddings-lab && cd embeddings-lab
+
+# Creează mediu virtual
+python -m venv venv
+
+# Activează (Windows)
+venv\Scripts\activate
+
+# Activează (macOS/Linux)
+source venv/bin/activate
+
+# Instalează librăriile
+pip install openai sentence-transformers numpy scipy</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Dacă nu vrei să plătești API</div>
+    Sari peste <code>pip install openai</code> și folosește doar <code>sentence-transformers</code> —
+    modelele locale sunt complet gratuite. Lecția acoperă ambele abordări.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: OPENAI API
+  ══════════════════════════════════════ -->
+  <h2>Varianta 1: OpenAI API</h2>
+
+  <p>
+    Obții un API key de pe <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>,
+    pui în variabila de mediu <code>OPENAI_API_KEY</code> și rulezi:
+  </p>
+
+  <pre><code>import os
+from openai import OpenAI
+import numpy as np
+
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+def get_embedding(text: str, model: str = "text-embedding-3-small") -> list[float]:
+    text = text.replace("\n", " ")
+    response = client.embeddings.create(input=[text], model=model)
+    return response.data[0].embedding
+
+# Test
+embedding = get_embedding("Pisica mea doarme pe canapea.")
+print(f"Dimensiuni vector: {len(embedding)}")   # 1536
+print(f"Primele 5 valori: {embedding[:5]}")</code></pre>
+
+  <p>
+    Funcția <code>get_embedding</code> este tot ce ai nevoie. Restul este aplicarea ei.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: SENTENCE TRANSFORMERS
+  ══════════════════════════════════════ -->
+  <h2>Varianta 2: Sentence Transformers (local, gratuit)</h2>
+
+  <p>
+    Prima rulare descarcă modelul (~90MB pentru MiniLM). Ulterior este cached local.
+  </p>
+
+  <pre><code>from sentence_transformers import SentenceTransformer
+import numpy as np
+
+# Modelul multilingv — funcționează și în română
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+def get_embedding_local(text: str) -> np.ndarray:
+    return model.encode(text)
+
+# Test
+embedding = get_embedding_local("Pisica mea doarme pe canapea.")
+print(f"Dimensiuni vector: {len(embedding)}")   # 384
+print(f"Tip: {embedding.dtype}")                # float32</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">Diferență față de OpenAI</div>
+    <code>sentence-transformers</code> returnează un <code>numpy.ndarray</code>, nu o listă Python.
+    Asta este convenabil — numpy are calculul cosine similarity inclus.
+    OpenAI returnează o <code>list[float]</code> — trebuie să o convertești cu <code>np.array()</code>.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: COSINE SIMILARITY
+  ══════════════════════════════════════ -->
+  <h2>Calculul similarității</h2>
+
+  <pre><code>from scipy.spatial.distance import cosine
+
+def cosine_similarity(vec_a, vec_b) -> float:
+    # scipy.cosine returnează DISTANȚA (0=identic, 2=opus)
+    # convertiți la similarity (1=identic, -1=opus)
+    return 1 - cosine(vec_a, vec_b)
+
+# Exemplu complet cu modele locale
+sentences = [
+    "Pisica mea doarme pe canapea.",
+    "Felina mea se odihnește pe fotoliu.",
+    "Câinele aleargă în parc.",
+    "Factura de electricitate a crescut.",
+]
+
+embeddings = [get_embedding_local(s) for s in sentences]
+
+query_idx = 0  # "Pisica mea doarme pe canapea."
+query_emb = embeddings[query_idx]
+
+print(f"Query: {sentences[query_idx]}\n")
+for i, (sent, emb) in enumerate(zip(sentences, embeddings)):
+    if i == query_idx:
+        continue
+    sim = cosine_similarity(query_emb, emb)
+    print(f"  [{sim:.4f}] {sent}")</code></pre>
+
+  <p>Output așteptat:</p>
+
+  <pre><code>Query: Pisica mea doarme pe canapea.
+
+  [0.8921] Felina mea se odihnește pe fotoliu.
+  [0.6234] Câinele aleargă în parc.
+  [0.1823] Factura de electricitate a crescut.</code></pre>
+
+  <p>
+    Exact ordinea așteptată: parafraza este cea mai similară, subiect din același domeniu e la mijloc,
+    subiect complet diferit are similarity mică.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: SEMANTIC SEARCH MINIMAL
+  ══════════════════════════════════════ -->
+  <h2>Semantic Search în ~20 de linii</h2>
+
+  <p>
+    Ai un corpus de documente, vectorizezi totul, apoi la fiecare query returnezi top-K rezultate:
+  </p>
+
+  <pre><code>from sentence_transformers import SentenceTransformer
+from scipy.spatial.distance import cosine
+
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+# Corpus de documente (în producție: citite din DB)
+corpus = [
+    "Cum resetez parola contului meu?",
+    "Ghid de instalare a aplicației mobile.",
+    "Politica de retur și refund pentru comenzi online.",
+    "Cum schimb adresa de livrare după plasarea comenzii?",
+    "Suport pentru plăți cu cardul în aplicație.",
+    "Erori frecvente și soluțiile lor.",
+]
+
+# Vectorizăm corpus-ul O SINGURĂ DATĂ
+corpus_embeddings = model.encode(corpus)
+
+def semantic_search(query: str, top_k: int = 3) -> list[tuple[float, str]]:
+    query_emb = model.encode(query)
+    scores = [1 - cosine(query_emb, doc_emb) for doc_emb in corpus_embeddings]
+    ranked = sorted(zip(scores, corpus), reverse=True)
+    return ranked[:top_k]
+
+# Test
+results = semantic_search("vreau să returnez un produs")
+for score, doc in results:
+    print(f"  [{score:.3f}] {doc}")</code></pre>
+
+  <p>Output:</p>
+
+  <pre><code>  [0.812] Politica de retur și refund pentru comenzi online.
+  [0.634] Cum schimb adresa de livrare după plasarea comenzii?
+  [0.521] Cum resetez parola contului meu?</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">În producție</div>
+    Nu stochezi embeddings în memorie și nu calculezi distanța față de fiecare document la fiecare query.
+    Folosești o <strong>vector database</strong> (Lecția 6) care face asta eficient la scară de milioane de documente.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU PRACTIC
+  ══════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Rulează și extinde</div>
+    <ol>
+      <li>Copiază codul semantic search de mai sus într-un fișier <code>search.py</code> și rulează-l.</li>
+      <li>Adaugă 5 documente proprii în <code>corpus</code> (din domeniul tău: PHP, Laravel, web).</li>
+      <li>Testează cu 3 query-uri diferite — observă că găsește documentul potrivit chiar și cu alte cuvinte.</li>
+      <li>Modifică <code>top_k=1</code> — observă că returnează mereu cel mai relevant document.</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://www.sbert.net/docs/quickstart.html" target="_blank">
+        Sentence Transformers — Quickstart oficial
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială cu toate modelele disponibile, exemple de semantic search,
+        clustering și clasificare. Pornește de la secțiunea „Computing Sentence Embeddings".
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Câte dimensiuni are un vector produs de <code>text-embedding-3-small</code> (OpenAI)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">384 dimensiuni</button></li>
+        <li><button data-correct="false">768 dimensiuni</button></li>
+        <li><button data-correct="true">1536 dimensiuni</button></li>
+        <li><button data-correct="false">3072 dimensiuni</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>text-embedding-3-small</code> produce vectori de 1536 dimensiuni. Modelul local <code>paraphrase-multilingual-MiniLM-L12-v2</code> produce 384 dimensiuni — mai compact, gratuit, dar ușor mai puțin precis.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce returnează <code>scipy.spatial.distance.cosine(a, b)</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cosine similarity (1 = identic)</button></li>
+        <li><button data-correct="true">Cosine distance (0 = identic)</button></li>
+        <li><button data-correct="false">Distanța euclidiană între vectori</button></li>
+        <li><button data-correct="false">Produsul scalar normalizat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>scipy.cosine</code> returnează <em>distanța</em> (0 = identic, 2 = opus), nu similarity. Pentru a obține similarity, calculezi <code>1 - cosine(a, b)</code>. Confuzia asta este o sursă frecventă de bug-uri.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Când ar trebui să vectorizezi corpus-ul de documente pentru semantic search?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">La fiecare request de search, pentru a fi actualizat</button></li>
+        <li><button data-correct="false">O dată pe zi, în batch, indiferent de modificări</button></li>
+        <li><button data-correct="true">O singură dată la indexare, și din nou când documentele se schimbă</button></li>
+        <li><button data-correct="false">Imediat înainte de fiecare calcul de similarity</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Embedding-urile documentelor nu se schimbă dacă textul nu se schimbă. Le calculezi o dată și le stochezi. Re-calculezi doar când adaugi sau modifici documente. Calculul la fiecare query ar fi extrem de lent și costisitor.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce tip de date returnează <code>model.encode(text)</code> din sentence-transformers?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">O listă Python de float-uri (<code>list[float]</code>)</button></li>
+        <li><button data-correct="false">Un dicționar cu dimensiunile ca cheie</button></li>
+        <li><button data-correct="true">Un array NumPy de float32</button></li>
+        <li><button data-correct="false">Un tensor PyTorch pe GPU dacă e disponibil</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>model.encode()</code> returnează <code>numpy.ndarray</code> de tip <code>float32</code>. Asta permite să folosești direct funcțiile NumPy/SciPy fără conversie. OpenAI returnează <code>list[float]</code> — trebuie <code>np.array()</code> pentru compatibilitate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce semantic search în memorie (lista de vectori + loop) nu este potrivit pentru producție cu milioane de documente?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Python nu poate ține milioane de float-uri în memorie RAM</button></li>
+        <li><button data-correct="false">Cosine similarity nu funcționează corect la scară mare</button></li>
+        <li><button data-correct="true">Calculul distanței față de fiecare document este O(n) — prea lent la scară</button></li>
+        <li><button data-correct="false">Modelele locale de embedding nu produc vectori suficient de precisi</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un loop peste 1M vectori la fiecare query durează secunde. Vector databases (Lecția 6) folosesc algoritmi aproximativi (HNSW, IVF) care reduc complexitatea la O(log n) sau sub-lineară — returnând top-K în milisecunde.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ai primit o eroare la instalarea librăriilor? Vrei să afli cum să vectorizezi mai multe texte simultan (batch)?
+      Curioasă cum funcționează encoding-ul pentru documente lungi?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0003-alegerea-tooling.html">← Lecția 3: Alegerea tooling-ului</a>
+    <a href="0005-javascript-embeddings.html">Lecția 5: JavaScript Embeddings →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

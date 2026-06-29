@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7: RAG — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 7 din 8</span>
+    <span class="tag">~25 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>RAG — Retrieval Augmented Generation</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum construiești un chatbot care răspunde pe baza documentelor tale, nu din antrenamentul LLM-ului.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: PROBLEMA
+  ══════════════════════════════════════ -->
+  <h2>Problema pe care o rezolvă RAG</h2>
+
+  <p>
+    Un LLM (Claude, GPT-4) știe enorm de multe lucruri din antrenament — dar nu știe nimic despre:
+  </p>
+
+  <ul>
+    <li>Documentele interne ale companiei tale</li>
+    <li>Datele actualizate după data de training (knowledge cutoff)</li>
+    <li>Informații specifice domeniului/produsului tău</li>
+    <li>Baza ta de date de clienți, comenzi, produse</li>
+  </ul>
+
+  <p>
+    <strong>RAG</strong> (Retrieval Augmented Generation) adaugă LLM-ului un mecanism de „căutare" în documentele tale
+    înainte să genereze răspunsul. Nu re-antrenezi modelul — îi dai contextul relevant în prompt.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">RAG vs Fine-tuning</div>
+    Fine-tuning modifică weights-urile modelului prin re-antrenare pe datele tale — scump, lent, greu de actualizat.
+    RAG injectează datele ca context în prompt la inference time — ieftin, rapid, datele se actualizează instant.
+    Pentru 95% din use cases, RAG este alegerea corectă.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: ARHITECTURA RAG
+  ══════════════════════════════════════ -->
+  <h2>Arhitectura RAG</h2>
+
+  <p>RAG are două faze distincte:</p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">A</div>
+      <div class="arch-info">
+        <h4>Faza de indexare (offline)</h4>
+        <p>Citești documentele, le fragmentezi în chunk-uri, calculezi embeddings, stochezi în vector database. Se face O SINGURĂ DATĂ sau la actualizarea documentelor.</p>
+      </div>
+      <div class="arch-tag">offline</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">B</div>
+      <div class="arch-info">
+        <h4>Faza de retrieval + generation (online)</h4>
+        <p>La fiecare întrebare a userului: vectorizezi query-ul, retrievi top-K chunk-uri relevante, construiești promptul cu contextul, trimiți LLM-ului care generează răspunsul.</p>
+      </div>
+      <div class="arch-tag">per request</div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p><strong>User întreabă:</strong> „Care este politica de retur pentru produse electronice?"</p>
+        <span class="layer-tag">input utilizator</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><strong>Retrieval:</strong> vectorizezi întrebarea și cauți top-3 chunk-uri similare în vector database.</p>
+        <span class="layer-tag">embeddings + vector DB</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><strong>Construiești promptul:</strong> combini contextul găsit cu întrebarea userului.</p>
+        <span class="layer-tag">prompt engineering</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><strong>LLM generează răspunsul</strong> pe baza contextului furnizat, nu din memoria sa de antrenament.</p>
+        <span class="layer-tag">LLM inference</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><strong>Răspuns returnat userului</strong> cu posibile citate din documentele sursă.</p>
+        <span class="layer-tag">output</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: CHUNKING
+  ══════════════════════════════════════ -->
+  <h2>Chunking — fragmentarea documentelor</h2>
+
+  <p>
+    Nu poți pune un document de 50 pagini în embedding. Modelele au limite de token-uri (ex. 8192 pentru
+    <code>text-embedding-3-small</code>). Și chiar dacă ai putea, un chunk mai mic produce retrieval mai precis.
+  </p>
+
+  <pre><code>def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
+    """
+    Fragmentează text în chunk-uri de chunk_size cuvinte cu overlap.
+    Overlap-ul previne pierderea contextului la granița dintre chunk-uri.
+    """
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = " ".join(words[i:i + chunk_size])
+        if chunk:
+            chunks.append(chunk)
+    return chunks
+
+# Exemplu
+text = "Politica de retur... (text lung de 5000 cuvinte)"
+chunks = chunk_text(text, chunk_size=200, overlap=20)
+# → 25 de chunk-uri de ~200 cuvinte fiecare</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Chunk size — un parametru important</div>
+    <ul>
+      <li><strong>Chunk mic (100–200 cuvinte):</strong> retrieval precis, context puțin per chunk</li>
+      <li><strong>Chunk mare (500–1000 cuvinte):</strong> mai mult context, dar retrieval mai puțin precis</li>
+      <li><strong>Overlap (50–100 cuvinte):</strong> previne pierderea contextului la granițe</li>
+    </ul>
+    Valoare bună de start: 300–500 cuvinte cu overlap 50.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: COD COMPLET RAG
+  ══════════════════════════════════════ -->
+  <h2>RAG complet în Python — de la zero</h2>
+
+  <pre><code># pip install openai chromadb
+import os
+import chromadb
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+chroma = chromadb.Client()
+collection = chroma.create_collection("docs", metadata={"hnsw:space": "cosine"})
+
+# ──────────────────────────────
+# FAZA 1: Indexare (offline)
+# ──────────────────────────────
+
+documents = {
+    "doc1": """Politica de retur: Clienții pot returna produsele în termen de 30 de zile
+    de la data achiziției. Produsele trebuie să fie în starea originală, cu ambalajul intact.
+    Electronicele au o garanție de 2 ani.""",
+
+    "doc2": """Metode de plată acceptate: card de credit/debit (Visa, Mastercard),
+    PayPal, transfer bancar, plata la livrare. Rambursările se procesează în 5-7 zile lucrătoare.""",
+
+    "doc3": """Livrare: Livrăm în toată România în 2-3 zile lucrătoare.
+    Livrarea gratuită pentru comenzi peste 200 RON. Livrarea expresă (24h) costă 25 RON.""",
+}
+
+def embed(text: str) -> list[float]:
+    res = client.embeddings.create(input=text, model="text-embedding-3-small")
+    return res.data[0].embedding
+
+# Indexează toate documentele
+collection.add(
+    ids=list(documents.keys()),
+    documents=list(documents.values()),
+    embeddings=[embed(doc) for doc in documents.values()],
+)
+
+# ──────────────────────────────
+# FAZA 2: RAG la query time
+# ──────────────────────────────
+
+def rag_query(question: str, top_k: int = 2) -> str:
+    # 1. Retrieval
+    query_emb = embed(question)
+    results = collection.query(query_embeddings=[query_emb], n_results=top_k)
+    context_chunks = results["documents"][0]
+
+    # 2. Construiește promptul
+    context = "\n\n".join(context_chunks)
+    prompt = f"""Ești un asistent de customer support. Răspunde DOAR pe baza contextului de mai jos.
+Dacă informația nu se află în context, spune că nu știi.
+
+Context:
+{context}
+
+Întrebarea clientului: {question}
+
+Răspuns:"""
+
+    # 3. LLM generează
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+    )
+    return response.choices[0].message.content
+
+# Test
+answer = rag_query("Cât timp am la dispoziție să returnez un produs?")
+print(answer)
+# → "Aveți 30 de zile de la data achiziției pentru a returna produsele..."</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4b: VARIANTA CU CLAUDE
+  ══════════════════════════════════════ -->
+  <h2>Varianta hibridă — embeddings OpenAI + generare cu Claude</h2>
+
+  <p>
+    Dacă ai deja o subscripție Anthropic, poți folosi <strong>Claude</strong> pentru partea de generare
+    din RAG — înlocuind <code>gpt-4o-mini</code> cu un model Claude. Embeddings-urile rămân la OpenAI
+    (sau Sentence Transformers gratuit) deoarece Anthropic nu oferă un endpoint de embeddings.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Flux hibrid</div>
+    <strong>Text → OpenAI embeddings → ChromaDB</strong> (retrieval) <strong>→ Claude</strong> (generare răspuns)<br>
+    Poți înlocui orice LLM în pasul de generare fără să schimbi nimic în pipeline-ul de embeddings/retrieval.
+  </div>
+
+  <pre><code># pip install openai chromadb anthropic
+import os
+import chromadb
+from openai import OpenAI
+import anthropic
+
+openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+claude_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+chroma = chromadb.Client()
+collection = chroma.create_collection("docs", metadata={"hnsw:space": "cosine"})
+
+# Faza 1: Indexare — identică, folosind OpenAI embeddings
+documents = {
+    "doc1": "Politica de retur: Clienții pot returna produsele în 30 de zile...",
+    "doc2": "Metode de plată: card, PayPal, transfer bancar, plata la livrare...",
+    "doc3": "Livrare în 2-3 zile lucrătoare. Gratuit peste 200 RON...",
+}
+
+def embed(text: str) -> list[float]:
+    res = openai_client.embeddings.create(input=text, model="text-embedding-3-small")
+    return res.data[0].embedding
+
+collection.add(
+    ids=list(documents.keys()),
+    documents=list(documents.values()),
+    embeddings=[embed(doc) for doc in documents.values()],
+)
+
+# Faza 2: RAG cu Claude pentru generare
+def rag_query_claude(question: str, top_k: int = 2) -> str:
+    # 1. Retrieval — identic cu varianta OpenAI
+    query_emb = embed(question)
+    results = collection.query(query_embeddings=[query_emb], n_results=top_k)
+    context = "\n\n".join(results["documents"][0])
+
+    # 2. Prompt — identic
+    prompt = f"""Ești un asistent de customer support. Răspunde DOAR pe baza contextului de mai jos.
+Dacă informația nu se află în context, spune că nu știi.
+
+Context:
+{context}
+
+Întrebarea clientului: {question}
+
+Răspuns:"""
+
+    # 3. Generare cu Claude în loc de GPT
+    response = claude_client.messages.create(
+        model="claude-haiku-4-5",   # ieftin și rapid; sau claude-opus-4-8 pentru calitate maximă
+        max_tokens=500,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text
+
+# Test
+answer = rag_query_claude("Cât timp am la dispoziție să returnez un produs?")
+print(answer)
+# → "Aveți 30 de zile de la data achiziției..."</code></pre>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">$</div>
+      <div class="arch-info">
+        <h4>Comparație cost generare</h4>
+        <p><code>claude-haiku-4-5</code> — $1/1M input + $5/1M output. Rapid, ieftin, suficient pentru Q&amp;A simplu.</p>
+      </div>
+      <div class="arch-tag">recomandat start</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">★</div>
+      <div class="arch-info">
+        <h4><code>claude-opus-4-8</code></h4>
+        <p>$5/1M input + $25/1M output. Cel mai capabil — util când răspunsurile necesită raționament complex sau sinteză.</p>
+      </div>
+      <div class="arch-tag">calitate maximă</div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-label">Varianta 100% gratuită</div>
+    Înlocuiește <code>embed()</code> cu <code>SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2').encode(text).tolist()</code>
+    (din Lecția 4) — zero cost pentru embeddings, plătești doar generarea Claude.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: PROMPT ENGINEERING
+  ══════════════════════════════════════ -->
+  <h2>Promptul RAG — câteva reguli</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Instrucțiunea de grounding</h4>
+        <p>„Răspunde DOAR pe baza contextului de mai jos." — previne hallucinations din training data.</p>
+      </div>
+      <div class="arch-tag">esențial</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Comportament când nu știe</h4>
+        <p>„Dacă informația nu se află în context, spune că nu știi." — răspunsuri oneste, nu inventate.</p>
+      </div>
+      <div class="arch-tag">important</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Citarea surselor</h4>
+        <p>Cere LLM-ului să menționeze din ce document vine informația: „Include referința documentului sursă."</p>
+      </div>
+      <div class="arch-tag">recomandat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>Temperature = 0</h4>
+        <p>Pentru răspunsuri factuale din documente, temperature 0 elimină variabilitatea aleatoare.</p>
+      </div>
+      <div class="arch-tag">configurare model</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU
+  ══════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — RAG pe propriile documente</div>
+    <ol>
+      <li>Alege 3–5 documente din domeniul tău (README-uri, politici, documentație).</li>
+      <li>Indexează-le în ChromaDB cu embeddings OpenAI sau sentence-transformers.</li>
+      <li>Construiește funcția <code>rag_query</code> și testează cu 5 întrebări.</li>
+      <li>Observă ce se întâmplă când pui o întrebare la care nu există răspuns în documente.</li>
+      <li>Îmbunătățește promptul ca să citeze sursa documentului în răspuns.</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://python.langchain.com/docs/tutorials/rag/" target="_blank">
+        LangChain RAG Tutorial — ghid complet
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Tutorial complet RAG cu LangChain: loading documente, chunking, embeddings, vector store, retrieval chain.
+        Dacă vrei să automatizezi totul cu un framework, LangChain sau LlamaIndex sunt standardele industriei.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Faza de indexare în RAG (calculul embeddings-urilor documentelor) se execută:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">La fiecare întrebare a utilizatorului, pentru răspunsuri actualizate</button></li>
+        <li><button data-correct="true">O singură dată (sau la actualizarea documentelor) — offline</button></li>
+        <li><button data-correct="false">De două ori — înainte și după generarea răspunsului LLM</button></li>
+        <li><button data-correct="false">De fiecare dată când LLM-ul nu știe răspunsul din memorie</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Indexarea este offline — calculezi o dată și stochezi. La query time, calculezi DOAR embedding-ul întrebării (rapid, un singur call) și retrievi din index. Asta face RAG eficient.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce RAG este preferat față de fine-tuning pentru knowledge base-uri care se actualizează frecvent?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">RAG are context window mai mare decât modelele fine-tuned</button></li>
+        <li><button data-correct="true">Datele se actualizează instant în vector database, fără re-antrenare</button></li>
+        <li><button data-correct="false">Fine-tuning nu funcționează cu texte în română</button></li>
+        <li><button data-correct="false">RAG produce răspunsuri mai creative și mai variate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fine-tuning modifică weights-urile modelului — re-antrenarea costă bani și timp, și trebuie repetată la fiecare actualizare. RAG adaugă documentele în vector DB instantaneu. Noul document este disponibil la următorul query.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce rol joacă overlap-ul în chunking-ul documentelor?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Reduce numărul de chunk-uri pentru a economisi spațiu în vector DB</button></li>
+        <li><button data-correct="false">Crește dimensiunea vectorului produs pentru fiecare chunk</button></li>
+        <li><button data-correct="true">Previne pierderea contextului la granițele dintre chunk-uri consecutive</button></li>
+        <li><button data-correct="false">Permite modelului să proceseze același text de mai multe ori pentru precizie</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Dacă o frază importantă cade exact la granița a două chunk-uri, fără overlap ar fi fragmentată. Overlap de 50 cuvinte înseamnă că ultimele 50 cuvinte din chunk-ul N sunt și primele 50 din chunk-ul N+1 — contextul este prezent în ambele.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce e important „Dacă informația nu se află în context, spune că nu știi" în promptul RAG?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Reduce numărul de token-uri consumate la fiecare query</button></li>
+        <li><button data-correct="false">Forțează LLM-ul să caute informația în altă parte</button></li>
+        <li><button data-correct="true">Previne hallucinations — LLM-ul să nu inventeze răspunsuri din training data</button></li>
+        <li><button data-correct="false">Îmbunătățește viteza de răspuns prin reducerea calculelor</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un LLM fără instrucțiuni clare va folosi training data când nu găsește răspunsul în context — și poate inventa fapte plauzibile dar false (hallucination). Instrucțiunea de fallback îl ancorează la sursele furnizate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care setare a temperature-ului LLM este recomandată pentru RAG pe documente factuale?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Temperature = 1.0 (default) — variabilitate naturală în răspunsuri</button></li>
+        <li><button data-correct="false">Temperature = 2.0 — răspunsuri creative și detaliate</button></li>
+        <li><button data-correct="true">Temperature = 0 — răspunsuri deterministe, fără aleatorie</button></li>
+        <li><button data-correct="false">Temperature = 0.5 — echilibru între factual și creativ</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Temperature = 0 face LLM-ul determinist — aceeași întrebare primește mereu același răspuns. Pentru fapte din documente, vrei consistență, nu creativitate. Temperature mai mare e bună pentru generare de text creativ, nu pentru Q&A factual.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să înțelegi cum funcționează citarea surselor în RAG?
+      Curioasă despre LangChain vs implementare manuală?
+      Ai întrebări despre chunk size optimal pentru documentele tale?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0006-vector-databases.html">← Lecția 6: Vector Databases</a>
+    <a href="0008-laravel-php.html">Lecția 8: Laravel / PHP →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

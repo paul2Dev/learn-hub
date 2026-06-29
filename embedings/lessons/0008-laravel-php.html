@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8: Embeddings în Laravel/PHP — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 8 din 8</span>
+    <span class="tag">~30 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Embeddings în Laravel și PHP</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Integrare completă: API calls, stocare în PostgreSQL cu pgvector, semantic search în Eloquent și RAG simplu.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: STRATEGII
+  ══════════════════════════════════════ -->
+  <h2>Trei strategii de integrare</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>API direct din Laravel (cel mai simplu)</h4>
+        <p>Laravel apelează direct OpenAI sau alt API cloud. Zero infrastructură suplimentară. Limitare: nu poți folosi modele locale.</p>
+      </div>
+      <div class="arch-tag">recomandat start</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Microserviciu Python + Laravel</h4>
+        <p>Creezi un endpoint FastAPI în Python pentru embeddings (cu modele locale). Laravel îl apelează ca orice API REST intern.</p>
+      </div>
+      <div class="arch-tag">modele locale</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>pgvector în PostgreSQL existent</h4>
+        <p>Stochezi vectorii direct în Postgres, în coloana de tip <code>vector</code>. Laravel accesează cu query-uri raw sau Eloquent.</p>
+      </div>
+      <div class="arch-tag">fără infra nouă</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: OPENAI PHP CLIENT
+  ══════════════════════════════════════ -->
+  <h2>Strategia 1: Client OpenAI în Laravel</h2>
+
+  <pre><code>composer require openai-php/client</code></pre>
+
+  <pre><code>// .env
+OPENAI_API_KEY=sk-proj-...
+
+// config/services.php
+'openai' => [
+    'api_key' => env('OPENAI_API_KEY'),
+],</code></pre>
+
+  <pre><code>// app/Services/EmbeddingService.php
+namespace App\Services;
+
+use OpenAI;
+
+class EmbeddingService
+{
+    private \OpenAI\Client $client;
+
+    public function __construct()
+    {
+        $this->client = OpenAI::client(config('services.openai.api_key'));
+    }
+
+    /**
+     * Returnează vectorul embedding pentru un text.
+     * @return float[]
+     */
+    public function embed(string $text, string $model = 'text-embedding-3-small'): array
+    {
+        $response = $this->client->embeddings()->create([
+            'model' => $model,
+            'input' => str_replace("\n", ' ', $text),
+        ]);
+
+        return $response->embeddings[0]->embedding;
+    }
+
+    /**
+     * Vectorizează mai multe texte simultan (mai eficient API).
+     * @return float[][]
+     */
+    public function embedBatch(array $texts): array
+    {
+        $response = $this->client->embeddings()->create([
+            'model' => 'text-embedding-3-small',
+            'input' => $texts,
+        ]);
+
+        return array_map(fn($item) => $item->embedding, $response->embeddings);
+    }
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Batch embedding</div>
+    Dacă ai 100 de documente de indexat, trimite-le pe toate în același request cu <code>embedBatch</code>.
+    API-ul OpenAI suportă array de input-uri — este mult mai rapid și mai ieftin decât 100 de request-uri separate.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: PGVECTOR
+  ══════════════════════════════════════ -->
+  <h2>Stocarea vectorilor cu pgvector</h2>
+
+  <p>
+    Dacă folosești PostgreSQL, pgvector este cel mai simplu: nu adaugi niciun serviciu nou.
+  </p>
+
+  <pre><code>-- Activează extensia (o singură dată, ca root)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Sau în migration Laravel
+public function up(): void
+{
+    DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
+}</code></pre>
+
+  <pre><code>// Migration
+Schema::create('documents', function (Blueprint $table) {
+    $table->id();
+    $table->text('content');
+    $table->string('category')->nullable();
+    $table->timestamps();
+});
+
+// Coloana vector se adaugă cu raw SQL (Blueprint nu o suportă nativ)
+DB::statement('ALTER TABLE documents ADD COLUMN embedding vector(1536)');
+DB::statement('CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops)');</code></pre>
+
+  <pre><code>// Model Eloquent
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Document extends Model
+{
+    protected $fillable = ['content', 'category', 'embedding'];
+
+    // Cast custom pentru array de float-uri
+    protected $casts = [
+        'embedding' => 'array',
+    ];
+
+    /**
+     * Salvează un document cu embedding calculat automat.
+     */
+    public static function createWithEmbedding(string $content, string $category = null): self
+    {
+        $service = app(EmbeddingService::class);
+        $embedding = $service->embed($content);
+
+        $doc = new self();
+        $doc->content = $content;
+        $doc->category = $category;
+        // pgvector acceptă format '[0.1, 0.2, ...]'
+        $doc->embedding = $embedding;
+        $doc->save();
+
+        // Updatează vectorul cu sintaxa pgvector
+        $vector = '[' . implode(',', $embedding) . ']';
+        \DB::statement(
+            "UPDATE documents SET embedding = ?::vector WHERE id = ?",
+            [$vector, $doc->id]
+        );
+
+        return $doc;
+    }
+}</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: SEMANTIC SEARCH ELOQUENT
+  ══════════════════════════════════════ -->
+  <h2>Semantic Search cu query raw în Eloquent</h2>
+
+  <pre><code>// app/Services/SearchService.php
+namespace App\Services;
+
+use App\Models\Document;
+use Illuminate\Support\Facades\DB;
+
+class SearchService
+{
+    public function __construct(private EmbeddingService $embedder) {}
+
+    /**
+     * Semantic search: returnează documentele cele mai similare cu query-ul.
+     */
+    public function search(string $query, int $limit = 5, ?string $category = null): \Illuminate\Support\Collection
+    {
+        $queryEmbedding = $this->embedder->embed($query);
+        $vector = '[' . implode(',', $queryEmbedding) . ']';
+
+        $sql = "
+            SELECT id, content, category,
+                   1 - (embedding <=> ?::vector) AS similarity
+            FROM documents
+            " . ($category ? "WHERE category = ?" : "") . "
+            ORDER BY embedding <=> ?::vector
+            LIMIT ?
+        ";
+
+        $bindings = $category
+            ? [$vector, $category, $vector, $limit]
+            : [$vector, $vector, $limit];
+
+        return collect(DB::select($sql, $bindings));
+    }
+}
+
+// Utilizare în Controller
+class SearchController extends Controller
+{
+    public function search(Request $request, SearchService $search)
+    {
+        $results = $search->search(
+            query: $request->input('q'),
+            limit: 5,
+            category: $request->input('category'),
+        );
+
+        return response()->json($results);
+    }
+}</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">Operatorul &lt;=&gt; în pgvector</div>
+    <code>&lt;=&gt;</code> este distanța cosinus — valori mai mici = mai similar.
+    Expresia <code>1 - (embedding &lt;=&gt; vector)</code> o convertește la similarity (0–1).
+    Există și <code>&lt;-&gt;</code> (L2/euclidiană) și <code>&lt;#&gt;</code> (inner product negativ).
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: RAG ÎN LARAVEL
+  ══════════════════════════════════════ -->
+  <h2>RAG simplu în Laravel</h2>
+
+  <pre><code>// app/Services/RagService.php
+namespace App\Services;
+
+class RagService
+{
+    public function __construct(
+        private SearchService $search,
+        private \OpenAI\Client $openai,
+    ) {}
+
+    public function ask(string $question, ?string $category = null): string
+    {
+        // 1. Retrieval — găsim contextul relevant
+        $results = $this->search->search($question, limit: 3, category: $category);
+        $context = $results->pluck('content')->implode("\n\n");
+
+        if ($results->isEmpty()) {
+            return 'Nu am găsit informații relevante pentru această întrebare.';
+        }
+
+        // 2. Construim promptul
+        $prompt = "Ești un asistent de customer support. Răspunde DOAR pe baza contextului de mai jos.
+Dacă informația nu este prezentă în context, spune că nu știi.
+
+Context:
+{$context}
+
+Întrebarea clientului: {$question}
+
+Răspuns:";
+
+        // 3. LLM generează răspunsul
+        $response = $this->openai->chat()->create([
+            'model'       => 'gpt-4o-mini',
+            'messages'    => [['role' => 'user', 'content' => $prompt]],
+            'temperature' => 0,
+            'max_tokens'  => 500,
+        ]);
+
+        return $response->choices[0]->message->content;
+    }
+}
+
+// Route
+Route::post('/support/ask', function (Request $request, RagService $rag) {
+    return response()->json([
+        'answer' => $rag->ask($request->input('question')),
+    ]);
+});</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 6: MICROSERVICIU PYTHON
+  ══════════════════════════════════════ -->
+  <h2>Bonus: Microserviciu Python pentru modele locale</h2>
+
+  <p>
+    Dacă vrei modele locale (gratuite, fără API key), creează un microserviciu Python cu FastAPI:
+  </p>
+
+  <pre><code># embed_service.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+from sentence_transformers import SentenceTransformer
+
+app = FastAPI()
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+class EmbedRequest(BaseModel):
+    text: str | list[str]
+
+@app.post("/embed")
+def embed(req: EmbedRequest):
+    embeddings = model.encode(req.text)
+    if isinstance(req.text, str):
+        return {"embedding": embeddings.tolist()}
+    return {"embeddings": [e.tolist() for e in embeddings]}
+
+# uvicorn embed_service:app --port 8001</code></pre>
+
+  <pre><code>// Laravel — apelează microserviciul
+$response = Http::post('http://localhost:8001/embed', [
+    'text' => $content,
+]);
+
+$embedding = $response->json('embedding'); // array PHP de float-uri</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU FINAL
+  ══════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu Final — Implementare end-to-end în Laravel</div>
+    <ol>
+      <li>Instalează <code>openai-php/client</code> și activează pgvector în Postgres.</li>
+      <li>Creează migrarea tabelului <code>documents</code> cu coloana <code>vector(1536)</code>.</li>
+      <li>Scrie <code>EmbeddingService</code> și indexează 5 documente (FAQ, politici, descrieri produse).</li>
+      <li>Implementează endpoint-ul de search și testează din browser sau Postman.</li>
+      <li>Adaugă <code>RagService</code> și testează întrebări în limbaj natural.</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://github.com/openai-php/client" target="_blank">
+        openai-php/client — Client oficial OpenAI pentru PHP
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația completă a clientului PHP. Acoperă embeddings, chat completions, streaming și toate endpoint-urile API.
+        Include exemple Laravel și Symfony.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce face metoda <code>embedBatch(array $texts)</code> față de <code>embed(string $text)</code> în termeni de eficiență?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Utilizează mai multă memorie RAM dar produce vectori mai precisi</button></li>
+        <li><button data-correct="true">Face un singur API call pentru toate textele, în loc de N call-uri separate</button></li>
+        <li><button data-correct="false">Paralelizează N request-uri simultane — la fel ca N call-uri individuale</button></li>
+        <li><button data-correct="false">Comprimă vectorii returnați pentru a reduce spațiul de stocare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> API-ul OpenAI acceptă un array de input-uri și returnează un array de embeddings. Un singur HTTP request pentru 100 texte este mult mai eficient decât 100 request-uri separate — reduce latența de rețea și costul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce operează <code>&lt;=&gt;</code> în PostgreSQL cu extensia pgvector?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Concatenarea a doi vectori într-un vector mai mare</button></li>
+        <li><button data-correct="false">Produsul scalar (dot product) al doi vectori</button></li>
+        <li><button data-correct="true">Distanța cosinus între doi vectori (valoare mai mică = mai similar)</button></li>
+        <li><button data-correct="false">Similaritate cosinus directă (valoare mai mare = mai similar)</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>&lt;=&gt;</code> este <em>distanța</em> cosinus (0 = identic, 2 = opus). Nu similarity. Sortezi ASC pentru cei mai apropiați. Conversia la similarity: <code>1 - (embedding &lt;=&gt; query)</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care este avantajul microserviciului Python față de API-ul OpenAI pentru calculul embeddings în Laravel?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Este mai rapid deoarece Laravel și Python pot fi pe același server</button></li>
+        <li><button data-correct="true">Permite utilizarea modelelor locale gratuite fără cost API și fără date în cloud</button></li>
+        <li><button data-correct="false">Produce embeddings cu mai multe dimensiuni pentru precizie mai bună</button></li>
+        <li><button data-correct="false">Permite indexarea simultană a mai multor colecții de documente</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un microserviciu Python cu FastAPI + sentence-transformers rulează local — zero cost API, zero date trimise în cloud (important pentru GDPR sau date confidențiale). Trade-off: adaugi complexitate de infrastructură.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce indexul <code>USING hnsw (embedding vector_cosine_ops)</code> este important în pgvector?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Permite stocarea vectorilor mai mari de 2000 dimensiuni</button></li>
+        <li><button data-correct="false">Comprimă vectorii pentru a reduce spațiul pe disc cu 80%</button></li>
+        <li><button data-correct="true">Accelerează nearest neighbor search de la O(n) la sub-liniar, esențial la scară</button></li>
+        <li><button data-correct="false">Permite query-uri în paralel pe același tabel</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> HNSW (Hierarchical Navigable Small World) este un algoritm ANN care reduce complexitatea căutării. Fără index, Postgres face un scan complet (O(n)) la fiecare query — imposibil la mii de documente. Cu HNSW, sub-milisecundă chiar și la milioane.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ai o aplicație Laravel cu PostgreSQL și vrei să adaugi semantic search la 10.000 documente. Care este abordarea cu cel mai mic overhead de infrastructură?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Instalezi Qdrant ca serviciu Docker separat cu client PHP</button></li>
+        <li><button data-correct="false">Folosești Pinecone cloud cu API key și client PHP</button></li>
+        <li><button data-correct="true">Activezi pgvector în Postgres-ul existent și stochezi vectorii acolo</button></li>
+        <li><button data-correct="false">Creezi un microserviciu Python cu ChromaDB și îl apelezi din Laravel</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> pgvector extinde Postgres-ul pe care îl ai deja. Nu adaugi niciun serviciu nou, nicio configurație Docker, niciun cont cloud. La 10.000 documente, Postgres + HNSW index este mai mult decât suficient — Postgres gestionează milioane de vectori.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ai erori la migrarea pgvector? Vrei să integrezi cu un model Eloquent mai complex?
+      Ai nevoie de ajutor pentru caching-ul embeddings ca să nu recalculezi la fiecare request?
+      Vrei să știi cum să monitorizezi costurile API?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0007-rag.html">← Lecția 7: RAG</a>
+    <span class="current">Finalul cursului →</span>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

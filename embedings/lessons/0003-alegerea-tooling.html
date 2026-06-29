@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3: Alegerea limbajului și tooling-ului — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 3 din 8</span>
+    <span class="tag">~15 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Alegerea limbajului și tooling-ului</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Python, JavaScript sau PHP — când să folosești fiecare și ce librării să alegi.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: PRINCIPIU
+  ══════════════════════════════════════ -->
+  <h2>Principiu: modelul este independent de limbaj</h2>
+
+  <p>
+    Un model de embedding este accesat printr-un API HTTP sau rulat local ca librărie.
+    <strong>Orice limbaj poate apela un API HTTP</strong> — deci teoretic poți folosi embeddings în PHP, Rust sau Go.
+    Diferența este în <em>ecosistemul disponibil</em>: tooluri, librării, comunitate și exemple.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Regula practică</div>
+    Dacă vrei modele locale sau ecosistem ML complet → <strong>Python</strong>.
+    Dacă lucrezi pe Node.js sau în browser → <strong>JavaScript/TypeScript</strong>.
+    Dacă aplicația ta principală e Laravel → <strong>PHP cu API calls</strong> sau un microserviciu Python.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: PYTHON
+  ══════════════════════════════════════ -->
+  <h2>Python — ecosistemul dominant</h2>
+
+  <p>
+    Python este alegerea implicită pentru orice proiect ML/AI. Nu pentru că e cel mai rapid sau cel mai simplu,
+    ci pentru că <em>toate librăriile importante există în Python și apar acolo primele</em>.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>openai (pip)</h4>
+        <p>Client oficial OpenAI. Acces la <code>text-embedding-3-small</code> și <code>text-embedding-3-large</code>. Necesită API key plătit.</p>
+      </div>
+      <div class="arch-tag">cloud API</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>sentence-transformers (pip)</h4>
+        <p>Modele locale, gratuite. Cele mai bune modele open-source: <code>all-MiniLM-L6-v2</code>, <code>paraphrase-multilingual-MiniLM-L12-v2</code>.</p>
+      </div>
+      <div class="arch-tag">local / gratuit</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>numpy / scipy</h4>
+        <p>Calculul cosine similarity și operații pe vectori. Incluse automat cu scipy.</p>
+      </div>
+      <div class="arch-tag">math</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>chromadb / qdrant-client (pip)</h4>
+        <p>Vector databases — stochezi și cauți în milioane de vectori eficient.</p>
+      </div>
+      <div class="arch-tag">vector DB</div>
+    </div>
+  </div>
+
+  <p>
+    <strong>Când să alegi Python:</strong> prototipare rapidă, data science, modele locale, proiecte unde
+    Python este deja în stack, sau când vrei cel mai larg ecosistem disponibil.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: JAVASCRIPT
+  ══════════════════════════════════════ -->
+  <h2>JavaScript/TypeScript — pentru aplicații web</h2>
+
+  <p>
+    Dacă lucrezi cu Node.js (Express, Next.js, NestJS), JavaScript este alegerea naturală —
+    nu introduci un limbaj nou în stack.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>openai (npm)</h4>
+        <p>Client oficial OpenAI pentru Node.js și browser. Identic ca funcționalitate cu clientul Python.</p>
+      </div>
+      <div class="arch-tag">cloud API</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>@xenova/transformers (npm)</h4>
+        <p>Port JavaScript al Hugging Face Transformers. Rulează modele local, <em>inclusiv în browser</em>. Bazat pe ONNX Runtime.</p>
+      </div>
+      <div class="arch-tag">local / browser</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>langchain / llamaindex (npm)</h4>
+        <p>Framework-uri RAG complete. Abstractizează embeddings, vector stores și LLM-uri într-un API unificat.</p>
+      </div>
+      <div class="arch-tag">RAG framework</div>
+    </div>
+  </div>
+
+  <p>
+    <strong>Când să alegi JavaScript:</strong> aplicații Node.js existente, proiecte Next.js/Nuxt,
+    când vrei embeddings în browser (privacy, offline), sau când echipa nu cunoaște Python.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: PHP
+  ══════════════════════════════════════ -->
+  <h2>PHP/Laravel — integrare via API</h2>
+
+  <p>
+    PHP nu are un ecosistem ML propriu, dar asta nu contează: modelele de embedding sunt accesate prin HTTP.
+    Laravel poate apela orice API REST.
+  </p>
+
+  <pre><code>// Laravel — apelul direct la OpenAI Embeddings API
+use Illuminate\Support\Facades\Http;
+
+$response = Http::withToken(env('OPENAI_API_KEY'))
+    ->post('https://api.openai.com/v1/embeddings', [
+        'input' => 'Textul de vectorizat',
+        'model' => 'text-embedding-3-small',
+    ]);
+
+$embedding = $response->json('data.0.embedding');
+// $embedding este un array de 1536 float-uri</code></pre>
+
+  <p>
+    Alternativ, există pachete Composer care wrappează API-urile ML:
+    <code>openai-php/client</code> este clientul oficial OpenAI pentru PHP.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-label">Limitare PHP</div>
+    Nu poți rula modele locale în PHP fără extensii native (ex. FFI sau o extensie C++).
+    Dacă ai nevoie de modele locale (fără cost API), creează un microserviciu Python cu FastAPI
+    și apelează-l din Laravel.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: COMPARAȚIE MODELE
+  ══════════════════════════════════════ -->
+  <h2>Comparație modele de embedding</h2>
+
+  <table style="width:100%;border-collapse:collapse;font-size:0.87rem;margin:1rem 0 1.5rem;">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border);">
+        <th style="text-align:left;padding:0.5rem 0.7rem;font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);">Model</th>
+        <th style="text-align:left;padding:0.5rem 0.7rem;font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);">Dimensiuni</th>
+        <th style="text-align:left;padding:0.5rem 0.7rem;font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);">Cost</th>
+        <th style="text-align:left;padding:0.5rem 0.7rem;font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);">Când să-l alegi</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.55rem 0.7rem;"><code>text-embedding-3-small</code></td>
+        <td style="padding:0.55rem 0.7rem;">1536</td>
+        <td style="padding:0.55rem 0.7rem;">$0.02/1M tokens</td>
+        <td style="padding:0.55rem 0.7rem;">Produção, calitate bună, preț mic</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.55rem 0.7rem;"><code>text-embedding-3-large</code></td>
+        <td style="padding:0.55rem 0.7rem;">3072</td>
+        <td style="padding:0.55rem 0.7rem;">$0.13/1M tokens</td>
+        <td style="padding:0.55rem 0.7rem;">Precizie maximă, documente specializate</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.55rem 0.7rem;"><code>all-MiniLM-L6-v2</code></td>
+        <td style="padding:0.55rem 0.7rem;">384</td>
+        <td style="padding:0.55rem 0.7rem;">Gratuit (local)</td>
+        <td style="padding:0.55rem 0.7rem;">Development, text în engleză, rapid</td>
+      </tr>
+      <tr>
+        <td style="padding:0.55rem 0.7rem;"><code>paraphrase-multilingual-MiniLM-L12-v2</code></td>
+        <td style="padding:0.55rem 0.7rem;">384</td>
+        <td style="padding:0.55rem 0.7rem;">Gratuit (local)</td>
+        <td style="padding:0.55rem 0.7rem;">Text în română sau multilingv, local</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-label">Recomandare pentru start</div>
+    Dacă ești la început: folosește <code>text-embedding-3-small</code> via OpenAI API (Python sau JS).
+    Costul este neglijabil în development — 1 milion de token-uri = câteva sute de pagini de text = $0.02.
+    Schimbi la modele locale ulterior dacă costul devine o problemă.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       EXERCIȚIU
+  ══════════════════════════════════════ -->
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Alege stack-ul pentru proiectul tău</div>
+    <p>Pe baza use case-ului identificat în Lecția 2, alege:</p>
+    <ol>
+      <li>Limbajul principal: Python, JavaScript sau PHP (cu microserviciu)?</li>
+      <li>Modelul: <code>text-embedding-3-small</code> (plătit, simplu) sau un model local?</li>
+      <li>Ai nevoie de o vector database sau poți stoca vectorii în baza de date existentă?</li>
+    </ol>
+    <p style="font-size:0.9rem;color:var(--muted);margin-top:0.8rem;">
+      Lecțiile 4 și 5 acoperă codul concret pentru Python și JavaScript.
+      Lecția 8 acoperă integrarea în Laravel.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://huggingface.co/spaces/mteb/leaderboard" target="_blank">
+        MTEB Leaderboard — Massive Text Embedding Benchmark
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Clasamentul independent al modelelor de embedding pe zeci de taskuri. Folosește-l pentru a alege
+        modelul potrivit pentru use case-ul tău (retrieval, clasificare, clustering etc.).
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce Python are ecosistemul dominant pentru embeddings, chiar dacă alte limbaje pot apela același API?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Python este singurul limbaj cu suport nativ pentru float pe 32 biți</button></li>
+        <li><button data-correct="true">Toate librăriile ML importante apar în Python primele și au cel mai larg suport</button></li>
+        <li><button data-correct="false">API-urile cloud de embeddings acceptă doar request-uri din Python</button></li>
+        <li><button data-correct="false">Python este mai rapid decât JavaScript pentru calcule pe vectori</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Viteza limbajului nu contează — bottleneck-ul este rețeaua (API call) sau inferența modelului. Python domină pentru că ecosistemul de librării (numpy, sklearn, huggingface, langchain) a apărut acolo și rămâne cel mai complet.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care librărie JavaScript permite rularea modelelor de embedding <em>în browser</em>, fără server?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">openai (npm) — clientul oficial OpenAI</button></li>
+        <li><button data-correct="false">langchain/js — framework RAG pentru Node.js</button></li>
+        <li><button data-correct="true">@xenova/transformers — port ONNX al Hugging Face</button></li>
+        <li><button data-correct="false">tensorflow.js — librăria Google de ML în browser</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>@xenova/transformers</code> (acum <code>@huggingface/transformers</code>) rulează modele ONNX direct în browser prin WebAssembly. Asta înseamnă embeddings fără server — útil pentru privacy sau aplicații offline.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ai o aplicație Laravel și vrei embeddings cu modele locale (fără cost API). Care este abordarea recomandată?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Folosești extensia PHP-ML care include modele Transformer native</button></li>
+        <li><button data-correct="true">Creezi un microserviciu Python cu FastAPI și îl apelezi din Laravel</button></li>
+        <li><button data-correct="false">Instalezi Python ca extensie PHP și rulezi scripturi inline</button></li>
+        <li><button data-correct="false">Converți modelul Python în format PHP folosind un transpiler</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> PHP nu poate rula modele Transformer local fără extensii native complexe. Un microserviciu Python cu FastAPI expune un endpoint REST — Laravel îl apelează ca orice API. Aceasta separă concerns și permite scaling independent.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Costul aproximativ pentru a vectoriza 1 milion de token-uri cu <code>text-embedding-3-small</code> este:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">~$2.00 (doi dolari)</button></li>
+        <li><button data-correct="true">~$0.02 (doi cenți)</button></li>
+        <li><button data-correct="false">~$20.00 (douăzeci de dolari)</button></li>
+        <li><button data-correct="false">~$0.002 (o fracțiune de cent)</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> La prețul OpenAI din 2024-2025, <code>text-embedding-3-small</code> costă $0.02/1M tokens. 1 milion de token-uri reprezintă aproximativ 750.000 de cuvinte — câteva cărți întregi. Ideal pentru development și producție cu volum mediu.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce model local recomandat funcționează bine pentru text în <em>română</em>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">all-MiniLM-L6-v2 — optimizat pentru engleză exclusiv</button></li>
+        <li><button data-correct="false">text-embedding-3-small — model cloud multilingv OpenAI</button></li>
+        <li><button data-correct="true">paraphrase-multilingual-MiniLM-L12-v2 — suportă 50+ limbi</button></li>
+        <li><button data-correct="false">bert-base-uncased — modelul BERT original Google</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>paraphrase-multilingual-MiniLM-L12-v2</code> este antrenat pe 50+ limbi inclusiv română și produce vectori de 384 dimensiuni — compact și rapid. <code>all-MiniLM-L6-v2</code> funcționează mai slab pe limbi non-engleze.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Nu ești sigur ce model să alegi pentru proiectul tău? Vrei să compari prețurile mai în detaliu?
+      Ai un constraint specific (GDPR, date on-premise, buget)?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0002-use-cases.html">← Lecția 2: Use Cases</a>
+    <a href="0004-python-embeddings.html">Lecția 4: Python Embeddings →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

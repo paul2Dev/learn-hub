@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1: Ce sunt Embeddings? — Curs Embeddings</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 1 din 8</span>
+    <span class="tag">~15 min</span>
+    <span>Embeddings — Curs</span>
+  </div>
+
+  <h1>Ce sunt Embeddings?</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum transformi text, imagini sau orice altceva în numere cu sens — și de ce asta schimbă totul.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 1: PROBLEMA
+  ══════════════════════════════════════ -->
+  <h2>Problema: computerele nu înțeleg cuvintele</h2>
+
+  <p>
+    Un computer poate compara <code>"câine"</code> și <code>"pisică"</code> și să spună că sunt diferite — dar nu poate
+    ști că sunt <em>mai similare între ele</em> decât cu <code>"avion"</code>.
+    Compararea de string-uri este binară: egale sau diferite. Nu există nuanță.
+  </p>
+
+  <p>
+    Pentru a rezolva asta, avem nevoie să transformăm cuvintele în <strong>numere</strong> — dar nu oricum.
+    Numerele trebuie să <em>captureze sensul</em>: cuvintele cu sens similar trebuie să producă numere similare.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Intuiție cheie</div>
+    Un embedding este un <strong>punct într-un spațiu multidimensional</strong>.
+    Cuvintele cu sens similar ajung aproape unele de altele în acel spațiu.
+    „Câine" și „pisică" sunt vecini. „Avion" este departe de amândouă.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 2: CE ESTE UN EMBEDDING
+  ══════════════════════════════════════ -->
+  <h2>Ce este un embedding</h2>
+
+  <p>
+    Un <strong>embedding</strong> este o listă de numere zecimale (un vector) care reprezintă un text, imagine sau
+    orice altă dată. Modelele moderne de embedding produc vectori cu sute sau mii de dimensiuni.
+  </p>
+
+  <p>
+    De exemplu, cuvântul <code>"rege"</code> ar putea fi reprezentat ca un vector de 1536 de numere:
+  </p>
+
+  <div class="vector-box">
+    <div class="vector-label">Exemplu vector (simplificat la 8 dimensiuni)</div>
+    <div class="vector-row">
+      <span class="vector-word">"rege"</span>
+      <span class="vector-val">0.231</span>
+      <span class="vector-val">-0.847</span>
+      <span class="vector-val">0.512</span>
+      <span class="vector-val">0.093</span>
+      <span class="vector-val">-0.421</span>
+      <span class="vector-val">0.768</span>
+      <span class="vector-val">-0.134</span>
+      <span class="vector-val">0.659</span>
+    </div>
+    <div class="vector-row">
+      <span class="vector-word">"regină"</span>
+      <span class="vector-val">0.228</span>
+      <span class="vector-val">-0.831</span>
+      <span class="vector-val">0.498</span>
+      <span class="vector-val">0.087</span>
+      <span class="vector-val">-0.409</span>
+      <span class="vector-val">0.751</span>
+      <span class="vector-val">-0.121</span>
+      <span class="vector-val">0.643</span>
+    </div>
+    <div class="vector-row">
+      <span class="vector-word">"avion"</span>
+      <span class="vector-val">-0.712</span>
+      <span class="vector-val">0.234</span>
+      <span class="vector-val">-0.089</span>
+      <span class="vector-val">0.891</span>
+      <span class="vector-val">0.302</span>
+      <span class="vector-val">-0.445</span>
+      <span class="vector-val">0.677</span>
+      <span class="vector-val">-0.213</span>
+    </div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-top:0.6rem;margin-bottom:0;">
+      „Rege" și „regină" au valori <em>aproape identice</em> — sunt aproape în spațiu. „Avion" are valori complet diferite.
+    </p>
+  </div>
+
+  <p>
+    Valorile individuale nu au un sens explicit — nu știi ce „înseamnă" dimensiunea a 3-a.
+    Dar <em>combinația</em> lor capturează semantica: relații, concepte, tonul textului.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 3: CUM SE CALCULEAZĂ
+  ══════════════════════════════════════ -->
+  <h2>Cum se produce un embedding</h2>
+
+  <p>
+    Un <strong>model de embedding</strong> este o rețea neurală antrenată special să producă vectori cu proprietăți semantice.
+    Nu antrenezi tu modelul — folosești unul deja antrenat, prin API sau local.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Input: text (sau imagine, audio)</h4>
+        <p>Dai modelului un string: o propoziție, un paragraf, un document.</p>
+      </div>
+      <div class="arch-tag">string</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Tokenizare</h4>
+        <p>Textul este descompus în token-uri (bucăți de cuvinte). Modelul lucrează cu token-uri, nu cu cuvinte.</p>
+      </div>
+      <div class="arch-tag">tokenizer</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Rețea neurală (Transformer)</h4>
+        <p>Token-urile trec printr-un model Transformer care „înțelege" contextul și relațiile semantice.</p>
+      </div>
+      <div class="arch-tag">transformer</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">4</div>
+      <div class="arch-info">
+        <h4>Output: vector de float-uri</h4>
+        <p>Modelul returnează un vector de 768, 1024, sau 1536 de numere zecimale. Acesta este embedding-ul.</p>
+      </div>
+      <div class="arch-tag">float[]</div>
+    </div>
+  </div>
+
+  <p>
+    Procesul durează milisecunde pentru text scurt și poți face mii de embeddings pe minut
+    cu un API cloud (OpenAI, Cohere, etc.) sau cu un model local.
+  </p>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 4: SIMILARITATE COSINUS
+  ══════════════════════════════════════ -->
+  <h2>Cum măsori similaritatea: cosine similarity</h2>
+
+  <p>
+    Odată ce ai doi vectori, poți măsura cât de <em>similari</em> sunt.
+    Metrica standard este <strong>cosine similarity</strong> — măsoară unghiul dintre vectori, nu distanța.
+  </p>
+
+  <ul>
+    <li><strong>1.0</strong> = vectori identici (același text)</li>
+    <li><strong>0.9+</strong> = texte foarte similare (parafraze, sinonime)</li>
+    <li><strong>0.7–0.9</strong> = texte cu aceeași temă</li>
+    <li><strong>0.0</strong> = texte fără legătură</li>
+    <li><strong>-1.0</strong> = texte cu sens opus (rar în practică)</li>
+  </ul>
+
+  <div class="callout">
+    <div class="callout-label">De ce cosine, nu distanță euclidiană?</div>
+    Distanța euclidiană este afectată de lungimea vectorului — un text mai lung va produce un vector „mai mare".
+    Cosine similarity normalizează această diferență: compară <em>direcția</em>, nu magnitudinea.
+    Doi vectori care „pointează în aceeași direcție" sunt similari, indiferent de lungime.
+  </div>
+
+  <p>Formula pentru cosine similarity este simplă și o vei vedea în toate librăriile:</p>
+
+  <pre><code># Python — formula manuală
+import numpy as np
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# Valoarea returnată este un float între -1 și 1
+similarity = cosine_similarity(embedding_a, embedding_b)
+print(f"Similaritate: {similarity:.4f}")</code></pre>
+
+
+  <!-- ══════════════════════════════════════
+       SECȚIUNEA 5: EXERCIȚIU CONCEPTUAL
+  ══════════════════════════════════════ -->
+  <h2>Exercițiu mental</h2>
+
+  <p>
+    Înainte de cod, gândește-te la câteva perechi de texte și estimează similaritatea lor:
+  </p>
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Ordonează după similaritate</div>
+    <p>Față de propoziția <em>„Pisica mea doarme pe canapea"</em>, care propoziție crezi că are similaritate mai mare?</p>
+    <ol>
+      <li>„Felina mea se odihnește pe fotoliu" — aceeași idee, alte cuvinte</li>
+      <li>„Câinele aleargă în parc" — același domeniu (animale), altă acțiune</li>
+      <li>„Factura de electricitate a crescut cu 20%" — subiect complet diferit</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns așteptat: 1 &gt; 2 &gt; 3. Modelele de embedding vor produce exact acest rezultat — fără reguli hardcodate,
+      ci din structura spațiului semantic.
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SURSĂ PRIMARĂ
+  ══════════════════════════════════════ -->
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://platform.openai.com/docs/guides/embeddings" target="_blank">
+        OpenAI Embeddings Guide — documentație oficială
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Explică modelele disponibile, dimensiunile vectorilor, distanțele recomandate și limitele de token.
+        Citește secțiunile „What are embeddings?" și „Use cases" înainte de Lecția 2.
+      </span>
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       QUIZ
+  ══════════════════════════════════════ -->
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce returnează un model de embedding când îi dai un text ca input?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un rezumat al textului în cuvinte cheie</button></li>
+        <li><button data-correct="true">O listă de numere zecimale (un vector)</button></li>
+        <li><button data-correct="false">Un scor de sentiment de la 0 la 100</button></li>
+        <li><button data-correct="false">O traducere a textului în altă limbă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un embedding este un vector — o listă de float-uri (de obicei 768, 1024 sau 1536 numere). Nu are sens literal citit, dar <em>combinația</em> lor capturează semantica textului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Două propoziții cu sens similar vor produce embeddings cu cosine similarity aproape de:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">-1.0 (opus în spațiu)</button></li>
+        <li><button data-correct="false">0.0 (fără legătură)</button></li>
+        <li><button data-correct="true">1.0 (în aceeași direcție)</button></li>
+        <li><button data-correct="false">100.0 (scală absolută)</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cosine similarity are valori între -1 și 1. Texte similare semantic produc vectori care „pointează în aceeași direcție" → valoare apropiată de 1.0. Valoarea exactă depinde de model.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce cosine similarity este preferată față de distanța euclidiană pentru compararea embeddings?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Este mai rapidă de calculat pe hardware modern</button></li>
+        <li><button data-correct="false">Produce valori între 0 și 1, mai ușor de interpretat</button></li>
+        <li><button data-correct="true">Nu este afectată de lungimea vectorului, ci doar de direcție</button></li>
+        <li><button data-correct="false">Este singurul algoritm suportat de librăriile ML</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Distanța euclidiană este influențată de magnitudine — texte mai lungi produc vectori mai mari, denaturând comparația. Cosine măsoară unghiul, nu lungimea, deci normalizează automat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Trebuie să antrenezi tu un model de embedding de la zero pentru a-l folosi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Da, fiecare proiect are nevoie de un model antrenat pe datele sale</button></li>
+        <li><button data-correct="false">Da, dar durează doar câteva minute pe un laptop modern</button></li>
+        <li><button data-correct="true">Nu — folosești modele preantrenate via API sau local</button></li>
+        <li><button data-correct="false">Nu, dar trebuie să faci fine-tuning pe datele tale înainte de orice utilizare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modelele de embedding sunt preantrenate pe cantități uriașe de text. Tu doar le <em>folosești</em> — trimiți textul, primești vectorul. Fine-tuning-ul este opțional și necesar doar în cazuri specializate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce etapă are loc ÎNAINTE ca textul să intre în rețeaua neurală a modelului de embedding?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Calculul cosine similarity față de baza de date</button></li>
+        <li><button data-correct="true">Tokenizarea — descompunerea în bucăți mai mici</button></li>
+        <li><button data-correct="false">Normalizarea vectorului la lungime 1</button></li>
+        <li><button data-correct="false">Traducerea automată în engleză pentru precizie</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Tokenizarea este primul pas: textul este descompus în token-uri (sub-cuvinte) înainte de a fi procesat. Fiecare model are propriul tokenizer — acesta influențează și limita de input (ex. max 8192 token-uri).
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Nu ești sigur ce înseamnă o dimensiune a vectorului? Vrei să afli cum arată un spațiu vectorial vizualizat?
+      Ai o întrebare despre tokenizare sau despre limite de input?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <span class="current">← Începutul cursului</span>
+    <a href="0002-use-cases.html">Lecția 2: Use Cases →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
