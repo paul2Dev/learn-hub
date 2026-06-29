@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3: Stack (Stivă) — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 3 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Stack (Stivă)</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Structura LIFO — Last In, First Out. Esențială pentru call stack, undo/redo, parsarea expresiilor și navigarea browserului.
+  </p>
+
+
+  <h2>Principiul LIFO</h2>
+
+  <p>
+    Un <strong>Stack</strong> funcționează ca o stivă de farfurii: adaugi deasupra, iei de deasupra.
+    Ultimul element adăugat este primul care iese — <strong>Last In, First Out</strong>.
+  </p>
+
+  <pre><code>Stiva vizualizată:
+
+push(1) → [ 1 ]
+push(2) → [ 1, 2 ]
+push(3) → [ 1, 2, 3 ]  ← top
+pop()   → returnează 3, stiva = [ 1, 2 ]
+pop()   → returnează 2, stiva = [ 1 ]
+peek()  → returnează 1, stiva = [ 1 ]  (fără să scoată)</code></pre>
+
+  <p>Operațiile unui stack:</p>
+  <ul>
+    <li><strong>push(val)</strong> — adaugă un element deasupra — O(1)</li>
+    <li><strong>pop()</strong> — scoate și returnează elementul de deasupra — O(1)</li>
+    <li><strong>peek()</strong> — citește vârful fără a-l scoate — O(1)</li>
+    <li><strong>isEmpty()</strong> — verifică dacă stiva e goală — O(1)</li>
+  </ul>
+
+
+  <h2>Implementare în PHP</h2>
+
+  <pre><code>class Stack {
+    private array $items = [];
+
+    public function push(mixed $value): void {
+        $this->items[] = $value;
+    }
+
+    public function pop(): mixed {
+        if ($this->isEmpty()) {
+            throw new UnderflowException('Stack is empty');
+        }
+        return array_pop($this->items);
+    }
+
+    public function peek(): mixed {
+        if ($this->isEmpty()) {
+            throw new UnderflowException('Stack is empty');
+        }
+        return end($this->items);
+    }
+
+    public function isEmpty(): bool {
+        return empty($this->items);
+    }
+
+    public function size(): int {
+        return count($this->items);
+    }
+}
+
+// Utilizare
+$stack = new Stack();
+$stack->push(10);
+$stack->push(20);
+$stack->push(30);
+
+echo $stack->peek();  // 30
+echo $stack->pop();   // 30
+echo $stack->pop();   // 20
+echo $stack->size();  // 1</code></pre>
+
+
+  <h2>Implementare în JavaScript</h2>
+
+  <pre><code>class Stack {
+    #items = [];
+
+    push(value) {
+        this.#items.push(value);
+    }
+
+    pop() {
+        if (this.isEmpty()) throw new Error('Stack is empty');
+        return this.#items.pop();
+    }
+
+    peek() {
+        if (this.isEmpty()) throw new Error('Stack is empty');
+        return this.#items.at(-1);
+    }
+
+    isEmpty() {
+        return this.#items.length === 0;
+    }
+
+    get size() {
+        return this.#items.length;
+    }
+}
+
+// Utilizare
+const stack = new Stack();
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek());  // 30
+console.log(stack.pop());   // 30
+console.log(stack.size);    // 2</code></pre>
+
+
+  <h2>Aplicații reale</h2>
+
+  <h3>1. Undo / Redo</h3>
+  <pre><code>class TextEditor {
+    private string $text = '';
+    private Stack $history;
+
+    public function __construct() {
+        $this->history = new Stack();
+    }
+
+    public function type(string $chars): void {
+        $this->history->push($this->text);  // salvăm starea anterioară
+        $this->text .= $chars;
+    }
+
+    public function undo(): void {
+        if (!$this->history->isEmpty()) {
+            $this->text = $this->history->pop();  // revenim la starea anterioară
+        }
+    }
+
+    public function getText(): string { return $this->text; }
+}
+
+$editor = new TextEditor();
+$editor->type('Hello');
+$editor->type(' World');
+echo $editor->getText();   // Hello World
+$editor->undo();
+echo $editor->getText();   // Hello</code></pre>
+
+  <h3>2. Verificare paranteze echilibrate</h3>
+  <pre><code>function isBalanced(string $str): bool {
+    $stack = new Stack();
+    $pairs = [')' => '(', ']' => '[', '}' => '{'];
+
+    for ($i = 0; $i < strlen($str); $i++) {
+        $ch = $str[$i];
+        if (in_array($ch, ['(', '[', '{'])) {
+            $stack->push($ch);
+        } elseif (isset($pairs[$ch])) {
+            if ($stack->isEmpty() || $stack->pop() !== $pairs[$ch]) {
+                return false;
+            }
+        }
+    }
+    return $stack->isEmpty();
+}
+
+var_dump(isBalanced('({[]})'));  // true
+var_dump(isBalanced('({[})'));   // false</code></pre>
+
+  <h3>3. Call Stack — ce este în realitate</h3>
+  <pre><code>// PHP/JS engine-ul tău folosește un stack intern pentru apeluri de funcții:
+function a() { b(); }    // push frame a
+function b() { c(); }    // push frame b
+function c() {           // push frame c
+    // stack: [a, b, c]  ← top
+}                        // pop c → stack: [a, b]
+                         // pop b → stack: [a]
+                         // pop a → stack: []
+// Stack Overflow = stack-ul s-a umplut (recursivitate infinită)</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu</div>
+    <ol>
+      <li>Implementează <code>isBalanced()</code> în JavaScript folosind clasa <code>Stack</code></li>
+      <li>Implementează un calculator de expresii postfix (<code>3 4 + 2 *</code> = 14) folosind un stack</li>
+      <li>Implementează <code>reverseString()</code> folosind un stack (push fiecare caracter, pop pentru reconstrucție)</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://www.php.net/manual/en/class.splstack.php" target="_blank">PHP Manual — SplStack</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        PHP include <code>SplStack</code> în Standard PHP Library — implementare optimizată nativă.
+        Pentru JavaScript, array-ul nativ cu <code>push/pop</code> este suficient pentru producție.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce înseamnă LIFO în contextul unui Stack?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Linear Input, Fixed Output — elementele se adaugă liniar</button></li>
+        <li><button data-correct="false">Last Index, First Operation — se operează pe ultimul index</button></li>
+        <li><button data-correct="true">Last In, First Out — ultimul element adăugat este primul scos</button></li>
+        <li><button data-correct="false">Linked Input, Forward Output — structura cu pointeri</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> LIFO înseamnă că elementele se extrag în ordine inversă față de ordinea inserării. Dacă adaugi A, B, C — vei scoate C, B, A. Gândește-te la o stivă de farfurii.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este diferența dintre <code>pop()</code> și <code>peek()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>pop()</code> returnează primul element, <code>peek()</code> returnează ultimul</button></li>
+        <li><button data-correct="false"><code>peek()</code> adaugă un element, <code>pop()</code> îl verifică</button></li>
+        <li><button data-correct="true"><code>pop()</code> scoate și returnează vârful; <code>peek()</code> citește vârful fără a-l elimina</button></li>
+        <li><button data-correct="false">Nu există diferență — sunt sinonime pentru aceeași operație</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>peek()</code> (sau <code>top()</code>) este o operație non-destructivă — citești vârful fără a-l elimina din stack. <code>pop()</code> elimină și returnează elementul. Util când vrei să verifici vârful înainte de a decide dacă să-l scoți.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce este un "Stack Overflow" în contextul programării?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">O eroare când array-ul depășește memoria RAM disponibilă</button></li>
+        <li><button data-correct="false">Un bug care apare când <code>pop()</code> e apelat pe un stack gol</button></li>
+        <li><button data-correct="true">Call stack-ul intern al engine-ului se umple — apare la recursivitate infinită</button></li>
+        <li><button data-correct="false">O excepție aruncată când un Stack depășește 1000 de elemente</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Engine-ul PHP/JS menține un call stack pentru apeluri de funcții. La recursivitate infinită (sau prea adâncă), stack-ul se umple și apare eroarea "Maximum call stack size exceeded" (JS) sau "Maximum function nesting level" (PHP).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce un stack este potrivit pentru funcționalitatea Undo?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece stochează datele în ordine alfabetică pentru recuperare ușoară</button></li>
+        <li><button data-correct="false">Deoarece permite acces aleator rapid la orice stare anterioară</button></li>
+        <li><button data-correct="true">Deoarece LIFO corespunde natural cu ordinea inversă a acțiunilor — ultima acțiune se anulează prima</button></li>
+        <li><button data-correct="false">Deoarece ocupă mai puțină memorie decât o coadă pentru același număr de stări</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Undo funcționează exact ca un stack: faci acțiuni în ordine (push state), iar când apeși Ctrl+Z, anulez ultima acțiune (pop). LIFO corespunde perfect cu semantica "anulează ce ai făcut ultima dată".
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care metodă PHP implementează operația <code>pop()</code> a unui stack bazat pe array?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>array_shift()</code> — scoate primul element din array</button></li>
+        <li><button data-correct="false"><code>array_splice()</code> — scoate elemente dintr-o poziție specificată</button></li>
+        <li><button data-correct="true"><code>array_pop()</code> — scoate și returnează ultimul element din array</button></li>
+        <li><button data-correct="false"><code>array_slice()</code> — returnează o copie a unei porțiuni din array</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>array_pop()</code> scoate și returnează ultimul element — exact operația <em>pop</em> a unui stack. Combinat cu <code>$arr[] = $val</code> sau <code>array_push()</code> pentru <em>push</em>, un array PHP devine un stack funcțional complet.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Cum implementezi un browser history (back/forward) cu două stack-uri?
+      Cum funcționează DFS (Depth First Search) cu un stack?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0002-array-uri.html">← Lecția 2: Array-uri și Operații</a>
+    <a href="0004-queue.html">Lecția 4: Queue (Coadă) →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -15,6 +15,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 | [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții |
 | [Workflow Agentic Complet](agentic-workflow/) | /verify, /code-review, Greptile, Greploop, CodeRabbit, GitHub Actions, gh CLI — 10 lecții |
 | [Embeddings](embedings/) | Vectori semantici, use cases, Python, JavaScript, Laravel, vector databases, RAG — 8 lecții |
+| [Data Structures — PHP & JavaScript](data-structures/) | Big O, Array, Stack, Queue, Linked List, Hash Map, BST, Grafuri, Sortare — 9 lecții |
 
 ## Cum clonezi
 
@@ -53,7 +54,10 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── next-js/                    ← curs Next.js cu Supabase și Vercel
 │   ├── index.html
 │   └── lessons/
-└── nuxt/                       ← curs Nuxt 3 cu Supabase și Vercel
+├── nuxt/                       ← curs Nuxt 3 cu Supabase și Vercel
+│   ├── index.html
+│   └── lessons/
+└── data-structures/            ← curs Data Structures — PHP & JavaScript
     ├── index.html
     └── lessons/
 ```

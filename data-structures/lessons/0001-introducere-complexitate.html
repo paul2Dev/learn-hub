@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1: Introducere și Complexitate — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 1 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Introducere și Complexitate</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Ce sunt structurile de date, de ce contează alegerea lor și cum măsurăm eficiența cu notația Big O.
+  </p>
+
+
+  <h2>Ce este o structură de date?</h2>
+
+  <p>
+    O <strong>structură de date</strong> este o modalitate organizată de a stoca și accesa date în memorie.
+    Alegerea structurii potrivite poate face diferența dintre un program care rulează în 1 ms și unul care rulează în 10 minute pe același set de date.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">ARR</div>
+      <div class="arch-info">
+        <h4>Array (tablou)</h4>
+        <p>Colecție ordonată de elemente, acces prin index. Rapid la citire, lent la inserare la mijloc.</p>
+      </div>
+      <div class="arch-tag">O(1) citire</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">STK</div>
+      <div class="arch-info">
+        <h4>Stack / Queue</h4>
+        <p>Colecții cu acces restricționat — LIFO sau FIFO. Simplu de implementat, esențial în algoritmi.</p>
+      </div>
+      <div class="arch-tag">O(1) push/pop</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">MAP</div>
+      <div class="arch-info">
+        <h4>Hash Map</h4>
+        <p>Perechi cheie-valoare cu acces ultra-rapid. PHP arrays sunt internaly hash maps.</p>
+      </div>
+      <div class="arch-tag">O(1) căutare</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">TRE</div>
+      <div class="arch-info">
+        <h4>Arbori și Grafuri</h4>
+        <p>Structuri ierarhice și relaționale — baze de date, rute, sisteme de fișiere, rețele sociale.</p>
+      </div>
+      <div class="arch-tag">O(log n) BST</div>
+    </div>
+  </div>
+
+
+  <h2>Notația Big O — măsurarea eficienței</h2>
+
+  <p>
+    <strong>Big O</strong> descrie cum crește timpul de execuție sau memoria în funcție de mărimea
+    input-ului <em>n</em>. Nu măsoară secunde — măsoară <em>ritmul de creștere</em>.
+  </p>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Notație</th><th>Nume</th><th>Exemplu</th><th>n=1000</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="complexity good">O(1)</span></td><td>Constant</td><td>Acces array prin index</td><td>1 operație</td></tr>
+      <tr><td><span class="complexity good">O(log n)</span></td><td>Logaritmic</td><td>Căutare binară</td><td>~10 operații</td></tr>
+      <tr><td><span class="complexity ok">O(n)</span></td><td>Linear</td><td>Parcurgere array</td><td>1 000 operații</td></tr>
+      <tr><td><span class="complexity ok">O(n log n)</span></td><td>Quasilinear</td><td>Merge sort, Quick sort</td><td>~10 000 operații</td></tr>
+      <tr><td><span class="complexity bad">O(n²)</span></td><td>Pătratic</td><td>Bubble sort, 2 for-uri nested</td><td>1 000 000 operații</td></tr>
+      <tr><td><span class="complexity bad">O(2ⁿ)</span></td><td>Exponențial</td><td>Permutări, brute-force</td><td>imposibil practic</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code>// O(1) — constant: nu contează câte elemente are array-ul
+$first = $arr[0];           // PHP
+const first = arr[0];       // JS
+
+// O(n) — linear: parcurgem fiecare element o dată
+foreach ($arr as $item) {   // PHP
+    echo $item;
+}
+arr.forEach(item => console.log(item));  // JS
+
+// O(n²) — pătratic: for în for (evită pe date mari!)
+for ($i = 0; $i < count($arr); $i++) {     // PHP
+    for ($j = 0; $j < count($arr); $j++) {
+        // ...
+    }
+}</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Regulă practică</div>
+    <strong>O(n²) devine problematic după ~10 000 elemente.</strong> Pe 100 000 elemente, un algoritm O(n²)
+    face 10 miliarde de operații — câteva minute de execuție. Un O(n log n) face doar ~1.7 milioane.
+  </div>
+
+
+  <h2>Complexitate spațială vs temporală</h2>
+
+  <pre><code>// Complexitate temporală O(n), spațială O(1) — nu alocăm memorie extra
+function findMax(array $arr): int {
+    $max = PHP_INT_MIN;
+    foreach ($arr as $val) {
+        if ($val > $max) $max = $val;
+    }
+    return $max;
+}
+
+// Complexitate temporală O(n), spațială O(n) — alocăm un array nou
+function doubleAll(array $arr): array {
+    return array_map(fn($x) => $x * 2, $arr);
+    // array nou de aceeași dimensiune = O(n) spațiu
+}</code></pre>
+
+  <p>
+    Există adesea un <strong>trade-off</strong> între timp și spațiu: poți cumpăra viteză cu memorie
+    (memoization, cache) sau poți economisi memorie cu algoritmi mai lenți.
+  </p>
+
+
+  <h2>Structuri de date în PHP și JavaScript</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Structură</th><th class="php-col">PHP</th><th class="js-col">JavaScript</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Array dinamic</td><td class="php-col"><code>array()</code> / <code>[]</code></td><td class="js-col"><code>[]</code> (Array)</td></tr>
+      <tr><td>Hash Map</td><td class="php-col"><code>['key' => 'val']</code></td><td class="js-col"><code>{key: 'val'}</code> / <code>Map</code></td></tr>
+      <tr><td>Set (valori unice)</td><td class="php-col">logică manuală / SplFixedArray</td><td class="js-col"><code>Set</code></td></tr>
+      <tr><td>Stack</td><td class="php-col"><code>array</code> + <code>array_push/pop</code></td><td class="js-col"><code>[]</code> + <code>push/pop</code></td></tr>
+      <tr><td>Queue</td><td class="php-col"><code>SplQueue</code> / <code>array_shift</code></td><td class="js-col"><code>[]</code> + <code>push/shift</code></td></tr>
+      <tr><td>Linked List</td><td class="php-col"><code>SplDoublyLinkedList</code> / manual</td><td class="js-col">implementare manuală cu obiecte</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Analiză Big O</div>
+    <p>Determină complexitatea temporală a acestor funcții:</p>
+    <ol>
+      <li>O funcție care returnează al doilea element dintr-un array — <em>O(?)</em></li>
+      <li>O funcție care caută un element printr-o buclă simplă — <em>O(?)</em></li>
+      <li>Două bucle independente (nu nested) care parcurg același array — <em>O(?)</em></li>
+      <li>O funcție care împarte mereu array-ul la jumătate până găsește elementul — <em>O(?)</em></li>
+    </ol>
+    <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem;">Răspunsuri: O(1), O(n), O(n), O(log n)</p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://www.bigocheatsheet.com/" target="_blank">Big O Cheat Sheet — bigocheatsheet.com</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Referința vizuală completă pentru complexitățile Big O ale tuturor structurilor de date și algoritmilor comuni.
+        Grafice comparative și tabele cu operațiile tipice.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce descrie notația Big O?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Timpul exact în milisecunde al unui algoritm pe un hardware specific</button></li>
+        <li><button data-correct="true">Ritmul de creștere al timpului sau memoriei în funcție de mărimea input-ului</button></li>
+        <li><button data-correct="false">Numărul de linii de cod necesare pentru a implementa un algoritm</button></li>
+        <li><button data-correct="false">Consumul de energie al unui program în raport cu datele de intrare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Big O descrie comportamentul asimptotic — cum crește complexitatea pe măsură ce n tinde spre infinit. Nu depinde de hardware sau de constantele mici; se concentrează pe termenul dominant.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este complexitatea accesului la un element dintr-un array prin index?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">O(n) — trebuie să parcurgem toate elementele până la index</button></li>
+        <li><button data-correct="false">O(log n) — folosim o căutare binară internă</button></li>
+        <li><button data-correct="true">O(1) — adresa memoriei se calculează direct din index</button></li>
+        <li><button data-correct="false">O(n²) — depinde de tipul elementelor din array</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Array-urile stochează elemente în memorie contiguă. Adresa elementului la index <code>i</code> este <code>adresa_baza + i * dimensiune_element</code> — calculat direct, indiferent de mărimea array-ului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Un algoritm O(n²) pe 1000 elemente face aproximativ câte operații?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">1 000 operații — linear față de input</button></li>
+        <li><button data-correct="false">10 000 operații — de 10 ori mai mult decât input-ul</button></li>
+        <li><button data-correct="true">1 000 000 operații — n pătrat înseamnă 1000 × 1000</button></li>
+        <li><button data-correct="false">1 000 000 000 operații — n la cub</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> O(n²) cu n=1000 înseamnă 1000² = 1 000 000 operații. Acesta este motivul pentru care algoritmii pătratici (bubble sort, selection sort) devin impractici pe seturi mari de date.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce este trade-off-ul clasic între complexitate temporală și spațială?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Algoritmii mai rapizi consumă mereu mai puțină memorie și invers</button></li>
+        <li><button data-correct="true">Poți cumpăra viteză cu memorie (caching/memoization) sau economisi memorie cu algoritmi mai lenți</button></li>
+        <li><button data-correct="false">Complexitatea temporală și cea spațială sunt întotdeauna egale pentru orice algoritm</button></li>
+        <li><button data-correct="false">Nu există trade-off — compilatoarele moderne optimizează automat ambele</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Memoization (cache pentru rezultate calculate) reduce complexitatea temporală de la O(2ⁿ) la O(n) dar crește spațiul la O(n). Inversul: poți recalcula în loc să stochezi, economisind memorie cu costul timpului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Array-urile PHP sunt internaly ce structură de date?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Array fix (statică) — cu dimensiune prestabilită în memorie contiguă</button></li>
+        <li><button data-correct="false">Linked list dublă — fiecare element are pointer la următor și anterior</button></li>
+        <li><button data-correct="true">Hash map ordonat — perechi cheie-valoare cu acces O(1) și ordine păstrată</button></li>
+        <li><button data-correct="false">Arbore binar — pentru a permite sortare rapidă automată</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Array-urile PHP sunt hash map-uri ordonate care suportă și chei întregi (comportament de array) și chei string (comportament de dicționar). Aceasta le face extrem de flexibile dar și ușor mai lente decât array-urile fixe din C sau Java.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum se compară O(n log n) vizual cu O(n²)?
+      Cum alegi structura de date potrivită pentru un caz concret din proiectul tău?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <span></span>
+    <a href="0002-array-uri.html">Lecția 2: Array-uri și operații →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

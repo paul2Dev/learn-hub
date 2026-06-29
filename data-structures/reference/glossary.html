@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-entry { margin-bottom: 2rem; }
+    .glossary-term {
+      font-family: var(--mono); font-size: 1rem; font-weight: bold;
+      color: var(--accent); margin-bottom: 0.2rem;
+    }
+    .glossary-def { margin: 0 0 0.4rem; font-size: 0.93rem; }
+    .glossary-see {
+      font-size: 0.82rem; color: var(--muted); font-family: var(--mono);
+    }
+    .glossary-section { margin-top: 3rem; }
+    dl { display: grid; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">referință</span>
+    <span>Data Structures — Glosar</span>
+  </div>
+
+  <h1>Glosar Data Structures</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Termenii esențiali din cursul de structuri de date — definiții concise pentru PHP și JavaScript.
+  </p>
+
+
+  <div class="glossary-section">
+    <h2>Complexitate și analiză</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Big O Notation</div>
+        <p class="glossary-def">Notație matematică pentru descrierea comportamentului unui algoritm la scală — câte operații face în funcție de dimensiunea inputului (n). Descrie worst case: O(1) constant, O(log n) logaritmic, O(n) linear, O(n log n) linearitmic, O(n²) pătratic.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Space Complexity</div>
+        <p class="glossary-def">Cantitatea de memorie extra folosită de un algoritm, exprimată în Big O. Un algoritm in-place folosește O(1) spațiu (nu alocă structuri proporționale cu n). Merge Sort folosește O(n) pentru array-urile temporare de combinare.</p>
+        <span class="glossary-see">→ Lecția 1, Lecția 9</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Time Complexity</div>
+        <p class="glossary-def">Numărul de operații executate de un algoritm în funcție de dimensiunea inputului. Distinge între best case (Ω), average case (Θ) și worst case (O). În practică, worst case e cel mai relevant pentru estimarea performanței.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Amortized O(1)</div>
+        <p class="glossary-def">Complexitate medie pe o secvență de operații. Array append e "amortized O(1)": ocazional declanșează un resize O(n), dar rar suficient încât media pe toate operațiile rămâne O(1).</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Structuri liniare</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Array</div>
+        <p class="glossary-def">Colecție de elemente stocate în memorie contiguă. Acces aleatoriu O(1) prin index. Insert/delete la mijloc O(n) — trebuie mutat tot ce urmează. PHP arrays sunt hash maps ordonate; JS arrays sunt obiecte cu indici numerici.</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Stack (Stivă)</div>
+        <p class="glossary-def">Structură LIFO (Last In, First Out): ultimul element adăugat e primul eliminat. Operații: push (adaugă), pop (elimină vârful), peek (citește vârful). Folosit în call stack, undo/redo, evaluarea expresiilor. Implementat cu array în PHP și JS.</p>
+        <span class="glossary-see">→ Lecția 3</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Queue (Coadă)</div>
+        <p class="glossary-def">Structură FIFO (First In, First Out): primul element adăugat e primul eliminat. Operații: enqueue (adaugă la final), dequeue (elimină din față). Folosit în job queues, BFS, rate limiting. PHP: SplQueue; JS: implementat cu index de head pentru O(1).</p>
+        <span class="glossary-see">→ Lecția 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Linked List</div>
+        <p class="glossary-def">Colecție de noduri unde fiecare nod stochează valoarea și un pointer la nodul următor. Nu există index — acces O(n). Insert/delete la extremități O(1). Singly linked: pointer next. Doubly linked: next și prev.</p>
+        <span class="glossary-see">→ Lecția 5</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Nod (Node)</div>
+        <p class="glossary-def">Unitatea de bază a structurilor înlănțuite (Linked List, arbori, grafuri). Stochează o valoare și unul sau mai mulți pointeri spre alte noduri. În PHP/JS implementat ca obiect/clasă cu proprietăți.</p>
+        <span class="glossary-see">→ Lecția 5, Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Floyd's Cycle Detection</div>
+        <p class="glossary-def">Algoritmul "turtle and hare": doi pointeri cu viteze diferite (slow +1, fast +2) detectează un ciclu într-o Linked List în O(n) timp și O(1) spațiu. Dacă se întâlnesc, există ciclu.</p>
+        <span class="glossary-see">→ Lecția 5</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Hash Maps și seturi</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Hash Map (Dicționar)</div>
+        <p class="glossary-def">Structură care mapează chei la valori printr-o funcție hash. Operații în O(1) mediu: get, set, delete, has. PHP arrays sunt hash maps native. JS: Object (chei string), Map (orice cheie), Set (valori unice).</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Funcție Hash</div>
+        <p class="glossary-def">Funcție care transformă o cheie de dimensiune arbitrară într-un index dintr-un spațiu finit. O funcție hash bună distribuie cheile uniform pentru a minimiza coliziunile. Determinist: aceeași cheie → același index.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Coliziune (Hash Collision)</div>
+        <p class="glossary-def">Când două chei diferite produc același hash index. Rezolvat prin chaining (bucket = listă înlănțuită cu mai multe perechi cheie-valoare) sau open addressing (caută alt bucket liber). PHP folosește chaining.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Memoization</div>
+        <p class="glossary-def">Tehnică de caching a rezultatelor funcțiilor cu aceleași argumente. Implementat cu hash map: dacă rezultatul pentru argumentele date există în cache, returnează-l direct fără recalcul. Transformă Fibonacci recursiv din O(2ⁿ) în O(n).</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Arbori</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Binary Search Tree (BST)</div>
+        <p class="glossary-def">Arbore binar cu invarianta: toți copiii stângi au valori mai mici, toți copiii drepți valori mai mari. Permite căutare O(log n) pe arbore echilibrat. In-Order traversal returnează elementele sortate.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Traversal In-Order</div>
+        <p class="glossary-def">Traversare BST în ordinea: subarbore stâng → rădăcină → subarbore drept. Returnează valorile în ordine sortată crescătoare. Poate fi implementat recursiv sau iterativ cu un Stack.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Traversal Pre-Order</div>
+        <p class="glossary-def">Traversare în ordinea: rădăcină → subarbore stâng → subarbore drept. Util pentru serializarea/copierea structurii arborelui — procesezi rădăcina înainte de copii.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Traversal Post-Order</div>
+        <p class="glossary-def">Traversare în ordinea: subarbore stâng → subarbore drept → rădăcină. Util pentru ștergerea arborelui (ștergi copiii înainte de părinte) și evaluarea expresiilor matematice.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Arbore Degenerat</div>
+        <p class="glossary-def">BST unde toate nodurile au un singur copil — degenerat în listă înlănțuită. Se produce dacă inserezi valori în ordine sortată. Înălțime O(n), căutare O(n). Rezolvat prin arbori auto-echilibrați (AVL, Red-Black).</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Grafuri</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Graf (Graph)</div>
+        <p class="glossary-def">Structură de date formată din noduri (vertices) conectate prin muchii (edges). Poate fi orientat (directed — muchiile au direcție) sau neorientat, ponderat (muchiile au cost) sau neponderat. Poate conține cicluri.</p>
+        <span class="glossary-see">→ Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Adjacency List</div>
+        <p class="glossary-def">Reprezentare graf: hash map unde cheia e nodul și valoarea e lista vecinilor. Spațiu O(V+E) — eficient pentru grafuri rare. Traversal vecini O(grad nod). Alternativă: Adjacency Matrix O(V²) spațiu, verificare muchie O(1).</p>
+        <span class="glossary-see">→ Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">BFS — Breadth First Search</div>
+        <p class="glossary-def">Traversal graf nivel cu nivel folosind o Queue. Găsește cea mai scurtă cale (în nr. muchii) între două noduri. Complexitate O(V+E). Nodurile vizitate sunt marcate pentru a evita ciclurile infinite.</p>
+        <span class="glossary-see">→ Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">DFS — Depth First Search</div>
+        <p class="glossary-def">Traversal graf adânc pe o ramură înainte de a explora altele, folosind Stack sau recursivitate. Util pentru detectarea ciclurilor, componente conexe, topological sort. Complexitate O(V+E).</p>
+        <span class="glossary-see">→ Lecția 8</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Algoritmi de sortare</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Sortare stabilă</div>
+        <p class="glossary-def">Algoritm de sortare care păstrează ordinea relativă a elementelor cu valori egale din input. Merge Sort și Insertion Sort sunt stabile. Quick Sort nu e stabil în implementarea clasică. JS <code>.sort()</code> (TimSort) e stabil din ES2019.</p>
+        <span class="glossary-see">→ Lecția 9</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Merge Sort</div>
+        <p class="glossary-def">Algoritm divide-et-impera: împarte array-ul în jumătăți recursiv, sortează fiecare, combină (merge) rezultatele. O(n log n) garantat în toate cazurile. Stabil. Dezavantaj: O(n) spațiu extra pentru array-urile temporare de combinare.</p>
+        <span class="glossary-see">→ Lecția 9</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Quick Sort</div>
+        <p class="glossary-def">Alege un pivot, partiționează array-ul în elemente mai mici și mai mari, sortează recursiv fiecare partiție. In-place, O(log n) spațiu. O(n log n) mediu, O(n²) worst case (pivot extremal). PHP <code>sort()</code> și JS <code>.sort()</code> folosesc variante hibride.</p>
+        <span class="glossary-see">→ Lecția 9</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">TimSort</div>
+        <p class="glossary-def">Algoritm hybrid Merge Sort + Insertion Sort — aplică Insertion Sort pe segmente mici, combină cu Merge Sort. O(n log n) garantat, stabil. Folosit de Python, JavaScript (V8/SpiderMonkey) și PHP 8+. Performanță excelentă pe date parțial sortate.</p>
+        <span class="glossary-see">→ Lecția 9</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Insertion Sort</div>
+        <p class="glossary-def">Construiește array-ul sortat câte un element: ia elementul curent și îl inserează la poziția corectă în porțiunea deja sortată. O(n²) mediu, O(n) best case (date deja sortate). Excelent pe array-uri mici sau aproape sortate.</p>
+        <span class="glossary-see">→ Lecția 9</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);text-align:center;font-size:0.85rem;color:var(--muted);">
+    <a href="../index.html">← Index curs</a>
+    &nbsp;·&nbsp;
+    <a href="../../index.html">Toate cursurile</a>
+  </div>
+
+</div>
+</body>
+</html>

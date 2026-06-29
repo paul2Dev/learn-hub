@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 9: Algoritmi de Sortare — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 9 din 9</span>
+    <span class="tag">~30 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Algoritmi de Sortare</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    De la Bubble Sort O(n²) la Merge Sort O(n log n) — cum funcționează, când le folosești și ce sortare folosesc PHP și JavaScript internaly.
+  </p>
+
+
+  <h2>Comparație algoritmi de sortare</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Algoritm</th><th>Best</th><th>Average</th><th>Worst</th><th>Spațiu</th><th>Stabil?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Bubble Sort</td><td><span class="complexity ok">O(n)</span></td><td><span class="complexity bad">O(n²)</span></td><td><span class="complexity bad">O(n²)</span></td><td>O(1)</td><td>Da</td></tr>
+      <tr><td>Selection Sort</td><td><span class="complexity bad">O(n²)</span></td><td><span class="complexity bad">O(n²)</span></td><td><span class="complexity bad">O(n²)</span></td><td>O(1)</td><td>Nu</td></tr>
+      <tr><td>Insertion Sort</td><td><span class="complexity ok">O(n)</span></td><td><span class="complexity bad">O(n²)</span></td><td><span class="complexity bad">O(n²)</span></td><td>O(1)</td><td>Da</td></tr>
+      <tr><td>Merge Sort</td><td><span class="complexity ok">O(n log n)</span></td><td><span class="complexity ok">O(n log n)</span></td><td><span class="complexity ok">O(n log n)</span></td><td>O(n)</td><td>Da</td></tr>
+      <tr><td>Quick Sort</td><td><span class="complexity ok">O(n log n)</span></td><td><span class="complexity ok">O(n log n)</span></td><td><span class="complexity bad">O(n²)</span></td><td>O(log n)</td><td>Nu*</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:0.85rem;color:var(--muted);">
+    *Quick Sort poate fi implementat stabil. PHP <code>sort()</code> folosește introsort (hybrid Quick+Heap+Insertion). JavaScript <code>.sort()</code> folosește TimSort (hybrid Merge+Insertion) — stabil și O(n log n).
+  </p>
+
+
+  <h2>Bubble Sort — O(n²)</h2>
+
+  <p>Compară perechi adiacente și le schimbă dacă sunt în ordine greșită. "Bule" mari ajung la final.</p>
+
+  <pre><code>// PHP
+function bubbleSort(array $arr): array {
+    $n = count($arr);
+    for ($i = 0; $i < $n - 1; $i++) {
+        $swapped = false;
+        for ($j = 0; $j < $n - $i - 1; $j++) {
+            if ($arr[$j] > $arr[$j + 1]) {
+                [$arr[$j], $arr[$j + 1]] = [$arr[$j + 1], $arr[$j]];
+                $swapped = true;
+            }
+        }
+        if (!$swapped) break;  // optimizare: deja sortat
+    }
+    return $arr;
+}
+
+// Trace: [5, 3, 8, 1]
+// Pass 1: [3,5,8,1] → [3,5,8,1] → [3,5,1,8]
+// Pass 2: [3,5,1,8] → [3,1,5,8]
+// Pass 3: [1,3,5,8] ← sortat</code></pre>
+
+
+  <h2>Insertion Sort — O(n²) dar excelent pe date mici sau aproape sortate</h2>
+
+  <pre><code>// JS — construiești array-ul sortat câte un element
+function insertionSort(arr) {
+    for (let i = 1; i < arr.length; i++) {
+        const key = arr[i];
+        let j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+    return arr;
+}
+
+// Trace: [5, 3, 8, 1]
+// i=1: key=3, [5,5,8,1] → [3,5,8,1]
+// i=2: key=8, nicio mutare → [3,5,8,1]
+// i=3: key=1, [3,5,8,8] → [3,5,5,8] → [3,3,5,8] → [1,3,5,8]</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Insertion Sort pe date aproape sortate</div>
+    Insertion Sort are complexitate O(n) pe date deja sortate sau cu puține inversiuni.
+    De aceea TimSort (folosit în JS și Python) combină Merge Sort cu Insertion Sort: aplică
+    Insertion Sort pe segmente mici (mai eficient în practică), apoi le combină cu Merge Sort.
+  </div>
+
+
+  <h2>Merge Sort — O(n log n) garantat</h2>
+
+  <p>
+    Divide et impera: împarte array-ul în jumătăți, sortează recursiv fiecare jumătate, combină (merge) rezultatele sortate.
+  </p>
+
+  <pre><code>// PHP
+function mergeSort(array $arr): array {
+    if (count($arr) <= 1) return $arr;
+
+    $mid   = intdiv(count($arr), 2);
+    $left  = mergeSort(array_slice($arr, 0, $mid));
+    $right = mergeSort(array_slice($arr, $mid));
+
+    return merge($left, $right);
+}
+
+function merge(array $left, array $right): array {
+    $result = [];
+    $i = $j = 0;
+
+    while ($i < count($left) && $j < count($right)) {
+        if ($left[$i] <= $right[$j]) {
+            $result[] = $left[$i++];
+        } else {
+            $result[] = $right[$j++];
+        }
+    }
+    return array_merge($result, array_slice($left, $i), array_slice($right, $j));
+}
+
+// Trace: [5, 3, 8, 1]
+// Split: [5,3] și [8,1]
+// Split: [5],[3] și [8],[1]
+// Merge: [3,5] și [1,8]
+// Merge: [1,3,5,8]</code></pre>
+
+
+  <h2>Quick Sort — O(n log n) mediu, in-place</h2>
+
+  <pre><code>// JS — Quick Sort cu pivot la final
+function quickSort(arr, low = 0, high = arr.length - 1) {
+    if (low < high) {
+        const pi = partition(arr, low, high);
+        quickSort(arr, low,   pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+    return arr;
+}
+
+function partition(arr, low, high) {
+    const pivot = arr[high];  // pivot = ultimul element
+    let i = low - 1;
+
+    for (let j = low; j < high; j++) {
+        if (arr[j] <= pivot) {
+            i++;
+            [arr[i], arr[j]] = [arr[j], arr[i]];  // swap
+        }
+    }
+    [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+    return i + 1;
+}
+
+// Quick Sort e O(n²) în worst case dacă pivotul e mereu min/max
+// Soluție: pivot aleatoriu sau median-of-three</code></pre>
+
+
+  <h2>Sortarea nativă — ce folosim în producție</h2>
+
+  <pre><code>// PHP — sort() nativ, Timsort / Introsort
+$arr = [5, 3, 8, 1, 4];
+sort($arr);                                    // ascendent, reindexare
+rsort($arr);                                   // descendent
+usort($arr, fn($a, $b) => $a - $b);            // custom comparator
+
+// Sortare stabilă pe obiecte (PHP 8)
+$users = [
+    ['name' => 'Ana',  'age' => 30],
+    ['name' => 'Paul', 'age' => 25],
+    ['name' => 'Ion',  'age' => 30],
+];
+usort($users, fn($a, $b) => $a['age'] - $b['age']);
+// [Paul(25), Ana(30), Ion(30)] — stabila: Ana înaintea lui Ion (ordine inițială)
+
+// JS — .sort() cu TimSort (stabil din ES2019)
+const numbers = [5, 3, 8, 1];
+numbers.sort((a, b) => a - b);    // [1, 3, 5, 8]
+
+const users2 = [{ name: 'Ana', age: 30 }, { name: 'Paul', age: 25 }];
+users2.sort((a, b) => a.age - b.age);</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu final — implementare și analiză</div>
+    <ol>
+      <li>Implementează Merge Sort în JavaScript și verifică că returnează un array nou (non-destructiv)</li>
+      <li>Sortează un array de obiecte după mai multe criterii: întâi după vârstă, la egalitate după nume</li>
+      <li>Măsoară timpul de execuție pentru Bubble Sort vs <code>.sort()</code> nativ pe un array de 50 000 elemente</li>
+      <li>Implementează Counting Sort pentru numere întregi între 0-100 — O(n+k) fără comparații</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://visualgo.net/en/sorting" target="_blank">VisuAlgo — Sorting Algorithms</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Vizualizare animată a tuturor algoritmilor de sortare — compari vizual cum se comportă
+        pe date random, sortate sau inversate. Esențial pentru înțelegerea intuitivă.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce înseamnă un algoritm de sortare "stabil"?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu produce erori pe niciun tip de input — rulează mereu fără excepții</button></li>
+        <li><button data-correct="false">Complexitatea sa temporală nu variază între best și worst case</button></li>
+        <li><button data-correct="true">Elementele cu valori egale păstrează ordinea relativă din input</button></li>
+        <li><button data-correct="false">Funcționează corect pe array-uri goale și cu un singur element</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Dacă sortezi [Ana(30), Paul(25), Ion(30)] după vârstă și algoritmul e stabil, Ana rămâne înaintea lui Ion în rezultat (ambii au 30). Un algoritm instabil ar putea schimba ordinea lor. Contează când sortezi după chei multiple.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce Merge Sort consumă O(n) memorie extra față de Quick Sort O(log n)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Merge Sort stochează toate valorile duplicate separat în structuri auxiliare</button></li>
+        <li><button data-correct="true">Merge Sort alocă array-uri noi la fiecare pas de combinare; Quick Sort sortează in-place</button></li>
+        <li><button data-correct="false">Merge Sort folosește recursivitate cu stiva mai adâncă decât Quick Sort</button></li>
+        <li><button data-correct="false">Merge Sort trebuie să stocheze întregul arbore de recursivitate în memorie</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> La fiecare <em>merge</em>, creăm un array temporar de dimensiunea celor două jumătăți combinate — în total O(n) spațiu extra. Quick Sort rearanjează elementele în loc (in-place) prin schimburi — folosește numai O(log n) pentru stiva de recursivitate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Quick Sort are worst case O(n²). Când se întâmplă asta?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când array-ul conține multe duplicate</button></li>
+        <li><button data-correct="false">Când array-ul are un număr impar de elemente</button></li>
+        <li><button data-correct="true">Când pivotul ales e mereu cel mai mic sau cel mai mare element (ex: array sortat + pivot la final)</button></li>
+        <li><button data-correct="false">Când recursivitatea depășește 1000 de niveluri de adâncime</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Dacă pivotul e mereu extremul, o partiție are 0 elemente și cealaltă n-1 — arbore de recursivitate degenerează în listă. Pe un array deja sortat cu pivot la final, asta se întâmplă la fiecare pas: O(n²). Soluție: pivot aleatoriu sau "median of three".
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce algorim de sortare folosește JavaScript internaly pentru <code>.sort()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Quick Sort — cel mai rapid în medie, implementat în toate engine-urile</button></li>
+        <li><button data-correct="false">Merge Sort — stabil și O(n log n) garantat</button></li>
+        <li><button data-correct="true">TimSort — hybrid din Merge Sort și Insertion Sort, stabil din ES2019</button></li>
+        <li><button data-correct="false">Heap Sort — O(n log n) garantat și in-place</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> TimSort (creat de Tim Peters pentru Python, adoptat de V8/SpiderMonkey) combină Insertion Sort pe segmente mici (eficient în practică) cu Merge Sort pentru combinare. E stabil și garantat O(n log n). PHP folosește Timsort din PHP 8.0 (anterior Introsort).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Pe ce tip de input excelează Insertion Sort față de Merge Sort?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Array-uri mari cu elemente random — mai puține schimburi totale</button></li>
+        <li><button data-correct="false">Array-uri cu multe duplicate — tratare specială pentru egalitate</button></li>
+        <li><button data-correct="true">Array-uri mici sau aproape sortate — O(n) în best case, constant mic</button></li>
+        <li><button data-correct="false">Array-uri inversate — optimizat pentru a detecta ordinea descrescătoare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Insertion Sort are O(n) pe date deja sortate (nicio inversiune) și performanță excelentă pe arrays mici (&lt;~32 elemente) datorită constantei mici și localism la cache. De aceea TimSort îl folosește pentru segmente mici — combinând avantajele ambilor algoritmi.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ai terminat cursul de Data Structures! Vrei să aprofundezi Heap Sort, Counting Sort sau algoritmii
+      de căutare avansată? Cum aplici ce ai învățat în proiectele tale PHP sau JavaScript?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0008-grafuri.html">← Lecția 8: Grafuri</a>
+    <a href="../index.html">Index curs →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

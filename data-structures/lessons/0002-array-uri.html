@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2: Array-uri și Operații — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 2 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Array-uri și Operații</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cea mai fundamentală structură de date — cum funcționează în memorie, operațiile esențiale și diferențele dintre PHP și JavaScript.
+  </p>
+
+
+  <h2>Cum funcționează un array în memorie</h2>
+
+  <p>
+    Un array clasic stochează elemente în <strong>memorie contiguă</strong> (bloc continuu).
+    Știind adresa primului element și dimensiunea fiecăruia, calculezi adresa oricărui element în O(1):
+  </p>
+
+  <pre><code>// Element la index i:
+adresa = adresa_baza + (i × dimensiune_element)
+
+// Ex: int de 4 bytes, adresă bază 1000
+// arr[0] → 1000
+// arr[1] → 1004
+// arr[5] → 1020  (indiferent câte elemente are array-ul)</code></pre>
+
+  <p>
+    <strong>PHP și JavaScript</strong> au array-uri dinamice — redimensionabile automat.
+    Internaly, când se umple capacitatea, se alocă un bloc nou (de obicei dublul), datele se copiază,
+    iar vechiul bloc se eliberează. Aceasta face <code>append</code> amortizat O(1).
+  </p>
+
+
+  <h2>Operații și complexitățile lor</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Operație</th><th>Complexitate</th><th>De ce?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Citire prin index</td><td><span class="complexity good">O(1)</span></td><td>Calcul direct de adresă</td></tr>
+      <tr><td>Modificare prin index</td><td><span class="complexity good">O(1)</span></td><td>Calcul direct de adresă</td></tr>
+      <tr><td>Append (la final)</td><td><span class="complexity good">O(1)</span> amortizat</td><td>Ocazional se realocă — costul e distribuit</td></tr>
+      <tr><td>Inserare la mijloc</td><td><span class="complexity ok">O(n)</span></td><td>Elementele după poziție se deplasează</td></tr>
+      <tr><td>Ștergere la mijloc</td><td><span class="complexity ok">O(n)</span></td><td>Elementele după poziție se deplasează</td></tr>
+      <tr><td>Căutare (liniar)</td><td><span class="complexity ok">O(n)</span></td><td>Parcurgem fiecare element în worst case</td></tr>
+      <tr><td>Căutare binară (sortat)</td><td><span class="complexity good">O(log n)</span></td><td>Înjumătățim spațiul la fiecare pas</td></tr>
+    </tbody>
+  </table>
+
+
+  <h2>Operații esențiale — PHP</h2>
+
+  <pre><code>// Creare
+$arr = [1, 2, 3, 4, 5];
+$assoc = ['name' => 'Paul', 'age' => 30];
+
+// Citire
+$first = $arr[0];                  // 1
+$name  = $assoc['name'];           // 'Paul'
+
+// Adăugare la final — O(1)
+$arr[] = 6;
+array_push($arr, 7, 8);
+
+// Adăugare la început — O(n) — deplasează tot!
+array_unshift($arr, 0);
+
+// Ștergere la final — O(1)
+$last = array_pop($arr);
+
+// Ștergere la început — O(n)
+$first = array_shift($arr);
+
+// Inserare la poziție — O(n)
+array_splice($arr, 2, 0, [99]);    // inserează 99 la index 2
+
+// Căutare liniară — O(n)
+$pos = array_search(99, $arr);     // returnează index sau false
+
+// Slice (subset) — O(k) unde k = lungimea slice-ului
+$subset = array_slice($arr, 1, 3); // elemente de la index 1, lungime 3
+
+// Sortare — O(n log n)
+sort($arr);
+usort($arr, fn($a, $b) => $a - $b);</code></pre>
+
+
+  <h2>Operații esențiale — JavaScript</h2>
+
+  <pre><code>// Creare
+const arr = [1, 2, 3, 4, 5];
+
+// Citire
+const first = arr[0];    // 1
+const last  = arr.at(-1); // 5  (ES2022 — index negativ)
+
+// Adăugare la final — O(1)
+arr.push(6, 7);
+
+// Adăugare la început — O(n)
+arr.unshift(0);
+
+// Ștergere la final — O(1)
+const popped = arr.pop();
+
+// Ștergere la început — O(n)
+const shifted = arr.shift();
+
+// Inserare / ștergere la poziție — O(n)
+arr.splice(2, 0, 99);     // inserează 99 la index 2
+arr.splice(2, 1);         // șterge 1 element la index 2
+
+// Căutare — O(n)
+const idx = arr.indexOf(99);
+const found = arr.find(x => x > 3);
+
+// Slice (nu modifică array-ul original) — O(k)
+const subset = arr.slice(1, 4);   // elemente de la 1 la 3 (exclusiv 4)
+
+// Sortare — O(n log n)
+arr.sort((a, b) => a - b);        // IMPORTANT: comparator numeric!
+
+// Transformări funcționale (returnează array nou)
+const doubled  = arr.map(x => x * 2);       // O(n)
+const evens    = arr.filter(x => x % 2 === 0); // O(n)
+const sum      = arr.reduce((acc, x) => acc + x, 0); // O(n)</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Atenție — JavaScript sort implicit</div>
+    <code>arr.sort()</code> fără comparator convertește elementele la string înainte de a le compara.
+    <code>[10, 9, 2].sort()</code> returnează <code>[10, 2, 9]</code> — nu <code>[2, 9, 10]</code>.
+    Folosește mereu <code>sort((a, b) =&gt; a - b)</code> pentru numere.
+  </div>
+
+
+  <h2>Căutare binară — O(log n) pe array sortat</h2>
+
+  <pre><code>// PHP
+function binarySearch(array $arr, int $target): int {
+    $left  = 0;
+    $right = count($arr) - 1;
+
+    while ($left <= $right) {
+        $mid = intdiv($left + $right, 2);
+        if ($arr[$mid] === $target)  return $mid;
+        if ($arr[$mid] < $target)    $left  = $mid + 1;
+        else                         $right = $mid - 1;
+    }
+    return -1;
+}
+
+// JS
+function binarySearch(arr, target) {
+    let left = 0, right = arr.length - 1;
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (arr[mid] === target) return mid;
+        if (arr[mid] < target)   left  = mid + 1;
+        else                     right = mid - 1;
+    }
+    return -1;
+}</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu practic</div>
+    <ol>
+      <li>Creează un array cu 10 numere întregi random și sortează-l</li>
+      <li>Implementează <code>binarySearch</code> și testează-l pe array-ul sortat</li>
+      <li>Măsoară diferența de timp dintre căutarea liniară și cea binară pe 1 000 000 elemente</li>
+      <li>Implementează o funcție care elimină duplicatele dintr-un array în O(n) folosind un hash set</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://www.php.net/manual/en/ref.array.php" target="_blank">PHP Manual — Array Functions</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Lista completă a funcțiilor PHP pentru array-uri cu exemple. Completează cu
+        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array" target="_blank">MDN — Array</a>
+        pentru JavaScript.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce inserarea unui element la mijlocul unui array este O(n)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Trebuie să căutăm poziția corectă prin parcurgere liniară</button></li>
+        <li><button data-correct="true">Toate elementele de după poziția de inserare trebuie deplasate cu o poziție</button></li>
+        <li><button data-correct="false">Array-ul trebuie re-alocat complet în memorie la fiecare inserare</button></li>
+        <li><button data-correct="false">Trebuie să verificăm duplicatele înainte de inserare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Memoria contiguă înseamnă că nu poți "face loc" fără a deplasa elementele existente. Dacă inserezi la index 0, toate n elemente se mută cu o poziție — O(n) operații.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce returnează <code>[10, 9, 2].sort()</code> în JavaScript fără comparator?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>[2, 9, 10]</code> — sortare numerică ascendentă</button></li>
+        <li><button data-correct="false"><code>[10, 9, 2]</code> — array-ul rămâne nemodificat</button></li>
+        <li><button data-correct="true"><code>[10, 2, 9]</code> — sortare lexicografică (ca string-uri)</button></li>
+        <li><button data-correct="false"><code>[9, 10, 2]</code> — sortare după lungimea reprezentării numerice</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>.sort()</code> convertește elementele la string: "10" &lt; "2" lexicografic (pentru că "1" &lt; "2"). Rezultatul este <code>[10, 2, 9]</code>. Folosește mereu <code>.sort((a, b) =&gt; a - b)</code> pentru numere.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Căutarea binară are o condiție obligatorie — care este aceasta?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Array-ul trebuie să conțină numai numere întregi pozitive</button></li>
+        <li><button data-correct="false">Array-ul nu trebuie să conțină duplicate</button></li>
+        <li><button data-correct="true">Array-ul trebuie să fie sortat</button></li>
+        <li><button data-correct="false">Array-ul trebuie să aibă un număr impar de elemente</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Căutarea binară funcționează prin eliminarea jumătății din spațiul de căutare la fiecare pas, bazându-se pe faptul că dacă elementul din mijloc e mai mic decât target, tot ce e la stânga e irelevant. Fără sortare, această presupunere nu mai e validă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este diferența dintre <code>slice()</code> și <code>splice()</code> în JavaScript?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu există diferență — sunt aliasuri pentru aceeași operație</button></li>
+        <li><button data-correct="false"><code>slice()</code> funcționează pe string-uri, <code>splice()</code> pe array-uri</button></li>
+        <li><button data-correct="true"><code>slice()</code> returnează o copie fără a modifica originalul; <code>splice()</code> modifică array-ul in-place</button></li>
+        <li><button data-correct="false"><code>splice()</code> returnează o copie, <code>slice()</code> modifică originalul</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>slice(start, end)</code> = non-destructiv, returnează un sub-array nou. <code>splice(start, deleteCount, ...items)</code> = destructiv, modifică array-ul original, returnează elementele șterse. Confuzia dintre ele este o sursă frecventă de bug-uri.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce <code>append</code> la finalul unui array dinamic e considerat O(1) amortizat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece se face mereu în O(1) exact, fără excepții</button></li>
+        <li><button data-correct="false">Deoarece compilatorul optimizează automat realocările de memorie</button></li>
+        <li><button data-correct="true">Realocările rare (O(n)) sunt distribuite pe n operații ieftine (O(1)), dând un cost mediu O(1) per operație</button></li>
+        <li><button data-correct="false">Deoarece memoria pentru array este pre-alocată infinit la creare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Când capacitatea se umple, se alocă un bloc de 2× mai mare și se copiază datele — costul e O(n). Dar asta se întâmplă rar: după n append-uri ieftine, o singură copiere costă O(n). Costul total al n operații = O(n), deci per operație = O(1) amortizat.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Cum să elimin duplicatele eficient? Cum funcționează <code>array_map</code> vs <code>array_walk</code> în PHP?
+      Când să folosești <code>find</code> vs <code>filter</code> în JavaScript?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0001-introducere-complexitate.html">← Lecția 1: Introducere și Complexitate</a>
+    <a href="0003-stack.html">Lecția 3: Stack (Stivă) →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

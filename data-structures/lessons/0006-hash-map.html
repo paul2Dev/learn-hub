@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6: Hash Map — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 6 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Hash Map (Dicționar)</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Căutare, inserare și ștergere în O(1) — cea mai folosită structură de date în aplicații web. PHP arrays și JS objects sunt hash maps.
+  </p>
+
+
+  <h2>Cum funcționează un Hash Map</h2>
+
+  <p>
+    Un Hash Map transformă o cheie în un index de array printr-o <strong>funcție hash</strong>.
+    Indexul indică "bucket-ul" unde e stocată valoarea — acces direct, O(1):
+  </p>
+
+  <pre><code>hash("name")  → 3  → bucket[3] = "Paul"
+hash("age")   → 7  → bucket[7] = 30
+hash("email") → 1  → bucket[1] = "paul@example.com"
+
+get("name") → hash("name") = 3 → bucket[3] → "Paul"  // O(1)</code></pre>
+
+  <h3>Coliziuni</h3>
+  <p>
+    Două chei diferite pot produce același hash — <strong>coliziune</strong>.
+    Soluții comune: <em>chaining</em> (fiecare bucket e o listă înlănțuită) sau <em>open addressing</em> (caută un bucket liber).
+    PHP folosește chaining; cu un factor de încărcare mic, coliziunile sunt rare.
+  </p>
+
+
+  <h2>Hash Map în PHP — arrays asociative</h2>
+
+  <pre><code>// PHP arrays sunt hash maps ordonate native
+$user = [
+    'name'  => 'Paul',
+    'age'   => 30,
+    'email' => 'paul@example.com',
+];
+
+// Acces — O(1)
+echo $user['name'];          // Paul
+echo $user['nonexistent'] ?? 'default';  // null-safe
+
+// Inserare / actualizare — O(1)
+$user['city'] = 'Bucharest';
+
+// Ștergere — O(1)
+unset($user['age']);
+
+// Verificare existență cheie — O(1)
+if (isset($user['email'])) { /* ... */ }
+if (array_key_exists('email', $user)) { /* ... */ }  // mai precis (detectează null)
+
+// Parcurgere — O(n)
+foreach ($user as $key => $value) {
+    echo "$key: $value\n";
+}
+
+// Cheie calculată — memoization
+function fibonacci(int $n, array &$memo = []): int {
+    if ($n <= 1) return $n;
+    if (isset($memo[$n])) return $memo[$n];   // O(1) cache lookup
+    return $memo[$n] = fibonacci($n - 1, $memo) + fibonacci($n - 2, $memo);
+}
+
+echo fibonacci(50);  // instant — fără memo ar dura ani</code></pre>
+
+
+  <h2>Hash Map în JavaScript — Object și Map</h2>
+
+  <pre><code>// Object — hash map simplu (chei string/Symbol)
+const user = {
+    name:  'Paul',
+    age:   30,
+    email: 'paul@example.com',
+};
+user.city = 'Bucharest';     // inserare O(1)
+delete user.age;             // ștergere O(1)
+'email' in user;             // verificare O(1)
+
+// Map — hash map adevărat (orice tip de cheie)
+const map = new Map();
+map.set('name', 'Paul');      // O(1)
+map.set(42, 'cheie numerică');
+map.set({id: 1}, 'cheie obiect');
+
+map.get('name');              // 'Paul' — O(1)
+map.has('name');              // true  — O(1)
+map.delete('name');           // O(1)
+map.size;                     // numărul de intrări
+
+// Iterare Map — păstrează ordinea inserării
+for (const [key, value] of map) {
+    console.log(key, value);
+}
+
+// Set — colecție de valori unice
+const set = new Set([1, 2, 3, 2, 1]);
+console.log([...set]);        // [1, 2, 3]
+set.has(2);                   // true — O(1)
+set.add(4);
+set.delete(1);</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Object vs Map în JavaScript</div>
+    Folosește <strong>Object</strong> pentru date structurate cu chei string cunoscute (config, DTO, JSON).
+    Folosește <strong>Map</strong> când: cheile nu sunt string-uri, adaugi/ștergi frecvent,
+    ai nevoie de <code>.size</code> direct, sau ordinea inserării contează și vrei garantare explicită.
+  </div>
+
+
+  <h2>Aplicații clasice</h2>
+
+  <h3>1. Frecvența elementelor — O(n)</h3>
+  <pre><code>// PHP
+function countFrequency(array $arr): array {
+    $freq = [];
+    foreach ($arr as $val) {
+        $freq[$val] = ($freq[$val] ?? 0) + 1;
+    }
+    return $freq;
+}
+$words = ['ana', 'are', 'mere', 'ana', 'are', 'ana'];
+print_r(countFrequency($words));
+// ['ana' => 3, 'are' => 2, 'mere' => 1]
+
+// JS
+function countFrequency(arr) {
+    return arr.reduce((map, val) => {
+        map.set(val, (map.get(val) ?? 0) + 1);
+        return map;
+    }, new Map());
+}</code></pre>
+
+  <h3>2. Two Sum — O(n) cu hash map vs O(n²) brute force</h3>
+  <pre><code>// Găsește doi indecși cu suma = target
+function twoSum(array $nums, int $target): array {
+    $seen = [];  // valoare => index
+    foreach ($nums as $i => $num) {
+        $complement = $target - $num;
+        if (isset($seen[$complement])) {
+            return [$seen[$complement], $i];
+        }
+        $seen[$num] = $i;
+    }
+    return [];
+}
+print_r(twoSum([2, 7, 11, 15], 9));  // [0, 1] — 2+7=9</code></pre>
+
+  <h3>3. Grouping / indexare — O(n)</h3>
+  <pre><code>// Grupează useri după țară
+function groupBy(array $users, string $key): array {
+    $groups = [];
+    foreach ($users as $user) {
+        $groups[$user[$key]][] = $user;
+    }
+    return $groups;
+}
+
+$users = [
+    ['name' => 'Ana',  'country' => 'RO'],
+    ['name' => 'John', 'country' => 'US'],
+    ['name' => 'Paul', 'country' => 'RO'],
+];
+$byCountry = groupBy($users, 'country');
+// ['RO' => [Ana, Paul], 'US' => [John]]</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu</div>
+    <ol>
+      <li>Implementează <code>twoSum</code> în JavaScript folosind <code>Map</code></li>
+      <li>Scrie o funcție care returnează primul caracter non-repetat dintr-un string (ex: "aabbc" → "c")</li>
+      <li>Implementează un cache LRU simplu folosind un <code>Map</code> JS (Map păstrează ordinea inserării)</li>
+      <li>Găsește toate anagramele dintr-o listă de cuvinte grupate împreună</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank">MDN — Map</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația completă pentru <code>Map</code> și <code>Set</code> în JavaScript.
+        Completează cu documentația internă PHP despre
+        <a href="https://www.php.net/manual/en/language.types.array.php" target="_blank">arrays PHP</a>
+        care explică implementarea internă ca hash map ordonat.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce este o coliziune într-un Hash Map?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când două valori identice sunt inserate cu chei diferite</button></li>
+        <li><button data-correct="true">Când două chei diferite produc același hash — același index de bucket</button></li>
+        <li><button data-correct="false">Când hash map-ul depășește capacitatea maximă de elemente</button></li>
+        <li><button data-correct="false">Când o cheie este ștearsă dar hash-ul ei rămâne în structură</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Hash-ul transformă chei de orice dimensiune în indici dintr-un spațiu finit — inevitabil, chei diferite pot produce același index. Soluția clasică (chaining) stochează o listă de perechi (cheie, valoare) în fiecare bucket; la acces se compară cheile exact.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce <code>array_key_exists()</code> e mai precis decât <code>isset()</code> în PHP?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>array_key_exists()</code> funcționează și pe obiecte, <code>isset()</code> numai pe array-uri</button></li>
+        <li><button data-correct="true"><code>isset()</code> returnează false dacă valoarea e null; <code>array_key_exists()</code> returnează true indiferent de valoare</button></li>
+        <li><button data-correct="false"><code>array_key_exists()</code> e mai rapidă deoarece nu accesează valoarea, numai cheia</button></li>
+        <li><button data-correct="false"><code>isset()</code> aruncă o excepție la cheie lipsă, <code>array_key_exists()</code> returnează false</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>$arr = ['key' => null]</code> — <code>isset($arr['key'])</code> returnează <strong>false</strong> (valoarea e null), dar <code>array_key_exists('key', $arr)</code> returnează <strong>true</strong> (cheia există). Când null e o valoare legitimă, folosești <code>array_key_exists()</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce algoritmul Two Sum cu Hash Map este O(n) față de O(n²) brute force?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece hash map-ul sortează elementele la inserare, permițând căutare binară</button></li>
+        <li><button data-correct="true">La fiecare element verificăm complementul în hash map în O(1) în loc de a-l căuta linear O(n) în array</button></li>
+        <li><button data-correct="false">Deoarece parcurgem array-ul de două ori — O(2n) = O(n)</button></li>
+        <li><button data-correct="false">Hash map-ul elimină duplicatele automat, reducând dimensiunea problemei</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Brute force: pentru fiecare element, caută complementul în toată lista — O(n) × O(n) = O(n²). Cu Hash Map: stochezi elementele văzute; la fiecare element nou, verifici complementul în O(1). Un singur parcurs = O(n) total.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Când preferi <code>Map</code> față de <code>Object</code> în JavaScript?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Mereu — Map este mai performantă decât Object în orice situație</button></li>
+        <li><button data-correct="false">Niciodată — Object este suficient și mai simplu de folosit</button></li>
+        <li><button data-correct="true">Când cheile nu sunt string-uri, ai nevoie de .size, sau adaugi/ștergi frecvent</button></li>
+        <li><button data-correct="false">Când datele trebuie serializate ca JSON — Map suportă JSON.stringify nativ</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>Map</code> acceptă orice tip ca cheie (obiecte, numere, funcții), expune <code>.size</code> direct, garantează ordinea inserării și e optimizată pentru operații frecvente de add/delete. Object e mai convenabil pentru date JSON-like cu chei string cunoscute. Notă: <code>Map</code> nu se serializează cu <code>JSON.stringify</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce structură de date folosești pentru a elimina duplicatele dintr-un array eficient?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Linked List — verifici fiecare element față de toată lista</button></li>
+        <li><button data-correct="false">Array sortat + Binary Search — O(n log n) timp, O(1) spațiu</button></li>
+        <li><button data-correct="true">Set sau Hash Map — inserezi fiecare element, duplicatele sunt ignorate — O(n)</button></li>
+        <li><button data-correct="false">Stack — push dacă nu e pe stack, pop dacă e duplicat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>Set</code> stochează numai valori unice prin definiție. <code>[...new Set(arr)]</code> în JS sau iterare cu <code>$seen[$val] = true</code> în PHP elimină duplicatele în O(n) cu O(n) spațiu extra. Alternativa sortare+comparare e O(n log n) dar O(1) spațiu.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Cum implementezi un LRU Cache cu Map și Linked List? Ce este un hash perfect?
+      Cum afectează factorul de încărcare performanța unui Hash Map?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0005-linked-list.html">← Lecția 5: Linked List</a>
+    <a href="0007-arbori-binari.html">Lecția 7: Arbori Binari →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

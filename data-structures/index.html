@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Structures — Index curs</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; color: var(--muted); max-width: 560px; }
+
+    .lesson-grid { display: flex; flex-direction: column; gap: 0; margin: 0.5rem 0 2.5rem; }
+    .lesson-card {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      padding: 1rem 1.2rem; border: 1px solid var(--border);
+      border-bottom: none; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+    }
+    .lesson-card:first-child { border-radius: 8px 8px 0 0; }
+    .lesson-card:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .lesson-card:hover { background: var(--code-bg); }
+    .lesson-num {
+      width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold; flex-shrink: 0;
+    }
+    .lesson-card:nth-child(1) .lesson-num { background: #6d28d9; }
+    .lesson-card:nth-child(2) .lesson-num { background: #7c3aed; }
+    .lesson-card:nth-child(3) .lesson-num { background: #8b5cf6; }
+    .lesson-card:nth-child(4) .lesson-num { background: #0891b2; }
+    .lesson-card:nth-child(5) .lesson-num { background: #0284c7; }
+    .lesson-card:nth-child(6) .lesson-num { background: #16a34a; }
+    .lesson-card:nth-child(7) .lesson-num { background: #f59e0b; }
+    .lesson-card:nth-child(8) .lesson-num { background: #dc2626; }
+    .lesson-card:nth-child(9) .lesson-num { background: #9333ea; }
+    .lesson-info h3 { font-size: 0.97rem; margin: 0 0 0.15rem; }
+    .lesson-info p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .lesson-time {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono); white-space: nowrap; align-self: center;
+    }
+
+    .reference-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0 3rem; }
+    .ref-card {
+      flex: 1; min-width: 160px;
+      padding: 0.85rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+      text-decoration: none; color: var(--text);
+      transition: background 0.12s;
+    }
+    .ref-card:hover { background: var(--code-bg); }
+    .ref-card h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ref-card p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+    .quickref-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .quickref-table th {
+      text-align: left; padding: 0.5rem 0.8rem;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    }
+    .quickref-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .quickref-table tr:last-child td { border-bottom: none; }
+    .quickref-table code { font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="course-header">
+    <div class="lesson-meta">
+      <span class="tag">9 lecții</span>
+      <span class="tag">~4 ore total</span>
+      <span>Data Structures — PHP &amp; JavaScript</span>
+    </div>
+    <h1>Structuri de date pentru developeri</h1>
+    <p>
+      De la Big O la grafuri. Înveți complexitatea algoritmică, array-uri, stive, cozi, linked lists,
+      hash maps, arbori binari, grafuri și algoritmi de sortare — cu implementări concrete în PHP și JavaScript.
+      9 lecții cu cod real, exerciții practice și quiz-uri interactive.
+    </p>
+  </div>
+
+
+  <!-- ══════ LECȚII ══════ -->
+  <h2 style="margin-top:0;">Lecții</h2>
+
+  <div class="lesson-grid">
+
+    <a class="lesson-card" href="lessons/0001-introducere-complexitate.html">
+      <div class="lesson-num">1</div>
+      <div class="lesson-info">
+        <h3>Introducere și complexitate algoritmică</h3>
+        <p>Big O Notation, O(1)/O(log n)/O(n)/O(n²), time vs space complexity, cum alegi structura de date potrivită</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0002-array-uri.html">
+      <div class="lesson-num">2</div>
+      <div class="lesson-info">
+        <h3>Array-uri și operații</h3>
+        <p>Memorie contiguă, complexitate operații, push/pop/shift/splice în PHP și JS, binary search, array internals</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0003-stack.html">
+      <div class="lesson-num">3</div>
+      <div class="lesson-info">
+        <h3>Stack (Stivă) — LIFO</h3>
+        <p>push/pop/peek, undo/redo, call stack, balanced parentheses checker, SplStack, implementare PHP și JS</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0004-queue.html">
+      <div class="lesson-num">4</div>
+      <div class="lesson-info">
+        <h3>Queue (Coadă) — FIFO</h3>
+        <p>enqueue/dequeue O(1) cu head index, SplQueue, job queue simulation, BFS, rate limiting sliding window</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0005-linked-list.html">
+      <div class="lesson-num">5</div>
+      <div class="lesson-info">
+        <h3>Linked List</h3>
+        <p>Singly linked, append/prepend/remove, reversare cu 3 pointeri, Floyd's cycle detection, vs Array trade-offs</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0006-hash-map.html">
+      <div class="lesson-num">6</div>
+      <div class="lesson-info">
+        <h3>Hash Map (Dicționar)</h3>
+        <p>Funcție hash, coliziuni, chaining, PHP arrays vs JS Map/Object/Set, Two Sum O(n), memoization, groupBy</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0007-arbori-binari.html">
+      <div class="lesson-num">7</div>
+      <div class="lesson-info">
+        <h3>Arbori Binari și BST</h3>
+        <p>Invarianta BST, insert/search O(log n), In/Pre/Post-Order traversal, iterativ cu Stack, arbore degenerat</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0008-grafuri.html">
+      <div class="lesson-num">8</div>
+      <div class="lesson-info">
+        <h3>Grafuri</h3>
+        <p>Adjacency List vs Matrix, BFS cu reconstrucție cale, DFS recursiv și iterativ, grafuri orientate și ponderate</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0009-algoritmi-sortare.html">
+      <div class="lesson-num">9</div>
+      <div class="lesson-info">
+        <h3>Algoritmi de sortare</h3>
+        <p>Bubble/Insertion/Merge/Quick Sort, complexitate comparată, sortare stabilă, TimSort nativ PHP și JS</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+  </div>
+
+
+  <!-- ══════ REFERINȚE ══════ -->
+  <h2>Referințe</h2>
+
+  <div class="reference-links">
+    <a class="ref-card" href="reference/glossary.html">
+      <h4>Glosar</h4>
+      <p>Toți termenii cheie — Big O, Stack, Queue, BST, BFS/DFS, Merge Sort și altele</p>
+    </a>
+    <a class="ref-card" href="RESOURCES.md">
+      <h4>Resurse</h4>
+      <p>Documentații, vizualizări interactive și comunități recomandate</p>
+    </a>
+    <a class="ref-card" href="https://visualgo.net" target="_blank">
+      <h4>VisuAlgo</h4>
+      <p>Vizualizare animată interactivă pentru toate structurile de date și algoritmii</p>
+    </a>
+    <a class="ref-card" href="https://www.bigocheatsheet.com" target="_blank">
+      <h4>Big O Cheat Sheet</h4>
+      <p>Tabel complet cu complexitățile tuturor structurilor de date și algoritmilor</p>
+    </a>
+  </div>
+
+
+  <!-- ══════ QUICK REFERENCE ══════ -->
+  <h2>Referință rapidă — complexitate operații</h2>
+
+  <table class="quickref-table">
+    <thead>
+      <tr>
+        <th>Structură</th>
+        <th>Acces</th>
+        <th>Căutare</th>
+        <th>Insert</th>
+        <th>Delete</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Array</td>
+        <td>O(1)</td>
+        <td>O(n)</td>
+        <td>O(n)*</td>
+        <td>O(n)*</td>
+        <td><a href="lessons/0002-array-uri.html">2</a></td>
+      </tr>
+      <tr>
+        <td>Stack</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td><a href="lessons/0003-stack.html">3</a></td>
+      </tr>
+      <tr>
+        <td>Queue</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td><a href="lessons/0004-queue.html">4</a></td>
+      </tr>
+      <tr>
+        <td>Linked List</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>O(1)**</td>
+        <td>O(1)**</td>
+        <td><a href="lessons/0005-linked-list.html">5</a></td>
+      </tr>
+      <tr>
+        <td>Hash Map</td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td><a href="lessons/0006-hash-map.html">6</a></td>
+      </tr>
+      <tr>
+        <td>BST (echilibrat)</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td><a href="lessons/0007-arbori-binari.html">7</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem;">
+    * O(1) amortizat la capete (push/pop). ** La capete cunoscute.
+  </p>
+
+
+  <h2 style="margin-top:2.5rem;">Referință rapidă — algoritmi de sortare</h2>
+
+  <table class="quickref-table">
+    <thead>
+      <tr>
+        <th>Algoritm</th>
+        <th>Best</th>
+        <th>Average</th>
+        <th>Worst</th>
+        <th>Spațiu</th>
+        <th>Stabil</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Bubble Sort</td>
+        <td>O(n)</td>
+        <td>O(n²)</td>
+        <td>O(n²)</td>
+        <td>O(1)</td>
+        <td>Da</td>
+        <td><a href="lessons/0009-algoritmi-sortare.html">9</a></td>
+      </tr>
+      <tr>
+        <td>Insertion Sort</td>
+        <td>O(n)</td>
+        <td>O(n²)</td>
+        <td>O(n²)</td>
+        <td>O(1)</td>
+        <td>Da</td>
+        <td><a href="lessons/0009-algoritmi-sortare.html">9</a></td>
+      </tr>
+      <tr>
+        <td>Merge Sort</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>Da</td>
+        <td><a href="lessons/0009-algoritmi-sortare.html">9</a></td>
+      </tr>
+      <tr>
+        <td>Quick Sort</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n²)</td>
+        <td>O(log n)</td>
+        <td>Nu</td>
+        <td><a href="lessons/0009-algoritmi-sortare.html">9</a></td>
+      </tr>
+      <tr>
+        <td>TimSort (nativ)</td>
+        <td>O(n)</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>Da</td>
+        <td><a href="lessons/0009-algoritmi-sortare.html">9</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    Data Structures — PHP &amp; JavaScript · Începe de la <a href="lessons/0001-introducere-complexitate.html">Lecția 1</a>
+  </p>
+
+</div>
+</body>
+</html>

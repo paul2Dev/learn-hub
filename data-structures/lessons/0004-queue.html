@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4: Queue (Coadă) — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 4 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Queue (Coadă)</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Structura FIFO — First In, First Out. Fundamentală pentru job queues, BFS, sisteme de mesagerie și procesarea task-urilor în ordine.
+  </p>
+
+
+  <h2>Principiul FIFO</h2>
+
+  <p>
+    O <strong>Coadă</strong> funcționează ca o coadă la casă: primul venit, primul servit.
+    Elementele se adaugă la coadă (<em>enqueue</em>) și se scot din față (<em>dequeue</em>) — <strong>First In, First Out</strong>.
+  </p>
+
+  <pre><code>Coada vizualizată (față ← elemente → spate):
+
+enqueue(A) → [ A ]
+enqueue(B) → [ A, B ]
+enqueue(C) → [ A, B, C ]
+dequeue()  → returnează A, coada = [ B, C ]
+dequeue()  → returnează B, coada = [ C ]
+front()    → returnează C (fără să scoată)</code></pre>
+
+  <p>Operațiile unei cozi:</p>
+  <ul>
+    <li><strong>enqueue(val)</strong> — adaugă la spate — O(1)</li>
+    <li><strong>dequeue()</strong> — scoate din față — O(1) cu implementare corectă</li>
+    <li><strong>front()</strong> — citește primul element fără a-l scoate — O(1)</li>
+    <li><strong>isEmpty()</strong> — verifică dacă coada e goală — O(1)</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-label">Atenție — implementare cu array simplu</div>
+    <code>array_shift()</code> în PHP și <code>shift()</code> în JS sunt O(n) — deplasează toate elementele.
+    Pentru o coadă eficientă cu volume mari, folosește <code>SplQueue</code> (PHP) sau o implementare cu indice de start.
+  </div>
+
+
+  <h2>Implementare în PHP</h2>
+
+  <pre><code>// Variantă 1: SplQueue — implementare nativă optimizată O(1)
+$queue = new SplQueue();
+$queue->enqueue('task1');
+$queue->enqueue('task2');
+$queue->enqueue('task3');
+
+echo $queue->dequeue();  // task1
+echo $queue->bottom();   // task2 (front, fără scoatere)
+echo $queue->count();    // 2
+
+// Variantă 2: clasă custom bazată pe array asociativ
+class Queue {
+    private array $items = [];
+    private int $head = 0;
+
+    public function enqueue(mixed $value): void {
+        $this->items[] = $value;
+    }
+
+    public function dequeue(): mixed {
+        if ($this->isEmpty()) throw new UnderflowException('Queue is empty');
+        $value = $this->items[$this->head];
+        unset($this->items[$this->head]);
+        $this->head++;
+        return $value;
+    }
+
+    public function front(): mixed {
+        if ($this->isEmpty()) throw new UnderflowException('Queue is empty');
+        return $this->items[$this->head];
+    }
+
+    public function isEmpty(): bool {
+        return $this->head >= count($this->items) + $this->head;
+    }
+
+    public function size(): int {
+        return count($this->items);
+    }
+}</code></pre>
+
+
+  <h2>Implementare în JavaScript</h2>
+
+  <pre><code>class Queue {
+    #items = {};
+    #head  = 0;
+    #tail  = 0;
+
+    enqueue(value) {
+        this.#items[this.#tail] = value;
+        this.#tail++;
+    }
+
+    dequeue() {
+        if (this.isEmpty()) throw new Error('Queue is empty');
+        const value = this.#items[this.#head];
+        delete this.#items[this.#head];
+        this.#head++;
+        return value;
+    }
+
+    front() {
+        if (this.isEmpty()) throw new Error('Queue is empty');
+        return this.#items[this.#head];
+    }
+
+    isEmpty() { return this.#tail === this.#head; }
+    get size() { return this.#tail - this.#head; }
+}
+
+const q = new Queue();
+q.enqueue('A');
+q.enqueue('B');
+q.enqueue('C');
+console.log(q.dequeue()); // A
+console.log(q.front());   // B
+console.log(q.size);      // 2</code></pre>
+
+
+  <h2>Aplicații reale</h2>
+
+  <h3>1. Job Queue (Laravel / Node.js)</h3>
+  <pre><code>// Conceptual — cum funcționează Laravel Queues internaly
+class JobQueue {
+    private Queue $queue;
+
+    public function dispatch(callable $job): void {
+        $this->queue->enqueue($job);
+    }
+
+    public function process(): void {
+        while (!$this->queue->isEmpty()) {
+            $job = $this->queue->dequeue();
+            $job();  // execută job-ul
+        }
+    }
+}
+
+$jq = new JobQueue(new Queue());
+$jq->dispatch(fn() => sendEmail('user@example.com'));
+$jq->dispatch(fn() => resizeImage('photo.jpg'));
+$jq->dispatch(fn() => generatePDF('report'));
+$jq->process();  // procesează în ordinea adăugării</code></pre>
+
+  <h3>2. BFS — Breadth First Search</h3>
+  <pre><code>// Parcurgerea unui graf nivel cu nivel folosind o coadă
+function bfs(array $graph, string $start): array {
+    $visited = [];
+    $queue   = new SplQueue();
+    $queue->enqueue($start);
+    $visited[$start] = true;
+
+    while (!$queue->isEmpty()) {
+        $node = $queue->dequeue();
+        echo $node . ' ';
+
+        foreach ($graph[$node] as $neighbor) {
+            if (!isset($visited[$neighbor])) {
+                $visited[$neighbor] = true;
+                $queue->enqueue($neighbor);
+            }
+        }
+    }
+    return array_keys($visited);
+}
+
+$graph = ['A' => ['B', 'C'], 'B' => ['D'], 'C' => ['D', 'E'], 'D' => [], 'E' => []];
+bfs($graph, 'A');  // A B C D E</code></pre>
+
+  <h3>3. Rate Limiting cu sliding window</h3>
+  <pre><code>// Permite maxim N request-uri în ultimele M secunde
+class RateLimiter {
+    private SplQueue $timestamps;
+    private int $limit;
+    private int $windowSeconds;
+
+    public function __construct(int $limit, int $windowSeconds) {
+        $this->timestamps    = new SplQueue();
+        $this->limit         = $limit;
+        $this->windowSeconds = $windowSeconds;
+    }
+
+    public function allow(): bool {
+        $now = time();
+        // Elimină timestamp-urile vechi din fereastră
+        while (!$this->timestamps->isEmpty()
+               && $this->timestamps->bottom() < $now - $this->windowSeconds) {
+            $this->timestamps->dequeue();
+        }
+        if ($this->timestamps->count() < $this->limit) {
+            $this->timestamps->enqueue($now);
+            return true;
+        }
+        return false;  // limita atinsă
+    }
+}
+
+$limiter = new RateLimiter(5, 60);  // 5 req/minut
+echo $limiter->allow() ? 'OK' : 'Rate limited';</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu</div>
+    <ol>
+      <li>Implementează o funcție care inversează o coadă folosind un stack (și invers)</li>
+      <li>Implementează BFS în JavaScript pentru un graf reprezentat ca obiect</li>
+      <li>Simulează o coadă de imprimare: adaugă 5 documente, procesează-le pe rând afișând ordinea</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://www.php.net/manual/en/class.splqueue.php" target="_blank">PHP Manual — SplQueue</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        <code>SplQueue</code> extinde <code>SplDoublyLinkedList</code> și oferă operații O(1) pentru enqueue/dequeue.
+        Ideal pentru volume mari față de <code>array_shift()</code> care e O(n).
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce înseamnă FIFO în contextul unei cozi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Fast Input, Fast Output — operații O(1) garantate</button></li>
+        <li><button data-correct="true">First In, First Out — primul element adăugat este primul scos</button></li>
+        <li><button data-correct="false">Fixed Index, Forward Order — acces secvențial prin indice</button></li>
+        <li><button data-correct="false">Free Input, Final Output — elementele pot fi inserate oriunde</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> FIFO înseamnă că elementele se extrag în aceeași ordine în care au fost adăugate — ca o coadă la casă. Primul client venit este primul servit. Contrastează cu LIFO (Stack) unde ultimul venit iese primul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce <code>array_shift()</code> nu e ideal pentru implementarea unui Queue cu volume mari?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu funcționează cu elemente non-numerice în array</button></li>
+        <li><button data-correct="true">Este O(n) — după extragere, deplasează toate elementele rămase cu o poziție</button></li>
+        <li><button data-correct="false">Aruncă o excepție dacă array-ul e gol în loc să returneze null</button></li>
+        <li><button data-correct="false">Nu păstrează ordinea elementelor — le sortează aleator</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>array_shift()</code> elimină primul element și reindexează tot array-ul de la 0 — O(n). Pe 1 milion de elemente în coadă, fiecare <em>dequeue</em> mută un milion de referințe. <code>SplQueue</code> sau implementarea cu indice de start rezolvă asta în O(1).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce algoritmul BFS (Breadth First Search) folosește o coadă și nu un stack?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un stack ar funcționa la fel — alegerea e arbitrară</button></li>
+        <li><button data-correct="false">Un stack consumă mai multă memorie, deci coada e mai eficientă</button></li>
+        <li><button data-correct="true">Coada garantează parcurgerea nivel cu nivel — procesăm toți vecinii unui nod înainte de a avansa</button></li>
+        <li><button data-correct="false">Stack-ul nu poate stoca noduri de graf, numai valori primitive</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> BFS explorează toate nodurile de la distanța 1, apoi toate de la distanța 2 etc. Coada (FIFO) asigură că procesăm nodurile în ordinea descoperirii. Un stack (LIFO) ar produce DFS — explorare în adâncime, nu în lățime.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este principala diferență de comportament dintre un Stack și o Queue?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Stack-ul poate stoca mai multe tipuri de date decât o Queue</button></li>
+        <li><button data-correct="false">Queue permite acces aleator prin index, Stack nu</button></li>
+        <li><button data-correct="true">Stack extrage ultimul element adăugat (LIFO); Queue extrage primul element adăugat (FIFO)</button></li>
+        <li><button data-correct="false">Stack este mai rapid la inserare, Queue este mai rapid la extragere</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Aceasta este diferența fundamentală: Stack = LIFO (undo, call stack, DFS), Queue = FIFO (job processing, BFS, rate limiting). Ambele au operații O(1) cu implementarea corectă, deci diferența nu e de performanță ci de semantică.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce clasă PHP nativă oferă o implementare eficientă O(1) pentru Queue?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>ArrayObject</code> — extensia OOP a array-ului nativ PHP</button></li>
+        <li><button data-correct="false"><code>SplStack</code> — clasa de stack din SPL, adaptabilă ca queue</button></li>
+        <li><button data-correct="true"><code>SplQueue</code> — parte din Standard PHP Library, bazată pe linked list dublu</button></li>
+        <li><button data-correct="false"><code>SplFixedArray</code> — array cu dimensiune fixă și acces O(1)</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>SplQueue</code> din Standard PHP Library este implementată intern ca o listă dublu înlănțuită — <em>enqueue</em> și <em>dequeue</em> sunt ambele O(1), indiferent de dimensiune. Este soluția recomandată pentru producție cu volume mari.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ce este o Deque (Double Ended Queue)? Cum implementezi o coadă cu priorități (Priority Queue)?
+      Cum funcționează job queues în Laravel față de o implementare manuală?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0003-stack.html">← Lecția 3: Stack (Stivă)</a>
+    <a href="0005-linked-list.html">Lecția 5: Linked List →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -238,5 +238,6 @@ Fiecare curs trebuie să aibă un `index.html` în rădăcina lui care servește
 | `engineering-principles/` | 10 |
 | `agentic-workflow/` | 10 |
 | `embedings/` | 8 |
+| `data-structures/` | 9 |
 | `next-js/` | 9 |
 | `nuxt/` | 9 |

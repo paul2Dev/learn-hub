@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7: Arbori Binari — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 7 din 9</span>
+    <span class="tag">~30 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Arbori Binari și BST</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Structuri ierarhice — Binary Search Tree, traversal în 3 moduri și aplicații în baze de date, sisteme de fișiere și expresii matematice.
+  </p>
+
+
+  <h2>Terminologie</h2>
+
+  <pre><code>           10          ← rădăcină (root)
+          /  \
+         5    15       ← noduri interne
+        / \     \
+       3   7    20     ← frunze (leaves)
+
+- Nod (Node): elementul de bază cu o valoare
+- Rădăcină (Root): nodul de sus, fără părinte
+- Frunză (Leaf): nod fără copii
+- Adâncime (Depth): distanța de la rădăcină
+- Înălțime (Height): cea mai lungă cale de la rădăcină la frunză
+- Subarbore (Subtree): orice nod cu descendenții lui
+- Arbore binar: fiecare nod are maxim 2 copii (stâng și drept)</code></pre>
+
+
+  <h2>Binary Search Tree (BST)</h2>
+
+  <p>
+    Un <strong>BST</strong> respectă invarianta: pentru orice nod,
+    <em>toți copiii stângi au valori mai mici</em> și <em>toți copiii drepți au valori mai mari</em>.
+    Aceasta permite căutare în <span class="complexity good">O(log n)</span> pe un arbore echilibrat.
+  </p>
+
+  <pre><code>           10
+          /  \
+         5    15      Căutăm 7:
+        / \     \     - 7 < 10 → mergi stânga
+       3   7    20    - 7 > 5  → mergi dreapta
+                      - 7 = 7  → găsit! (3 comparații vs 6 linear)</code></pre>
+
+
+  <h2>Implementare în PHP</h2>
+
+  <pre><code>class BSTNode {
+    public function __construct(
+        public int      $value,
+        public ?BSTNode $left  = null,
+        public ?BSTNode $right = null
+    ) {}
+}
+
+class BST {
+    private ?BSTNode $root = null;
+
+    // Inserare — O(log n) mediu, O(n) worst case (arbore degenerat)
+    public function insert(int $value): void {
+        $this->root = $this->insertNode($this->root, $value);
+    }
+
+    private function insertNode(?BSTNode $node, int $value): BSTNode {
+        if ($node === null) return new BSTNode($value);
+        if ($value < $node->value)      $node->left  = $this->insertNode($node->left,  $value);
+        elseif ($value > $node->value)  $node->right = $this->insertNode($node->right, $value);
+        return $node;  // valori duplicate ignorate
+    }
+
+    // Căutare — O(log n)
+    public function search(int $value): bool {
+        return $this->searchNode($this->root, $value);
+    }
+
+    private function searchNode(?BSTNode $node, int $value): bool {
+        if ($node === null)              return false;
+        if ($value === $node->value)     return true;
+        if ($value < $node->value)       return $this->searchNode($node->left,  $value);
+        return $this->searchNode($node->right, $value);
+    }
+
+    // Traversal In-Order (stânga, rădăcină, dreapta) → returnează sortat!
+    public function inOrder(): array {
+        $result = [];
+        $this->inOrderTraversal($this->root, $result);
+        return $result;
+    }
+
+    private function inOrderTraversal(?BSTNode $node, array &$result): void {
+        if ($node === null) return;
+        $this->inOrderTraversal($node->left, $result);
+        $result[] = $node->value;
+        $this->inOrderTraversal($node->right, $result);
+    }
+}
+
+$bst = new BST();
+foreach ([10, 5, 15, 3, 7, 20] as $val) $bst->insert($val);
+print_r($bst->inOrder());   // [3, 5, 7, 10, 15, 20] — sortat!
+var_dump($bst->search(7));  // true
+var_dump($bst->search(9));  // false</code></pre>
+
+
+  <h2>Traversal — cele 3 moduri</h2>
+
+  <pre><code>// Arborele:    10
+//             /  \
+//            5    15
+//           / \
+//          3   7
+
+// In-Order   (L → Root → R): 3, 5, 7, 10, 15  ← returnează valorile sortate
+// Pre-Order  (Root → L → R): 10, 5, 3, 7, 15  ← util pentru copiere/serializare arbore
+// Post-Order (L → R → Root): 3, 7, 5, 15, 10  ← util pentru ștergere (ștergi copiii înainte de părinte)
+
+// JavaScript — in-order iterativ cu stack (fără recursivitate)
+function inOrderIterative(root) {
+    const result = [];
+    const stack  = [];
+    let current  = root;
+
+    while (current || stack.length) {
+        while (current) {
+            stack.push(current);
+            current = current.left;
+        }
+        current = stack.pop();
+        result.push(current.value);
+        current = current.right;
+    }
+    return result;
+}</code></pre>
+
+
+  <h2>Înălțimea unui arbore și echilibrul</h2>
+
+  <pre><code>// Înălțimea — O(n)
+function height(?BSTNode $node): int {
+    if ($node === null) return -1;
+    return 1 + max(height($node->left), height($node->right));
+}
+
+// BST degenerat (cel mai rău caz) — inserezi valori sortate:
+// 1 → 2 → 3 → 4 → 5  devine o listă înlănțuită, înălțime n-1
+// Căutarea e O(n) în loc de O(log n)!
+
+// Soluție: arbori echilibrați (AVL, Red-Black Tree)
+// Aceștia mențin înălțimea O(log n) prin rotații automate
+// MySQL B-Tree indexes, PHP SplMinHeap — arbori echilibrați internaly</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">BST în practică</div>
+    Nu implementezi de obicei BST de la zero — bazele de date folosesc B-Tree (variantă), motoarele
+    JavaScript folosesc arbori interni pentru obiecte. Valoarea exercițiului BST este înțelegerea
+    recursivității, traversalului și a complexității O(log n) pe structuri ierarhice.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu</div>
+    <ol>
+      <li>Adaugă metoda <code>findMin()</code> și <code>findMax()</code> la BST (cel mai mic e cel mai din stânga)</li>
+      <li>Implementează <code>preOrder()</code> și <code>postOrder()</code> traversal</li>
+      <li>Implementează BFS pe un arbore binar (traversal level-order) folosind o coadă</li>
+      <li>Verifică dacă un arbore binar este un BST valid (fiecare nod respectă invarianta)</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://visualgo.net/en/bst" target="_blank">VisuAlgo — Binary Search Tree</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Vizualizare interactivă a operațiilor BST (insert, search, delete, traversal) pas cu pas.
+        Indispensabil pentru înțelegerea vizuală a modului în care arborele se restructurează.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este invarianta unui Binary Search Tree?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Fiecare nod are exact doi copii — arborele e complet</button></li>
+        <li><button data-correct="true">Copiii stângi au valori mai mici, copiii drepți au valori mai mari decât nodul curent</button></li>
+        <li><button data-correct="false">Valorile sunt stocate sortat de la stânga la dreapta pe fiecare nivel</button></li>
+        <li><button data-correct="false">Diferența de înălțime dintre subarborii stâng și drept e maxim 1</button></tr></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Invarianta BST: pentru orice nod N, toate nodurile din subarborele stâng au valori &lt; N.value, toate din subarborele drept au valori &gt; N.value. Această proprietate permite căutarea binară — eliminăm jumătate din arbore la fiecare pas.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce returnează traversalul In-Order pe un BST valid?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Elementele în ordinea inserării lor în arbore</button></li>
+        <li><button data-correct="false">Elementele de la rădăcină spre frunze, nivel cu nivel</button></li>
+        <li><button data-correct="true">Elementele în ordine sortată crescătoare</button></li>
+        <li><button data-correct="false">Elementele în ordine inversată, de la cel mai mare la cel mai mic</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> In-Order (Stânga → Rădăcină → Dreapta) pe un BST produce elementele în ordine ascendentă. Aceasta este o proprietate cheie: BST In-Order = array sortat. De aceea indexurile B-Tree din bazele de date permit scanare în ordine eficientă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Când devine căutarea într-un BST O(n) în loc de O(log n)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când arborele are mai mult de 1000 de noduri</button></li>
+        <li><button data-correct="false">Când căutăm o valoare care nu există în arbore</button></li>
+        <li><button data-correct="true">Când arborele e degenerat — inserezi valori sortate, formând o listă înlănțuită</button></li>
+        <li><button data-correct="false">Când arborele are mai mulți copii drepți decât stângi</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Inserând valorile 1, 2, 3, 4, 5 în ordine, fiecare nod nou merge la dreapta celui precedent — arborele devine o linie (liste înlănțuită). Înălțimea = n-1, căutarea = O(n). Soluția: arbori auto-echilibrați (AVL, Red-Black) care mențin O(log n).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Traversalul Post-Order (L → R → Root) este util mai ales pentru:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Returnarea elementelor în ordine sortată din un BST</button></li>
+        <li><button data-correct="false">Copierea unui arbore în exact aceeași formă</button></li>
+        <li><button data-correct="true">Ștergerea unui arbore — procesezi copiii înainte de a șterge părintele</button></li>
+        <li><button data-correct="false">Căutarea celei mai scurte căi între două noduri</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Post-Order procesează copiii complet înainte de rădăcină — esențial pentru ștergere (nu poți șterge un părinte dacă copiii sunt încă referiți) și pentru evaluarea expresiilor matematice în formă de arbore (operanzii se evaluează înainte de operator).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care traversal folosește o Coadă (Queue) în loc de recursivitate sau Stack?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">In-Order traversal — parcurge nodurile în ordine sortată</button></li>
+        <li><button data-correct="false">Pre-Order traversal — parcurge rădăcina înaintea copiilor</button></li>
+        <li><button data-correct="false">Post-Order traversal — parcurge copiii înaintea rădăcinii</button></li>
+        <li><button data-correct="true">Level-Order (BFS) traversal — parcurge nodurile nivel cu nivel</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> BFS (Breadth First Search) pe arbore vizitează toate nodurile de pe nivelul curent înainte de a avansa la nivelul următor. O coadă menține nodurile în ordinea corectă: adaugi copiii unui nod în coadă și procesezi în ordinea FIFO.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Cum funcționează un AVL Tree (arbore echilibrat automat)? Cum sunt construiți indexurile B-Tree în MySQL?
+      Cum rezolvi "cel mai mic strămoș comun" a două noduri?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0006-hash-map.html">← Lecția 6: Hash Map</a>
+    <a href="0008-grafuri.html">Lecția 8: Grafuri →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

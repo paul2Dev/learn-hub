@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5: Linked List — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 5 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Linked List (Listă Înlănțuită)</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    O colecție de noduri conectate prin pointeri — inserare și ștergere O(1) la extremități, dar fără acces aleator.
+  </p>
+
+
+  <h2>Structura unui nod</h2>
+
+  <p>
+    O listă înlănțuită este formată din <strong>noduri</strong>. Fiecare nod conține:
+    o <strong>valoare</strong> și un <strong>pointer</strong> (referință) către nodul următor.
+    Ultimul nod are pointer-ul <code>null</code>.
+  </p>
+
+  <pre><code>Node(1) → Node(2) → Node(3) → Node(4) → null
+  ↑ head                        ↑ tail
+
+Singly Linked List:   fiecare nod știe numai nodul următor
+Doubly Linked List:   fiecare nod știe nodul anterior ȘI cel următor
+                      null ← Node(1) ↔ Node(2) ↔ Node(3) → null</code></pre>
+
+
+  <h2>Array vs Linked List — comparație</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Operație</th><th>Array</th><th>Linked List</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Acces prin index</td><td><span class="complexity good">O(1)</span></td><td><span class="complexity bad">O(n)</span> — trebuie parcurs</td></tr>
+      <tr><td>Inserare la început</td><td><span class="complexity ok">O(n)</span> — deplasare</td><td><span class="complexity good">O(1)</span> — schimb de pointer</td></tr>
+      <tr><td>Inserare la final</td><td><span class="complexity good">O(1)</span> amortizat</td><td><span class="complexity good">O(1)</span> cu pointer tail</td></tr>
+      <tr><td>Inserare la mijloc</td><td><span class="complexity ok">O(n)</span></td><td><span class="complexity ok">O(n)</span> căutare + O(1) inserare</td></tr>
+      <tr><td>Ștergere la început</td><td><span class="complexity ok">O(n)</span> — deplasare</td><td><span class="complexity good">O(1)</span> — schimb de pointer</td></tr>
+      <tr><td>Memorie</td><td>Contiguă, eficientă</td><td>Extra memorie pentru pointeri</td></tr>
+      <tr><td>Cache performance</td><td>Excelent (localism)</td><td>Slab (noduri împrăștiate)</td></tr>
+    </tbody>
+  </table>
+
+
+  <h2>Implementare în PHP</h2>
+
+  <pre><code>class Node {
+    public function __construct(
+        public mixed $value,
+        public ?Node $next = null
+    ) {}
+}
+
+class LinkedList {
+    private ?Node $head = null;
+    private ?Node $tail = null;
+    private int   $size = 0;
+
+    // Adaugă la final — O(1)
+    public function append(mixed $value): void {
+        $node = new Node($value);
+        if ($this->tail === null) {
+            $this->head = $this->tail = $node;
+        } else {
+            $this->tail->next = $node;
+            $this->tail = $node;
+        }
+        $this->size++;
+    }
+
+    // Adaugă la început — O(1)
+    public function prepend(mixed $value): void {
+        $node = new Node($value, $this->head);
+        $this->head = $node;
+        if ($this->tail === null) $this->tail = $node;
+        $this->size++;
+    }
+
+    // Șterge primul nod — O(1)
+    public function removeFirst(): mixed {
+        if ($this->head === null) throw new UnderflowException('List is empty');
+        $value = $this->head->value;
+        $this->head = $this->head->next;
+        if ($this->head === null) $this->tail = null;
+        $this->size--;
+        return $value;
+    }
+
+    // Caută o valoare — O(n)
+    public function contains(mixed $value): bool {
+        $current = $this->head;
+        while ($current !== null) {
+            if ($current->value === $value) return true;
+            $current = $current->next;
+        }
+        return false;
+    }
+
+    // Conversie la array — O(n)
+    public function toArray(): array {
+        $result  = [];
+        $current = $this->head;
+        while ($current !== null) {
+            $result[] = $current->value;
+            $current  = $current->next;
+        }
+        return $result;
+    }
+
+    public function size(): int { return $this->size; }
+}
+
+$list = new LinkedList();
+$list->append(1);
+$list->append(2);
+$list->append(3);
+$list->prepend(0);
+print_r($list->toArray());   // [0, 1, 2, 3]
+echo $list->removeFirst();   // 0</code></pre>
+
+
+  <h2>Implementare în JavaScript</h2>
+
+  <pre><code>class Node {
+    constructor(value, next = null) {
+        this.value = value;
+        this.next  = next;
+    }
+}
+
+class LinkedList {
+    #head = null;
+    #tail = null;
+    #size = 0;
+
+    append(value) {
+        const node = new Node(value);
+        if (!this.#tail) {
+            this.#head = this.#tail = node;
+        } else {
+            this.#tail.next = node;
+            this.#tail = node;
+        }
+        this.#size++;
+    }
+
+    prepend(value) {
+        const node = new Node(value, this.#head);
+        this.#head = node;
+        if (!this.#tail) this.#tail = node;
+        this.#size++;
+    }
+
+    removeFirst() {
+        if (!this.#head) throw new Error('List is empty');
+        const value = this.#head.value;
+        this.#head  = this.#head.next;
+        if (!this.#head) this.#tail = null;
+        this.#size--;
+        return value;
+    }
+
+    contains(value) {
+        let current = this.#head;
+        while (current) {
+            if (current.value === value) return true;
+            current = current.next;
+        }
+        return false;
+    }
+
+    toArray() {
+        const result = [];
+        let current  = this.#head;
+        while (current) {
+            result.push(current.value);
+            current = current.next;
+        }
+        return result;
+    }
+
+    get size() { return this.#size; }
+}
+
+const list = new LinkedList();
+list.append(1); list.append(2); list.append(3);
+list.prepend(0);
+console.log(list.toArray());    // [0, 1, 2, 3]
+console.log(list.removeFirst()); // 0</code></pre>
+
+
+  <h2>Inversarea unei liste înlănțuite</h2>
+
+  <pre><code>// Algoritmul clasic cu 3 pointeri — O(n) timp, O(1) spațiu
+public function reverse(): void {
+    $prev    = null;
+    $current = $this->head;
+    $this->tail = $this->head;  // capul devine coada
+
+    while ($current !== null) {
+        $next          = $current->next;  // salvăm următorul
+        $current->next = $prev;           // inversăm pointerul
+        $prev          = $current;        // avansăm prev
+        $current       = $next;           // avansăm current
+    }
+    $this->head = $prev;  // noul cap e fostul coadă
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Când să folosești Linked List</div>
+    Linked List e avantajoasă când: inserezi/ștergi frecvent la <strong>începutul</strong> listei,
+    dimensiunea variază extrem de mult și nu vrei realocări, sau implementezi un Stack/Queue
+    fără a folosi array. În PHP/JS modern, array-urile native sunt adesea mai rapide în practică
+    datorită cache-ului CPU, chiar și pentru inserare.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu</div>
+    <ol>
+      <li>Adaugă metoda <code>removeAt(index)</code> care șterge nodul de la un index dat — O(n)</li>
+      <li>Implementează metoda <code>reverse()</code> în JavaScript</li>
+      <li>Detectează dacă o listă înlănțuită are un ciclu (Floyd's Cycle Detection — doi pointeri, unul rapid și unul lent)</li>
+      <li>Găsește al N-lea nod de la final fără a cunoaște lungimea listei</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://www.php.net/manual/en/class.spldoublylinkedlist.php" target="_blank">PHP Manual — SplDoublyLinkedList</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        PHP include o implementare nativă de doubly linked list — baza pentru <code>SplStack</code> și <code>SplQueue</code>.
+        Suportă iterare în ambele direcții și operații O(1) la ambele capete.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce accesul prin index în o Linked List este O(n)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Deoarece nodurile sunt sortate și trebuie căutate binar</button></li>
+        <li><button data-correct="true">Nodurile nu sunt în memorie contiguă — trebuie parcurse de la head până la indexul dorit</button></li>
+        <li><button data-correct="false">Deoarece indexurile se recalculează la fiecare acces</button></li>
+        <li><button data-correct="false">Deoarece Linked List nu suportă acces prin index deloc</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Într-un array, adresa elementului se calculează direct: <code>baza + i * size</code>. Într-o Linked List, nu există adresă directă — trebuie să urmezi pointerii nod cu nod de la <code>head</code>: <code>head → next → next → ...</code> de i ori.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este avantajul principal al Linked List față de un Array?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Accesul aleator O(1) față de O(n) al array-ului</button></li>
+        <li><button data-correct="false">Consumul mai mic de memorie datorită lipsei de indici</button></li>
+        <li><button data-correct="true">Inserarea și ștergerea la capete sunt O(1) — nu necesită deplasarea elementelor</button></li>
+        <li><button data-correct="false">Performanță mai bună la cache-ul procesorului datorită memoriei contigue</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Schimbarea pointerilor la <code>head</code> sau <code>tail</code> este O(1) și nu deplasează niciun alt element. Un array trebuie să mute toate elementele la inserare/ștergere la început — O(n). Acesta e trade-off-ul principal: acces lent vs modificare rapidă la extremități.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Câți pointeri modifici la ștergerea primului nod (removeFirst) dintr-o Singly Linked List?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Zero — nodul dispare automat când nu mai e referențiat</button></li>
+        <li><button data-correct="true">Unul — <code>head</code> devine <code>head.next</code>, iar vechiul head e colectat de GC</button></li>
+        <li><button data-correct="false">Doi — modifici atât <code>head</code> cât și <code>tail</code> ale listei</button></li>
+        <li><button data-correct="false">N — trebuie actualizate referințele tuturor nodurilor rămase</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Muți <code>head</code> să pointeze la al doilea nod. Vechiul prim nod nu mai are referințe și va fi colectat de Garbage Collector. Cazul special: dacă lista devine goală după ștergere, trebuie să setezi și <code>tail = null</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce avantaj adaugă o Doubly Linked List față de o Singly Linked List?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Acces O(1) prin index datorită pointerilor bidirecționali</button></li>
+        <li><button data-correct="false">Consum mai mic de memorie prin eliminarea unui pointer</button></li>
+        <li><button data-correct="true">Traversare în ambele direcții și ștergere O(1) la final (tail) fără a parcurge lista</button></li>
+        <li><button data-correct="false">Inserare mai rapidă la mijloc față de Singly Linked List</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cu pointer <code>prev</code>, poți șterge nodul <code>tail</code> în O(1) — actualizezi <code>tail.prev.next = null</code> și muți <code>tail</code>. Fără el, trebuie să parcurgi toată lista pentru a găsi penultimul nod — O(n). Costul: memorie dublă pentru pointeri.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Algoritmul Floyd's Cycle Detection folosește două pointeri cu viteze diferite. De ce funcționează?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pointerul rapid marchează nodurile vizitate, cel lent verifică marcajele</button></li>
+        <li><button data-correct="false">Dacă există ciclu, pointerul rapid ajunge la null mai repede decât cel lent</button></li>
+        <li><button data-correct="true">Dacă există ciclu, pointerul rapid îl va ajunge din urmă pe cel lent — se vor întâlni în interiorul ciclului</button></li>
+        <li><button data-correct="false">Pointerul rapid calculează lungimea listei, cel lent verifică dacă e egală</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Pointerul lent avansează 1 nod/pas, cel rapid 2. Fără ciclu, rapid ajunge la null. Cu ciclu, ambii intră în el și se rotesc — rapid câștigă tur după tur și în final rapid = lent. Nici un nod nu e marcat — O(1) spațiu.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Cum implementezi o Doubly Linked List? Cum funcționează LRU Cache cu o Linked List + Hash Map?
+      Când să alegi Linked List vs array în PHP modern?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0004-queue.html">← Lecția 4: Queue (Coadă)</a>
+    <a href="0006-hash-map.html">Lecția 6: Hash Map →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

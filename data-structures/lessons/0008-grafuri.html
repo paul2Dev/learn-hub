@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8: Grafuri — Data Structures</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 8 din 9</span>
+    <span class="tag">~30 min</span>
+    <span>Data Structures — PHP &amp; JavaScript</span>
+  </div>
+
+  <h1>Grafuri</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Noduri și muchii — rețele sociale, hărți, dependențe de pachete, rutare. BFS și DFS aplicate pe grafuri reale.
+  </p>
+
+
+  <h2>Ce este un graf?</h2>
+
+  <p>
+    Un <strong>graf</strong> constă din <strong>noduri (vertices)</strong> conectate prin <strong>muchii (edges)</strong>.
+    Spre deosebire de arbori, grafurile pot forma cicluri și nu au o rădăcină.
+  </p>
+
+  <pre><code>Graf neorientat (undirected):         Graf orientat (directed):
+  A --- B --- D                          A → B → D
+  |     |                                ↓   ↓
+  C --- E                                C → E
+
+Graf ponderat (weighted) — muchii au costuri:
+  A --3-- B --1-- D
+  |               |
+  2               5
+  |               |
+  C ------4------ E</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Exemple din lumea reală</div>
+    <strong>Rețele sociale</strong> — noduri: utilizatori, muchii: conexiuni.<br>
+    <strong>Hărți</strong> — noduri: locații, muchii: drumuri cu distanțe (graf ponderat).<br>
+    <strong>Dependențe npm/Composer</strong> — noduri: pachete, muchii: dependențe (graf orientat).<br>
+    <strong>Web crawling</strong> — noduri: pagini, muchii: link-uri.
+  </div>
+
+
+  <h2>Reprezentare — Adjacency List</h2>
+
+  <p>
+    Cea mai comună reprezentare: un hash map unde cheia e nodul și valoarea e lista vecinilor.
+    Eficientă pentru grafuri rare (puține muchii față de noduri):
+  </p>
+
+  <pre><code>// PHP — Adjacency List
+$graph = [
+    'A' => ['B', 'C'],
+    'B' => ['A', 'D', 'E'],
+    'C' => ['A', 'E'],
+    'D' => ['B'],
+    'E' => ['B', 'C'],
+];
+
+// JS — Adjacency List cu Map
+const graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'E']],
+    ['D', ['B']],
+    ['E', ['B', 'C']],
+]);
+
+// Adjacency Matrix — alternativă pentru grafuri dense
+//   A  B  C  D  E
+// A[0, 1, 1, 0, 0]
+// B[1, 0, 0, 1, 1]
+// C[1, 0, 0, 0, 1]
+// D[0, 1, 0, 0, 0]
+// E[0, 1, 1, 0, 0]
+// Avantaj: verificare muchie O(1). Dezavantaj: O(V²) memorie</code></pre>
+
+
+  <h2>BFS — Breadth First Search</h2>
+
+  <p>
+    Explorează nodurile nivel cu nivel — cel mai aproape primul.
+    Găsește <strong>cea mai scurtă cale</strong> (în număr de muchii) între două noduri.
+  </p>
+
+  <pre><code>// PHP
+function bfs(array $graph, string $start, string $target): ?array {
+    $queue   = new SplQueue();
+    $visited = [$start => true];
+    $parent  = [];  // pentru reconstrucția căii
+
+    $queue->enqueue($start);
+
+    while (!$queue->isEmpty()) {
+        $node = $queue->dequeue();
+        if ($node === $target) return reconstructPath($parent, $start, $target);
+
+        foreach ($graph[$node] as $neighbor) {
+            if (!isset($visited[$neighbor])) {
+                $visited[$neighbor] = true;
+                $parent[$neighbor]  = $node;
+                $queue->enqueue($neighbor);
+            }
+        }
+    }
+    return null;  // nu există cale
+}
+
+function reconstructPath(array $parent, string $start, string $target): array {
+    $path = [];
+    $node = $target;
+    while ($node !== $start) {
+        array_unshift($path, $node);
+        $node = $parent[$node];
+    }
+    array_unshift($path, $start);
+    return $path;
+}
+
+$path = bfs($graph, 'A', 'D');
+print_r($path);  // ['A', 'B', 'D']</code></pre>
+
+
+  <h2>DFS — Depth First Search</h2>
+
+  <p>
+    Explorează cât mai adânc pe o ramură înainte de a reveni.
+    Util pentru detectarea ciclurilor, topological sort, componente conexe.
+  </p>
+
+  <pre><code>// JS — DFS recursiv
+function dfs(graph, node, visited = new Set(), result = []) {
+    visited.add(node);
+    result.push(node);
+
+    for (const neighbor of (graph.get(node) ?? [])) {
+        if (!visited.has(neighbor)) {
+            dfs(graph, neighbor, visited, result);
+        }
+    }
+    return result;
+}
+
+// JS — DFS iterativ cu Stack (evită stack overflow pe grafuri adânci)
+function dfsIterative(graph, start) {
+    const visited = new Set();
+    const stack   = [start];
+    const result  = [];
+
+    while (stack.length) {
+        const node = stack.pop();
+        if (visited.has(node)) continue;
+        visited.add(node);
+        result.push(node);
+
+        for (const neighbor of (graph.get(node) ?? []).reverse()) {
+            if (!visited.has(neighbor)) stack.push(neighbor);
+        }
+    }
+    return result;
+}
+
+const g = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['D', 'E']],
+    ['C', []],
+    ['D', []],
+    ['E', []],
+]);
+console.log(dfs(g, 'A'));          // ['A', 'B', 'D', 'E', 'C']
+console.log(dfsIterative(g, 'A')); // ['A', 'B', 'D', 'E', 'C']</code></pre>
+
+
+  <h2>BFS vs DFS — când să alegi</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Criteriu</th><th>BFS</th><th>DFS</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Structura de date</td><td>Coadă (Queue)</td><td>Stack / Recursivitate</td></tr>
+      <tr><td>Explorare</td><td>Nivel cu nivel (lățime)</td><td>Ramură completă (adâncime)</td></tr>
+      <tr><td>Cea mai scurtă cale</td><td>Da (nr. muchii)</td><td>Nu garantat</td></tr>
+      <tr><td>Memorie</td><td>O(V) — stochează nivelul curent</td><td>O(H) — adâncimea stivei</td></tr>
+      <tr><td>Folosit pentru</td><td>GPS, rețele sociale, nivel minim</td><td>Detectare cicluri, topological sort, maze solving</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu</div>
+    <ol>
+      <li>Implementează o funcție care verifică dacă există o cale între două noduri folosind BFS</li>
+      <li>Implementează detectarea ciclurilor într-un graf orientat cu DFS (urmărește nodurile "în procesare")</li>
+      <li>Modelează o rețea socială simplă și găsește gradul de separare (shortest path) dintre doi utilizatori</li>
+      <li>Implementează topological sort pentru a ordona dependențele unui proiect (graf orientat aciclic)</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://visualgo.net/en/graphds" target="_blank">VisuAlgo — Graph Data Structures</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Vizualizare interactivă pentru BFS și DFS pe grafuri. Poți construi propriul graf și urmări
+        pas cu pas cum funcționează algoritmii de traversal.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este diferența principală dintre un graf și un arbore?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Arborii pot stoca orice tip de date, grafurile numai numere</button></li>
+        <li><button data-correct="false">Grafurile au maxim 2 muchii per nod, arborii pot avea oricâte</button></li>
+        <li><button data-correct="true">Grafurile pot conține cicluri și nu au rădăcină; arborii sunt grafuri conexe fără cicluri</button></li>
+        <li><button data-correct="false">Arborii sunt mai eficienți la memorie deoarece nu stochează muchii</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un arbore este un caz special de graf — un graf conex și aciclic cu n noduri și n-1 muchii. Grafurile generale pot forma cicluri (A → B → C → A), pot fi neconexe, orientate, ponderate etc.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce BFS găsește cea mai scurtă cale (în muchii) și DFS nu?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">BFS sortează nodurile după distanță înainte de a le procesa</button></li>
+        <li><button data-correct="true">BFS explorează nivel cu nivel — primul nod ajuns la destinație are garantat cel mai scurt drum</button></li>
+        <li><button data-correct="false">DFS nu poate găsi drumuri, numai detecta cicluri</button></li>
+        <li><button data-correct="false">BFS folosește o matrice de distanțe precalculate pentru a ghida explorarea</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> BFS extinde "frontiera" uniform — mai întâi toți vecinii la distanța 1, apoi la distanța 2 etc. Prima dată când atingi destinația, ai parcurs calea cu cele mai puține muchii posibile. DFS poate găsi destinația pe o cale lungă înainte de a explora calea scurtă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce structură de date folosește intern algoritmul BFS?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Stack — pentru urmărirea nodurilor de vizitat</button></li>
+        <li><button data-correct="false">Array sortat — pentru accesul rapid la nodul cu distanța minimă</button></li>
+        <li><button data-correct="true">Queue (Coadă) — FIFO garantează procesarea nodurilor în ordinea descoperirii</button></li>
+        <li><button data-correct="false">Hash Map — pentru a stoca distanțele de la nodul sursă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> BFS adaugă vecinii în coadă (enqueue) și îi procesează în ordinea adăugării (dequeue FIFO). Aceasta garantează că nodurile de la distanța k sunt procesate complet înainte de nodurile de la distanța k+1. DFS folosește un stack (sau recursivitate, care folosește call stack-ul).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este avantajul Adjacency List față de Adjacency Matrix?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Verificarea dacă există o muchie între doi noduri e O(1) față de O(n)</button></li>
+        <li><button data-correct="true">Consumă O(V + E) memorie față de O(V²) — eficient pentru grafuri rare</button></li>
+        <li><button data-correct="false">Permite stocarea grafurilor ponderate, spre deosebire de matrice</button></li>
+        <li><button data-correct="false">Traversalul BFS este mai rapid cu Adjacency List datorită indexării</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Adjacency Matrix alocă V×V spațiu indiferent de câte muchii există. Pentru un graf cu 1000 noduri și 1000 muchii (rar), Matrix aloca 1.000.000 celule, List aloca ~2000. Invers, Matrix e mai bună pentru grafuri dense și pentru verificare rapidă O(1) a existenței unei muchii.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce marcăm nodurile ca "vizitate" în BFS și DFS?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru a calcula distanța de la nodul sursă la fiecare nod</button></li>
+        <li><button data-correct="false">Pentru a sorta nodurile în ordinea vizitării</button></li>
+        <li><button data-correct="true">Pentru a evita vizitarea aceluiași nod de mai multe ori și a preveni bucle infinite în grafuri cu cicluri</button></li>
+        <li><button data-correct="false">Pentru a permite reluarea traversalului de la un nod deja vizitat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fără marcarea nodurilor vizitate, un graf cu ciclu (A → B → A → B → ...) ar face BFS/DFS să ruleze la infinit. Marcând nodurile, garantăm că fiecare nod e procesat o singură dată — complexitate O(V + E) în loc de infinit.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Cum funcționează algoritmul Dijkstra pentru căi minime cu ponderi?
+      Ce este Topological Sort și când îl folosești în practică?
+      Cum detectezi componente conexe cu Union-Find?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0007-arbori-binari.html">← Lecția 7: Arbori Binari</a>
+    <a href="0009-algoritmi-sortare.html">Lecția 9: Algoritmi de Sortare →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
