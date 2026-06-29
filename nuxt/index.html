@@ -3,8 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nuxt 3 cu Supabase și Vercel — Curs</title>
+  <title>Nuxt 3 — Index curs</title>
   <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; color: var(--muted); max-width: 560px; }
+
+    .lesson-grid { display: flex; flex-direction: column; gap: 0; margin: 0.5rem 0 2.5rem; }
+    .lesson-card {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      padding: 1rem 1.2rem; border: 1px solid var(--border);
+      border-bottom: none; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+    }
+    .lesson-card:first-child { border-radius: 8px 8px 0 0; }
+    .lesson-card:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .lesson-card:hover { background: var(--code-bg); }
+    .lesson-num {
+      width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold; flex-shrink: 0;
+    }
+    .lesson-card:nth-child(1) .lesson-num { background: #00856d; }
+    .lesson-card:nth-child(2) .lesson-num { background: #16a34a; }
+    .lesson-card:nth-child(3) .lesson-num { background: #0891b2; }
+    .lesson-card:nth-child(4) .lesson-num { background: #7c3aed; }
+    .lesson-card:nth-child(5) .lesson-num { background: #f59e0b; }
+    .lesson-card:nth-child(6) .lesson-num { background: #0284c7; }
+    .lesson-card:nth-child(7) .lesson-num { background: #dc2626; }
+    .lesson-card:nth-child(8) .lesson-num { background: #9333ea; }
+    .lesson-card:nth-child(9) .lesson-num { background: #00856d; }
+    .lesson-info h3 { font-size: 0.97rem; margin: 0 0 0.15rem; }
+    .lesson-info p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .lesson-time {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono); white-space: nowrap; align-self: center;
+    }
+
+    .reference-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0 3rem; }
+    .ref-card {
+      flex: 1; min-width: 160px;
+      padding: 0.85rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+      text-decoration: none; color: var(--text);
+      transition: background 0.12s;
+    }
+    .ref-card:hover { background: var(--code-bg); }
+    .ref-card h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ref-card p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+    .quickref-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .quickref-table th {
+      text-align: left; padding: 0.5rem 0.8rem;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    }
+    .quickref-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .quickref-table tr:last-child td { border-bottom: none; }
+    .quickref-table code { font-size: 0.82rem; }
+  </style>
 </head>
 <body>
 <div class="container">
@@ -13,154 +72,254 @@
     <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
   </div>
 
-  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
-    <span style="font-size:2.5rem;">💚</span>
-    <div>
-      <h1 style="margin:0;font-size:1.8rem;">Nuxt 3 cu Supabase și Vercel</h1>
-      <p style="margin:0.25rem 0 0;color:var(--muted);font-size:0.95rem;">
-        De la Vue 3 la producție — App Router, Nitro, Supabase Auth, deploy multi-platformă.
-      </p>
+  <!-- ══════ HEADER ══════ -->
+  <div class="course-header">
+    <div class="lesson-meta">
+      <span class="tag">9 lecții</span>
+      <span class="tag">~3.5 ore total</span>
+      <span>Nuxt 3 — Curs</span>
     </div>
+    <h1>Învață Nuxt 3</h1>
+    <p>
+      De la Vue 3 la producție. Înveți rutarea cu <code>pages/</code>, Nitro server engine,
+      composables (<code>useFetch</code>, <code>useAsyncData</code>), server routes API,
+      conectarea la Supabase cu modulul oficial, Pinia pentru state management,
+      deploy pe Vercel, Netlify și Cloudflare Workers. 9 lecții cu cod concret și quiz-uri interactive.
+    </p>
   </div>
 
-  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:2.5rem;">
-    <span class="tag">nuxt 3</span>
-    <span class="tag tag-orange">supabase</span>
-    <span class="tag tag-orange">vue 3</span>
-    <span class="tag tag-green">9 lecții</span>
-  </div>
 
+  <!-- ══════ LECȚII ══════ -->
+  <h2 style="margin-top:0;">Lecții</h2>
 
-  <h2>Lecții</h2>
   <div class="lesson-grid">
 
     <a class="lesson-card" href="lessons/0001-ce-este-nuxt.html">
-      <div class="lesson-num">01</div>
+      <div class="lesson-num">1</div>
       <div class="lesson-info">
-        <h3>Ce este Nuxt 3?</h3>
-        <p>Vue vs Next, Nitro engine, auto-imports, rendering modes cu routeRules, SFC format.</p>
+        <h3>Ce este Nuxt 3 și de ce îl folosim</h3>
+        <p>Vue vs Next.js, Nitro engine, auto-imports, rendering modes cu routeRules, format SFC</p>
       </div>
+      <span class="lesson-time">~20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0002-structura-proiect.html">
-      <div class="lesson-num">02</div>
+      <div class="lesson-num">2</div>
       <div class="lesson-info">
-        <h3>Structura unui Proiect Nuxt</h3>
-        <p><code>nuxi init</code>, directoare (pages/, components/, composables/, server/), file routing, runtimeConfig.</p>
+        <h3>Structura unui proiect Nuxt</h3>
+        <p>nuxi init, directoare (pages/, components/, composables/, server/, layouts/), file routing, runtimeConfig</p>
       </div>
+      <span class="lesson-time">~20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0003-routing-layouts.html">
-      <div class="lesson-num">03</div>
+      <div class="lesson-num">3</div>
       <div class="lesson-info">
         <h3>Routing și Layouts</h3>
-        <p>NuxtLink, useRoute, useRouter, definePageMeta, route middleware, layouts cu slot, NuxtPage.</p>
+        <p>NuxtLink, useRoute, useRouter, definePageMeta, route middleware, layouts cu slot, NuxtPage</p>
       </div>
+      <span class="lesson-time">~20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0004-composables-data-fetching.html">
-      <div class="lesson-num">04</div>
+      <div class="lesson-num">4</div>
       <div class="lesson-info">
         <h3>Composables și Data Fetching</h3>
-        <p>useFetch vs useAsyncData vs $fetch, watch/refresh, composables custom, useState global.</p>
+        <p>useFetch vs useAsyncData vs $fetch, watch/refresh, composables custom cu prefix use, useState global</p>
       </div>
+      <span class="lesson-time">~25 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0005-server-routes-nitro.html">
-      <div class="lesson-num">05</div>
+      <div class="lesson-num">5</div>
       <div class="lesson-info">
         <h3>Server Routes cu Nitro</h3>
-        <p>defineEventHandler, sufixe de metodă (.get.ts, .post.ts), readBody, getQuery, createError, server middleware.</p>
+        <p>defineEventHandler, sufixe de metodă (.get.ts, .post.ts), readBody, getQuery, createError, server middleware</p>
       </div>
+      <span class="lesson-time">~25 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0006-supabase.html">
-      <div class="lesson-num">06</div>
+      <div class="lesson-num">6</div>
       <div class="lesson-info">
         <h3>Supabase în Nuxt 3</h3>
-        <p>@nuxtjs/supabase, useSupabaseClient, useSupabaseUser, serverSupabaseClient, auth email + OAuth.</p>
+        <p>@nuxtjs/supabase, useSupabaseClient, useSupabaseUser, serverSupabaseClient, auth email + OAuth</p>
       </div>
+      <span class="lesson-time">~30 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0007-module-configurare.html">
-      <div class="lesson-num">07</div>
+      <div class="lesson-num">7</div>
       <div class="lesson-info">
         <h3>Module și Configurare</h3>
-        <p>Ecosistem module Nuxt, Pinia pentru state management, nuxt.config.ts complet, runtimeConfig.</p>
+        <p>Ecosistem module Nuxt, Pinia store cu actions și getters, nuxt.config.ts complet, runtimeConfig</p>
       </div>
+      <span class="lesson-time">~20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0008-deploy.html">
-      <div class="lesson-num">08</div>
+      <div class="lesson-num">8</div>
       <div class="lesson-info">
-        <h3>Deploy pe Vercel, Netlify, Cloudflare</h3>
-        <p>Nitro presets, deploy pe cele 3 platforme, nuxt generate, testare output local, preview deployments.</p>
+        <h3>Deploy pe Vercel, Netlify și Cloudflare</h3>
+        <p>Nitro presets, deploy pe cele 3 platforme, nuxt generate pentru SSG, testare output local</p>
       </div>
+      <span class="lesson-time">~20 min</span>
     </a>
 
     <a class="lesson-card" href="lessons/0009-proiect-complet.html">
-      <div class="lesson-num">09</div>
+      <div class="lesson-num">9</div>
       <div class="lesson-info">
-        <h3>Proiect Complet: Task Manager</h3>
-        <p>CRUD cu Nuxt 3 + Supabase — schema RLS, server routes API, Pinia store, dashboard interactiv, deploy.</p>
+        <h3>Proiect complet: Task Manager cu Nuxt 3 + Supabase</h3>
+        <p>Schema SQL cu RLS, API REST Nitro, Pinia store cu optimistic updates, dashboard Vue, deploy</p>
       </div>
+      <span class="lesson-time">~45 min</span>
     </a>
 
   </div>
 
 
-  <h2>Referință</h2>
-  <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem;">
-    <a href="reference/glossary.html" class="lesson-card" style="max-width:260px;">
-      <div class="lesson-num" style="background:var(--accent);">📖</div>
-      <div class="lesson-info">
-        <h3>Glosar</h3>
-        <p>Toți termenii cheie din curs — de la auto-imports la Nitro presets.</p>
-      </div>
+  <!-- ══════ REFERINȚE ══════ -->
+  <h2>Referințe</h2>
+
+  <div class="reference-links">
+    <a class="ref-card" href="reference/glossary.html">
+      <h4>Glosar</h4>
+      <p>Toți termenii cheie din curs — Nitro, composables, NuxtLink, Pinia, runtimeConfig și altele</p>
+    </a>
+    <a class="ref-card" href="RESOURCES.md">
+      <h4>Resurse</h4>
+      <p>Documentații oficiale, ghiduri și comunități recomandate</p>
+    </a>
+    <a class="ref-card" href="https://nuxt.com/docs" target="_blank">
+      <h4>Nuxt 3 Docs</h4>
+      <p>Documentația oficială — nuxt.com/docs</p>
+    </a>
+    <a class="ref-card" href="https://supabase.nuxtjs.org/" target="_blank">
+      <h4>@nuxtjs/supabase</h4>
+      <p>Documentația modulului oficial Supabase pentru Nuxt</p>
     </a>
   </div>
 
 
-  <h2>Referință rapidă</h2>
+  <!-- ══════ QUICK REFERENCE ══════ -->
+  <h2>Referință rapidă — composables și utilitare Nuxt</h2>
 
-  <table class="compare-table" style="margin-bottom:2rem;">
+  <table class="quickref-table">
     <thead>
-      <tr><th>Concept</th><th class="nuxt-col">Nuxt 3</th><th class="next-col">Next.js (echivalent)</th></tr>
+      <tr>
+        <th>Composable / Utilitar</th>
+        <th>Descriere</th>
+        <th>Context</th>
+        <th>Lecție</th>
+      </tr>
     </thead>
     <tbody>
-      <tr><td>Rutare</td><td class="nuxt-col"><code>pages/[slug].vue</code></td><td class="next-col"><code>app/[slug]/page.tsx</code></td></tr>
-      <tr><td>Data fetching</td><td class="nuxt-col"><code>useFetch()</code> / <code>useAsyncData()</code></td><td class="next-col"><code>fetch()</code> în Server Component</td></tr>
-      <tr><td>Mutații (POST)</td><td class="nuxt-col"><code>$fetch('/api/endpoint', { method: 'POST' })</code></td><td class="next-col">Server Actions (<code>'use server'</code>)</td></tr>
-      <tr><td>State global</td><td class="nuxt-col">Pinia / <code>useState()</code></td><td class="next-col">Zustand / Context</td></tr>
-      <tr><td>API Backend</td><td class="nuxt-col"><code>server/api/tasks.get.ts</code></td><td class="next-col"><code>app/api/tasks/route.ts</code></td></tr>
-      <tr><td>Auth Supabase</td><td class="nuxt-col"><code>@nuxtjs/supabase</code></td><td class="next-col"><code>@supabase/ssr</code> manual</td></tr>
-      <tr><td>Deploy output</td><td class="nuxt-col"><code>.output/</code></td><td class="next-col"><code>.next/</code></td></tr>
-      <tr><td>Build static</td><td class="nuxt-col"><code>nuxt generate</code></td><td class="next-col"><code>output: 'export'</code></td></tr>
+      <tr>
+        <td><code>useFetch(url)</code></td>
+        <td>Fetch + caching + reactiv — cel mai comun mod de data fetching</td>
+        <td>Componente Vue</td>
+        <td><a href="lessons/0004-composables-data-fetching.html">4</a></td>
+      </tr>
+      <tr>
+        <td><code>useAsyncData(key, fn)</code></td>
+        <td>Control complet asupra data fetching — bun pentru logică complexă</td>
+        <td>Componente Vue</td>
+        <td><a href="lessons/0004-composables-data-fetching.html">4</a></td>
+      </tr>
+      <tr>
+        <td><code>$fetch(url, opts)</code></td>
+        <td>Fetch simplu isomorf (server + client) fără reactiv</td>
+        <td>Oriunde</td>
+        <td><a href="lessons/0004-composables-data-fetching.html">4</a></td>
+      </tr>
+      <tr>
+        <td><code>useSupabaseClient()</code></td>
+        <td>Client Supabase cu sesiunea utilizatorului, RLS activ</td>
+        <td>Componente Vue</td>
+        <td><a href="lessons/0006-supabase.html">6</a></td>
+      </tr>
+      <tr>
+        <td><code>useSupabaseUser()</code></td>
+        <td>User curent ca <code>Ref&lt;User | null&gt;</code> reactiv</td>
+        <td>Componente Vue</td>
+        <td><a href="lessons/0006-supabase.html">6</a></td>
+      </tr>
+      <tr>
+        <td><code>serverSupabaseClient(event)</code></td>
+        <td>Client Supabase cu sesiunea utilizatorului — în context server</td>
+        <td>server/api/</td>
+        <td><a href="lessons/0006-supabase.html">6</a></td>
+      </tr>
+      <tr>
+        <td><code>readBody(event)</code></td>
+        <td>Citire și parsare automată a body-ului JSON din request</td>
+        <td>server/api/</td>
+        <td><a href="lessons/0005-server-routes-nitro.html">5</a></td>
+      </tr>
+      <tr>
+        <td><code>createError({ statusCode })</code></td>
+        <td>Arunca erori HTTP standardizate din server routes</td>
+        <td>server/api/</td>
+        <td><a href="lessons/0005-server-routes-nitro.html">5</a></td>
+      </tr>
+      <tr>
+        <td><code>definePageMeta({})</code></td>
+        <td>Configurează layout-ul și middleware per pagină</td>
+        <td>pages/</td>
+        <td><a href="lessons/0003-routing-layouts.html">3</a></td>
+      </tr>
+      <tr>
+        <td><code>navigateTo('/path')</code></td>
+        <td>Navigare programatică — funcționează pe server și client</td>
+        <td>Oriunde</td>
+        <td><a href="lessons/0003-routing-layouts.html">3</a></td>
+      </tr>
     </tbody>
   </table>
 
-  <table class="compare-table" style="margin-bottom:2.5rem;">
+
+  <h2 style="margin-top:2.5rem;">Referință rapidă — Supabase în Nuxt 3</h2>
+
+  <table class="quickref-table">
     <thead>
-      <tr><th>Composable / Util</th><th>Descriere</th><th>Context</th></tr>
+      <tr>
+        <th>Situație</th>
+        <th>Soluție</th>
+        <th>Lecție</th>
+      </tr>
     </thead>
     <tbody>
-      <tr><td><code>useSupabaseClient()</code></td><td>Client Supabase cu sesiune user</td><td>Componente Vue</td></tr>
-      <tr><td><code>useSupabaseUser()</code></td><td>User curent ca Ref reactiv</td><td>Componente Vue</td></tr>
-      <tr><td><code>serverSupabaseClient(event)</code></td><td>Client Supabase pe server</td><td>server/api/</td></tr>
-      <tr><td><code>serverSupabaseUser(event)</code></td><td>Verifică autentificarea pe server</td><td>server/api/</td></tr>
-      <tr><td><code>useFetch(url)</code></td><td>Fetch + caching + reactiv</td><td>Componente Vue</td></tr>
-      <tr><td><code>$fetch(url, opts)</code></td><td>Fetch simplu, isomorf</td><td>Oriunde</td></tr>
-      <tr><td><code>readBody(event)</code></td><td>Citire body JSON din request</td><td>server/api/</td></tr>
-      <tr><td><code>getRouterParam(event, 'id')</code></td><td>Parametru dinamic din URL</td><td>server/api/</td></tr>
-      <tr><td><code>createError({ statusCode })</code></td><td>Eroare HTTP standardizată</td><td>server/api/</td></tr>
-      <tr><td><code>definePageMeta({})</code></td><td>Layout + middleware per pagină</td><td>pages/</td></tr>
-      <tr><td><code>navigateTo('/path')</code></td><td>Navigare programatică</td><td>Oriunde</td></tr>
+      <tr>
+        <td>Query în componentă Vue (client)</td>
+        <td><code>useSupabaseClient()</code> → <code>.from('table').select()</code></td>
+        <td><a href="lessons/0006-supabase.html">6</a></td>
+      </tr>
+      <tr>
+        <td>Query în server route (Nitro)</td>
+        <td><code>serverSupabaseClient(event)</code> → <code>.from('table').select()</code></td>
+        <td><a href="lessons/0006-supabase.html">6</a>, <a href="lessons/0009-proiect-complet.html">9</a></td>
+      </tr>
+      <tr>
+        <td>Verificare autentificare (server)</td>
+        <td><code>await serverSupabaseUser(event)</code> → 401 dacă null</td>
+        <td><a href="lessons/0006-supabase.html">6</a>, <a href="lessons/0005-server-routes-nitro.html">5</a></td>
+      </tr>
+      <tr>
+        <td>Redirect la login dacă neautentificat</td>
+        <td><code>supabase.redirectOptions</code> în <code>nuxt.config.ts</code></td>
+        <td><a href="lessons/0006-supabase.html">6</a></td>
+      </tr>
+      <tr>
+        <td>Datele utilizatorului autentificat</td>
+        <td>RLS + politici SQL + <code>auth.uid() = user_id</code></td>
+        <td><a href="lessons/0006-supabase.html">6</a>, <a href="lessons/0009-proiect-complet.html">9</a></td>
+      </tr>
     </tbody>
   </table>
 
 
-  <p style="font-size:0.8rem;color:var(--muted);text-align:center;margin-top:2rem;">
-    <a href="../index.html">← Catalog cursuri</a>
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    Nuxt 3 — Curs · Începe de la <a href="lessons/0001-ce-este-nuxt.html">Lecția 1</a>
   </p>
 
 </div>
