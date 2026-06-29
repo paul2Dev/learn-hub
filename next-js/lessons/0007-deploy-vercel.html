@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7: Deploy pe Vercel — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 7 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Deploy pe Vercel</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    De la repo la producție în 5 minute: conectezi GitHub, configurezi variabilele de mediu și fiecare <code>git push</code> devine un deploy automat.
+  </p>
+
+
+  <h2>De ce Vercel pentru Next.js?</h2>
+
+  <p>
+    Vercel este compania care creează și menține Next.js. Platformele lor sunt construite să lucreze perfect
+    împreună — fără configurare manuală de server, Docker sau Nginx.
+  </p>
+
+  <ul>
+    <li><strong>Zero-config deploy</strong> — Vercel detectează automat că e un proiect Next.js</li>
+    <li><strong>Edge Network global</strong> — aplicația servită din locația geografică cea mai apropiată de utilizator</li>
+    <li><strong>Preview deployments</strong> — fiecare PR primește un URL de preview unic</li>
+    <li><strong>Rollback instant</strong> — poți reveni la orice deployment anterior cu un click</li>
+    <li><strong>Tier gratuit generos</strong> — suficient pentru proiecte personale și prototipuri</li>
+  </ul>
+
+
+  <h2>Pasul 1: Pregătire repo GitHub</h2>
+
+  <p>
+    Vercel se conectează la GitHub (sau GitLab/Bitbucket). Asigură-te că:
+  </p>
+
+  <ul>
+    <li>Proiectul tău Next.js e într-un repo GitHub</li>
+    <li>Fișierul <code>.env.local</code> este în <code>.gitignore</code> (nu se comite niciodată)</li>
+    <li><code>package.json</code> are script-ul <code>"build": "next build"</code></li>
+  </ul>
+
+  <pre><code># .gitignore (generat automat de create-next-app)
+.env.local
+.env.*.local
+node_modules/
+.next/</code></pre>
+
+
+  <h2>Pasul 2: Import proiect în Vercel</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Mergi la <strong>vercel.com</strong> → „Add New Project" → conectează contul GitHub</p>
+        <span class="layer-tag">vercel.com/new</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Selectezi repo-ul tău — Vercel detectează automat că e Next.js, nu trebuie să setezi framework</p>
+        <span class="layer-tag">auto-detect</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>La pasul „Environment Variables" adaugi <strong>toate</strong> variabilele din <code>.env.local</code></p>
+        <span class="layer-tag">configurare obligatorie</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Click „Deploy" — build-ul durează 1-3 minute, aplicația e live pe un URL vercel.app</p>
+        <span class="layer-tag">producție</span>
+      </div>
+    </div>
+  </div>
+
+
+  <h2>Pasul 3: Configurare variabile de mediu pe Vercel</h2>
+
+  <p>
+    Variabilele de mediu din <code>.env.local</code> nu se comit — trebuie adăugate manual în Vercel:
+  </p>
+
+  <pre><code># Adaugă în Vercel Dashboard → Settings → Environment Variables:
+NEXT_PUBLIC_SUPABASE_URL        = https://xyzcompany.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY   = eyJhbGciOi...
+SUPABASE_SERVICE_ROLE_KEY       = eyJhbGciOi...</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Medii separate</div>
+    Vercel suportă variabile diferite pentru „Production", „Preview" și „Development".
+    Ideal, ai un proiect Supabase de producție și unul de staging/preview — nu folosi producția pentru teste.
+  </div>
+
+
+  <h2>Vercel CLI — deploy din terminal</h2>
+
+  <pre><code># Instalare globală
+npm install -g vercel
+
+# Login
+vercel login
+
+# Deploy din directorul proiectului
+vercel                  # preview deploy
+vercel --prod           # production deploy
+
+# Pull variabile de mediu din Vercel în local
+vercel env pull .env.local</code></pre>
+
+  <p>
+    <code>vercel env pull</code> este extrem de util — îți sincronizează variabilele de mediu din Vercel
+    în <code>.env.local</code> fără a le copia manual.
+  </p>
+
+
+  <h2>Workflow automat: git push → deploy</h2>
+
+  <p>
+    Odată conectat, workflow-ul devine:
+  </p>
+
+  <pre><code># Fiecare push pe branch-ul principal → deploy în producție
+git add .
+git commit -m "feat: add user dashboard"
+git push origin main
+# → Vercel primește webhook, pornește build-ul automat
+
+# Fiecare PR → preview deployment cu URL unic
+git checkout -b feature/new-feature
+git push origin feature/new-feature
+# → PR primeeste un comentariu cu URL de preview: https://my-app-git-feature-*.vercel.app</code></pre>
+
+
+  <h2>Domeniu personalizat</h2>
+
+  <p>
+    Din Vercel Dashboard → Settings → Domains, adaugi domeniul tău:
+  </p>
+
+  <ol>
+    <li>Adaugi domeniul în Vercel (ex: <code>myapp.ro</code>)</li>
+    <li>Vercel îți dă un DNS record CNAME sau A de adăugat la registrar</li>
+    <li>Adaugi recordul la providerul DNS (ex: Cloudflare, GoDaddy)</li>
+    <li>SSL (HTTPS) e configurat automat de Vercel prin Let's Encrypt</li>
+  </ol>
+
+  <div class="callout tip">
+    <div class="callout-label">Supabase și domenii</div>
+    Dacă folosești Supabase Auth cu OAuth (Google, GitHub), trebuie să adaugi domeniul de producție
+    în Supabase Dashboard → Authentication → URL Configuration → Site URL și Redirect URLs.
+    Altfel autentificarea va eșua în producție.
+  </div>
+
+
+  <h2>Verificare build local înainte de deploy</h2>
+
+  <pre><code># Rulează exact ce face Vercel — detectezi erori înainte de deploy
+npm run build
+
+# Pornește serverul de producție local pentru testare
+npm run start</code></pre>
+
+  <p>
+    <code>npm run build</code> poate eșua pe erori TypeScript sau import-uri greșite care nu apar la
+    <code>npm run dev</code>. Rulează-l local înainte de fiecare push important.
+  </p>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Primul deploy</div>
+    <p>Deploys proiectul tău Next.js pe Vercel urmând acești pași:</p>
+    <ol>
+      <li>Asigură-te că <code>.env.local</code> e în <code>.gitignore</code></li>
+      <li>Rulează <code>npm run build</code> local — verifică că trece fără erori</li>
+      <li>Push repo-ul pe GitHub</li>
+      <li>Importă proiectul pe vercel.com</li>
+      <li>Adaugă toate variabilele de mediu</li>
+      <li>Deploys și verifică URL-ul de producție</li>
+      <li>Fă o modificare mică și push — verifică că deploy-ul automat funcționează</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://vercel.com/docs/deployments/overview" target="_blank">
+        Vercel Docs — Deployments Overview
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația completă cu toate opțiunile de configurare, environment variables, domenii și CI/CD.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce nu trebuie commituit <code>.env.local</code> în Git?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că Vercel nu îl citește din repo — îl generează el</button></li>
+        <li><button data-correct="true">Conține chei secrete care ar deveni publice dacă repo-ul e public sau dacă e expus</button></li>
+        <li><button data-correct="false">Pentru că Git nu suportă fișiere cu prefix punct (.) pe Windows</button></li>
+        <li><button data-correct="false">Pentru că variabilele locale nu funcționează în producție oricum</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>.env.local</code> conține chei API secrete, credențiale DB, etc. Dacă ajunge în repo (chiar și privat), riscul de scurgere crește enorm. Variabilele de producție se adaugă manual în dashboard-ul Vercel sau prin CLI.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce se întâmplă automat la fiecare Pull Request pe GitHub conectat la Vercel?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Vercel rulează testele automate ale proiectului și blochează PR-ul dacă eșuează</button></li>
+        <li><button data-correct="true">Vercel creează un preview deployment cu URL unic pentru acel PR</button></li>
+        <li><button data-correct="false">PR-ul este deploiat direct în producție pentru review de stakeholders</button></li>
+        <li><button data-correct="false">Vercel trimite o notificare email cu analiza de performanță a codului nou</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fiecare PR primește un deployment de preview la un URL unic (ex: <code>my-app-git-pr-42-user.vercel.app</code>). Poți testa feature-ul în producție înainte de merge. Vercel adaugă automat un comentariu în PR cu link-ul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce face comanda <code>vercel env pull .env.local</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Trimite variabilele locale pe Vercel — suprascrie cele din producție</button></li>
+        <li><button data-correct="true">Descarcă variabilele de mediu din Vercel și le scrie în <code>.env.local</code> local</button></li>
+        <li><button data-correct="false">Validează că variabilele locale coincid cu cele din Vercel</button></li>
+        <li><button data-correct="false">Creează un backup al variabilelor de mediu din producție</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Extrem de util când lucrezi în echipă — cineva adaugă o variabilă nouă în Vercel, tu rulezi <code>vercel env pull</code> și o primești local fără copy-paste manual. Sincronizare în ambele sensuri menținută cu ușurință.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce SSL/HTTPS e configurat automat pe Vercel și nu trebuie instalat manual?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Vercel folosește certificate proprii semnate intern — nu au nevoie de CA extern</button></li>
+        <li><button data-correct="true">Vercel integrează Let's Encrypt și gestionează emiterea și reînnoirea automată a certificatelor</button></li>
+        <li><button data-correct="false">HTTPS e activ numai pe domenii .vercel.app — pentru domenii proprii trebuie configurat manual</button></li>
+        <li><button data-correct="false">Browserele moderne nu mai cer HTTPS pentru aplicații web</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Vercel gestionează totul prin Let's Encrypt: emitere, reînnoire înainte de expirare, configurare Nginx/proxy. Nu trebuie să faci nimic — HTTPS e activ imediat ce domeniul e configurat, inclusiv pentru domenii proprii.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce trebuie adăugat domeniul de producție în Supabase Auth URL Configuration?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Supabase trebuie să știe domeniul pentru a genera certificatele SSL</button></li>
+        <li><button data-correct="false">Supabase folosește domeniul pentru a trimite email-uri de confirmare corecte</button></li>
+        <li><button data-correct="true">OAuth și magic links redirecționează înapoi la aplicație — dacă domeniul nu e în allowlist, Supabase blochează redirectul</button></li>
+        <li><button data-correct="false">Supabase limitează numărul de cereri în funcție de domeniu</button></pre></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> După autentificare, Supabase redirecționează utilizatorul înapoi la aplicație. Din motive de securitate, acceptă numai URL-uri pre-aprobate. Dacă uiți să adaugi domeniul de producție, utilizatorii vor vedea eroare la login — funcționează local dar nu în producție.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi despre Vercel Functions vs Edge Functions? Cum configurezi un domeniu cu Cloudflare?
+      Cum gestionezi multiple environments (staging, producție)?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0006-server-actions-fetching.html">← Lecția 6: Server Actions și fetching</a>
+    <a href="0008-proiect-complet.html">Lecția 8: Proiect complet CRUD →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

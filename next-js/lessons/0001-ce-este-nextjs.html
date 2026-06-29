@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1: Ce este Next.js — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 1 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Ce este Next.js și de ce îl folosim</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Mental model-ul complet: React, SSR, SSG, ISR și de ce Next.js rezolvă probleme pe care React singur nu le rezolvă.
+  </p>
+
+
+  <h2>Problema: React singur nu este de ajuns</h2>
+
+  <p>
+    React este o librărie pentru UI — construiești componente, gestionezi stare, randezi în DOM.
+    Dar React <em>singur</em> nu îți spune: unde rulează codul (server sau client)?
+    Cum faci routing? Cum optimizezi pentru SEO? Cum faci fetch la date înainte de randare?
+  </p>
+
+  <p>
+    <strong>Next.js</strong> este un <em>framework</em> construit peste React care răspunde la toate aceste întrebări.
+    Face alegerile arhitecturale în locul tău și furnizează convenții clare.
+    Dacă Laravel este „PHP with opinionated conventions", Next.js este exact asta pentru React.
+  </p>
+
+  <div class="callout">
+    <div class="callout-label">Analogie Laravel</div>
+    React = PHP pur. Next.js = Laravel. Framework-ul adaugă routing, server-side rendering,
+    optimizări automate, structură de foldere și deployment integrat.
+  </div>
+
+
+  <h2>Modurile de randare: SSR, SSG, ISR, CSR</h2>
+
+  <p>
+    Cea mai importantă decizie în Next.js este <em>unde și când</em> se generează HTML-ul paginii.
+    Next.js suportă 4 moduri:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">SSR</div>
+      <div class="arch-info">
+        <h4>Server-Side Rendering</h4>
+        <p>HTML generat la <strong>fiecare request</strong> pe server. Date mereu proaspete. Similar cu PHP/Laravel clasic.</p>
+      </div>
+      <div class="arch-tag">dinamic</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">SSG</div>
+      <div class="arch-info">
+        <h4>Static Site Generation</h4>
+        <p>HTML generat o singură dată la <strong>build time</strong>. Extrem de rapid. Ideal pentru pagini care nu se schimbă des.</p>
+      </div>
+      <div class="arch-tag">static</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">ISR</div>
+      <div class="arch-info">
+        <h4>Incremental Static Regeneration</h4>
+        <p>Static, dar se <strong>regenerează în background</strong> la un interval configurat. Combină viteza staticului cu prospețimea SSR.</p>
+      </div>
+      <div class="arch-tag">hibrid</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">CSR</div>
+      <div class="arch-info">
+        <h4>Client-Side Rendering</h4>
+        <p>HTML gol trimis din server; JavaScript <strong>randează în browser</strong>. Comportamentul React „clasic".</p>
+      </div>
+      <div class="arch-tag">client</div>
+    </div>
+  </div>
+
+  <p>
+    În Next.js modern (App Router), SSR este implicit pentru toate componentele server.
+    Nu trebuie să alegi explicit — Next.js deduce modul de randare din codul tău.
+  </p>
+
+
+  <h2>App Router vs Pages Router</h2>
+
+  <p>
+    Next.js are două sisteme de routing. Dacă începi azi un proiect nou, folosești <strong>App Router</strong>
+    (introdus în Next.js 13, stabil din 14). Pages Router este moștenire.
+  </p>
+
+  <ul>
+    <li><strong>App Router</strong> — directorul <code>app/</code>, Server Components implicit, layouts nested, mai puternic</li>
+    <li><strong>Pages Router</strong> — directorul <code>pages/</code>, mai simplu dar cu mai puțin control, deprecat conceptual</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-label">Atenție</div>
+    Tutorialele mai vechi (pre-2023) folosesc Pages Router. Dacă găsești <code>getServerSideProps</code>
+    sau <code>getStaticProps</code> în exemple, e Pages Router — nu e abordarea recomandată pentru proiecte noi.
+  </div>
+
+
+  <h2>Fluxul unui request în Next.js (App Router)</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Browser trimite request la <code>https://app.com/dashboard</code></p>
+        <span class="layer-tag">browser → Vercel Edge Network</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Next.js găsește <code>app/dashboard/page.tsx</code> — o Server Component</p>
+        <span class="layer-tag">Next.js router</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Server Component face fetch la date (DB, API) — <strong>pe server, fără client overhead</strong></p>
+        <span class="layer-tag">Node.js server</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>HTML complet, cu date incluse, trimis browserului</p>
+        <span class="layer-tag">HTTP response</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p>React hidratează DOM-ul — interactivitatea Client Components devine activă</p>
+        <span class="layer-tag">browser hydration</span>
+      </div>
+    </div>
+  </div>
+
+
+  <h2>De ce Next.js pentru integrări cu Supabase și Vercel?</h2>
+
+  <p>
+    Next.js, Supabase și Vercel formează un stack complet fără fricțiune:
+  </p>
+
+  <ul>
+    <li><strong>Vercel</strong> — compania care creează Next.js. Deploy cu un <code>git push</code>, zero configurare.</li>
+    <li><strong>Supabase</strong> — PostgreSQL ca serviciu + Auth + Storage + Realtime. SDK oficial pentru Next.js SSR.</li>
+    <li><strong>Next.js Server Actions</strong> — mutații pe server fără a scrie un API separat, ideal cu Supabase.</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-label">Stack-ul acestui curs</div>
+    Next.js (App Router) + TypeScript + Supabase (DB + Auth) + Vercel (deploy).
+    Nu ai nevoie de server propriu, nu ai nevoie de API separat, nu ai nevoie de Docker local.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Identificare mod randare</div>
+    <p>Pentru fiecare caz de mai jos, gândește-te care mod de randare ar fi cel mai potrivit:</p>
+    <ol>
+      <li>O pagină de prețuri care se schimbă rar (lunar)</li>
+      <li>Un dashboard cu date în timp real ale utilizatorului autentificat</li>
+      <li>Un blog cu 500 de articole, actualizate zilnic</li>
+      <li>Un widget de coș de cumpărături (vizibil doar în browser)</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns așteptat: 1→SSG, 2→SSR, 3→ISR (revalidare zilnică), 4→CSR.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nextjs.org/docs" target="_blank">Next.js Documentation — nextjs.org/docs</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Citește secțiunile „Introduction" și „App Router → Getting Started" înainte de Lecția 2.
+        Documentația Next.js este de înaltă calitate și include exemple interactive.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce adaugă Next.js față de React pur?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un sistem de state management mai bun decât Redux</button></li>
+        <li><button data-correct="true">Routing, server-side rendering, optimizări și structură de proiect</button></li>
+        <li><button data-correct="false">Un limbaj nou de template-ing pentru componente React</button></li>
+        <li><button data-correct="false">Suport pentru CSS-in-JS integrat în core</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Next.js este un framework peste React — adaugă routing bazat pe fișiere, SSR/SSG/ISR, optimizări de imagini/fonturi, și convenții clare. React rămâne librăria pentru UI.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care mod de randare generează HTML la fiecare request, pe server?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">SSG — Static Site Generation</button></li>
+        <li><button data-correct="false">CSR — Client-Side Rendering</button></li>
+        <li><button data-correct="true">SSR — Server-Side Rendering</button></li>
+        <li><button data-correct="false">ISR — Incremental Static Regeneration</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> SSR generează HTML la fiecare request, pe server, cu date proaspete. Este echivalentul PHP/Laravel clasic — fiecare request produce un răspuns HTML complet.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care director este folosit de App Router (sistemul modern al Next.js)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Directorul <code>pages/</code> cu fișiere .tsx</button></li>
+        <li><button data-correct="true">Directorul <code>app/</code> cu layouts și page.tsx</button></li>
+        <li><button data-correct="false">Directorul <code>src/routes/</code> cu fișiere de configurare</button></li>
+        <li><button data-correct="false">Directorul <code>views/</code> similar cu Laravel</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> App Router folosește directorul <code>app/</code>. Structura de foldere <em>definește</em> rutele — un folder <code>app/dashboard/</code> cu un <code>page.tsx</code> creează automat ruta <code>/dashboard</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce este ISR (Incremental Static Regeneration)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">O tehnologie de caching în memorie pentru API calls</button></li>
+        <li><button data-correct="false">Un mod de randare care actualizează paginile în timp real via WebSockets</button></li>
+        <li><button data-correct="true">Pagini statice regenerate automat în background la un interval configurat</button></li>
+        <li><button data-correct="false">Un sistem de lazy loading pentru componente React mari</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> ISR combină avantajele staticului (viteză, caching) cu prospețimea datelor: paginile sunt statice dar Next.js le regenerează în background la intervalul specificat (ex. <code>revalidate: 3600</code> = o oră).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce Next.js, Supabase și Vercel formează un stack bun împreună?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că toate trei sunt open-source și gratuite fără limite</button></li>
+        <li><button data-correct="true">Vercel creează Next.js, Supabase are SDK pentru SSR, deploy e zero-config</button></li>
+        <li><button data-correct="false">Pentru că folosesc același limbaj de programare sub capotă</button></li>
+        <li><button data-correct="false">Pentru că toate trei rulează pe același server fizic în cloud</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Vercel este compania din spatele Next.js — deployment-ul este nativ integrat. Supabase oferă <code>@supabase/ssr</code> special pentru Next.js App Router. Împreună elimină aproape orice fricțiune de infrastructură.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre diferența dintre SSR și ISR? Vrei să știi când să alegi Pages Router vs App Router?
+      Ai o întrebare despre cum se compară Next.js cu alte framework-uri (Nuxt, Remix, SvelteKit)?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <span class="current">← Începutul cursului</span>
+    <a href="0002-structura-proiect.html">Lecția 2: Structura proiectului →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

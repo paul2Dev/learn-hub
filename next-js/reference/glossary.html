@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-entry { margin-bottom: 2rem; }
+    .glossary-term {
+      font-family: var(--mono); font-size: 1rem; font-weight: bold;
+      color: var(--accent); margin-bottom: 0.2rem;
+    }
+    .glossary-def { margin: 0 0 0.4rem; font-size: 0.93rem; }
+    .glossary-see {
+      font-size: 0.82rem; color: var(--muted); font-family: var(--mono);
+    }
+    .glossary-section { margin-top: 3rem; }
+    dl { display: grid; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">referință</span>
+    <span>Next.js — Glosar</span>
+  </div>
+
+  <h1>Glosar Next.js</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Termenii esențiali din cursul Next.js — definiții concise pentru referință rapidă.
+  </p>
+
+
+  <div class="glossary-section">
+    <h2>Arhitectură și randare</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">App Router</div>
+        <p class="glossary-def">Sistemul modern de routing al Next.js (v13+) bazat pe directorul <code>app/</code>. Suportă Server Components, layouts nested și fișiere speciale (<code>page.tsx</code>, <code>layout.tsx</code>, <code>loading.tsx</code>). Înlocuiește Pages Router.</p>
+        <span class="glossary-see">→ Lecția 1, Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">CSR — Client-Side Rendering</div>
+        <p class="glossary-def">Randare în browser. Serverul trimite HTML minim; JavaScript generează conținutul în browser. Comportamentul implicit al React fără framework. Dezavantaj: SEO slab, slow first load.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Edge Network</div>
+        <p class="glossary-def">Rețea de servere distribuite global ale Vercel. Când deployezi pe Vercel, aplicația rulează pe serverul cel mai aproape geografic de utilizator, reducând latența.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Hydration</div>
+        <p class="glossary-def">Procesul prin care React „preia controlul" HTML-ului pre-generat de server. Adaugă event listeners și activează interactivitatea Client Components în browser, fără a re-randa HTML-ul vizibil.</p>
+        <span class="glossary-see">→ Lecția 1, Lecția 3</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">ISR — Incremental Static Regeneration</div>
+        <p class="glossary-def">Pagini statice care se regenerează automat în background la un interval configurat (ex: <code>revalidate: 3600</code>). Combină viteza paginilor statice cu prospețimea SSR.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Pages Router</div>
+        <p class="glossary-def">Sistemul de routing legacy al Next.js bazat pe directorul <code>pages/</code>. Folosește <code>getServerSideProps</code> și <code>getStaticProps</code>. Compatibil în continuare dar nu mai e recomandat pentru proiecte noi.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">SSG — Static Site Generation</div>
+        <p class="glossary-def">HTML generat o singură dată la build time. Extrem de rapid — servit direct din CDN. Ideal pentru conținut care nu se schimbă des: pagini de prezentare, documentație, blog cu actualizări rare.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">SSR — Server-Side Rendering</div>
+        <p class="glossary-def">HTML generat la fiecare request, pe server, cu date proaspete. Similar cu PHP/Laravel clasic. Ideal pentru pagini cu date care se schimbă frecvent sau personalizate per utilizator (dashboard, profil).</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Componente și fișiere</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Client Component</div>
+        <p class="glossary-def">Componentă React cu directiva <code>'use client'</code> la primul rând. Rulează în browser — poate folosi <code>useState</code>, <code>useEffect</code>, event handlers, <code>window</code>, <code>localStorage</code>.</p>
+        <span class="glossary-see">→ Lecția 3</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">error.tsx</div>
+        <p class="glossary-def">Fișier special care definește UI-ul pentru erori runtime dintr-o rută. Trebuie să fie obligatoriu un Client Component (<code>'use client'</code>) deoarece React error boundaries funcționează numai în browser.</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">layout.tsx</div>
+        <p class="glossary-def">UI wrapper persistent aplicat paginii curente și tuturor sub-rutelor. Nu se remontează la navigarea între paginile copil — starea internă supraviețuiește navigării. <code>app/layout.tsx</code> este obligatoriu (include &lt;html&gt; și &lt;body&gt;).</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">loading.tsx</div>
+        <p class="glossary-def">UI afișat automat în timp ce un Server Component face fetch (skeleton, spinner). Creează automat un Suspense boundary în jurul paginii. Zero boilerplate față de <code>useState(isLoading)</code>.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">not-found.tsx</div>
+        <p class="glossary-def">UI pentru paginile 404. Activat când chemi funcția <code>notFound()</code> din <code>next/navigation</code> într-un Server Component.</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">page.tsx</div>
+        <p class="glossary-def">Singurul fișier dintr-un folder <code>app/</code> care creează o rută accesibilă public în browser. Fără <code>page.tsx</code>, ruta nu există chiar dacă folderul există.</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Route Group</div>
+        <p class="glossary-def">Folder cu paranteze în <code>app/</code> — ex: <code>(auth)</code>. Nu adaugă prefix la URL. Folosit pentru organizarea fișierelor și pentru a aplica layout-uri diferite unor grupuri de pagini.</p>
+        <span class="glossary-see">→ Lecția 2</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Server Component</div>
+        <p class="glossary-def">Comportamentul implicit al tuturor componentelor în App Router. Rulează pe server, poate folosi async/await direct, accesa DB/fișiere/variabile secrete. Nu trimite JS în browser. Nu poate folosi hooks React sau event handlers.</p>
+        <span class="glossary-see">→ Lecția 3</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Data fetching și mutații</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">generateStaticParams()</div>
+        <p class="glossary-def">Funcție exportată dintr-un <code>page.tsx</code> cu rute dinamice. Returnează lista de parametri pentru care Next.js va pre-genera pagini statice la build. Ex: toate slug-urile de blog.</p>
+        <span class="glossary-see">→ Lecția 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">revalidatePath()</div>
+        <p class="glossary-def">Funcție importată din <code>next/cache</code>. Invalidează cache-ul pentru o rută sau un layout, forțând re-randarea Server Components la următoarea vizită. Apelată din Server Actions după mutații.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">revalidateTag()</div>
+        <p class="glossary-def">Similar cu <code>revalidatePath</code> dar invalidează prin tag-uri. Mai granular — poți invalida toate fetch-urile cu un anumit tag fără a specifica rutele.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Server Action</div>
+        <p class="glossary-def">Funcție async marcată cu directiva <code>'use server'</code>. Rulează exclusiv pe server dar poate fi apelată din Client Components sau formulare HTML. Elimină necesitatea unui API REST separat pentru mutații simple.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Suspense</div>
+        <p class="glossary-def">Componenta React care afișează un fallback UI în timp ce componenta copil face operații async. Next.js o folosește intern pentru <code>loading.tsx</code>. Componentele în Suspense separate fac fetch în paralel.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Supabase</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">@supabase/ssr</div>
+        <p class="glossary-def">Pachetul Supabase specializat pentru SSR (Next.js, Nuxt, SvelteKit). Oferă <code>createServerClient</code> și <code>createBrowserClient</code> care gestionează corect cookie-urile de sesiune pe server și client.</p>
+        <span class="glossary-see">→ Lecția 5</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">anon key</div>
+        <p class="glossary-def">Cheia publică Supabase — sigură să fie în browser (prefix <code>NEXT_PUBLIC_</code>). Permite operații de date filtrate de politicile RLS. Nu bypasează securitatea.</p>
+        <span class="glossary-see">→ Lecția 5</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">RLS — Row Level Security</div>
+        <p class="glossary-def">Mecanism PostgreSQL care definește politici de acces la nivel de rând. Utilizatorii văd/modifică numai rândurile permise de politici. Activat cu <code>ALTER TABLE x ENABLE ROW LEVEL SECURITY</code>.</p>
+        <span class="glossary-see">→ Lecțiile 5, 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">service_role key</div>
+        <p class="glossary-def">Cheia privată Supabase cu acces total la DB, ocolind RLS. Niciodată cu prefix <code>NEXT_PUBLIC_</code>. Folosită numai pe server pentru operații administrative (migrații, import date, webhooks).</p>
+        <span class="glossary-see">→ Lecția 5</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Navigare și routing</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Dynamic Route</div>
+        <p class="glossary-def">Rută cu segment variabil definit prin paranteze pătrate în numele folderului: <code>[id]</code>, <code>[slug]</code>. Valoarea din URL devine disponibilă ca <code>params.id</code> sau <code>params.slug</code>.</p>
+        <span class="glossary-see">→ Lecțiile 2, 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Link (componenta)</div>
+        <p class="glossary-def">Componenta Next.js pentru navigare internă. Extinde <code>&lt;a&gt;</code> cu navigare client-side (fără full reload) și prefetching automat al paginilor vizibile în viewport.</p>
+        <span class="glossary-see">→ Lecția 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Middleware (Next.js)</div>
+        <p class="glossary-def">Cod care rulează înaintea fiecărui request, la edge. Definit în <code>middleware.ts</code> la rădăcina proiectului. Folosit cu Supabase pentru reîmprospătarea automată a sesiunilor.</p>
+        <span class="glossary-see">→ Lecțiile 5, 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">notFound()</div>
+        <p class="glossary-def">Funcție din <code>next/navigation</code> care activează <code>not-found.tsx</code>. Returnează un 404 HTTP fără a arunca o eroare vizibilă. Utilizată în Server Components când un resurs nu există.</p>
+        <span class="glossary-see">→ Lecțiile 2, 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">redirect()</div>
+        <p class="glossary-def">Funcție din <code>next/navigation</code> pentru redirect HTTP în Server Components. Aruncă o excepție internă — nu pune niciodată în try/catch. Generează HTTP 307 (temporary redirect).</p>
+        <span class="glossary-see">→ Lecția 4</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Variabile de mediu</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">.env.local</div>
+        <p class="glossary-def">Fișier pentru variabile de mediu locale. Gitignored implicit. Nu se comite niciodată — conține chei secrete. Pe Vercel, variabilele se adaugă manual în dashboard sau prin <code>vercel env pull</code>.</p>
+        <span class="glossary-see">→ Lecțiile 5, 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">NEXT_PUBLIC_ prefix</div>
+        <p class="glossary-def">Prefixul care face o variabilă de mediu accesibilă în browser (inclusă în bundle-ul JS). Fără prefix, variabila e disponibilă numai pe server. Niciodată nu pune chei secrete cu acest prefix.</p>
+        <span class="glossary-see">→ Lecțiile 3, 5</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    Next.js — Glosar · <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2: Structura proiectului — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 2 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Structura unui proiect Next.js</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum creezi un proiect nou, ce înseamnă fiecare folder și fișier special, și cum funcționează file-based routing în App Router.
+  </p>
+
+
+  <h2>Creare proiect nou</h2>
+
+  <p>
+    Comanda oficială creează un proiect cu toate dependențele configurate:
+  </p>
+
+  <pre><code>npx create-next-app@latest my-app --typescript --tailwind --app --no-src-dir --import-alias "@/*"
+
+cd my-app
+npm run dev   # pornești serverul de dezvoltare pe http://localhost:3000</code></pre>
+
+  <p>
+    Opțiunile de mai sus: TypeScript activat, Tailwind CSS activat, App Router activat (<code>--app</code>),
+    fără directorul <code>src/</code> (structura flat), alias de import <code>@/</code>.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Notă Tailwind</div>
+    Tailwind este opțional. Acest curs nu folosește Tailwind pentru a ține stilurile lizibile —
+    dar în proiecte reale e alegerea implicită și recomandată cu Next.js.
+  </div>
+
+
+  <h2>Structura de foldere generată</h2>
+
+  <pre><code>my-app/
+├── app/                    ← App Router — tot routing-ul e aici
+│   ├── layout.tsx          ← layout rădăcină (aplat pe toate paginile)
+│   ├── page.tsx            ← pagina / (home)
+│   ├── globals.css         ← stiluri globale
+│   └── favicon.ico
+├── public/                 ← fișiere statice (imagini, fonts)
+├── next.config.js          ← configurare Next.js
+├── tsconfig.json           ← configurare TypeScript
+├── package.json
+└── .env.local              ← variabile de mediu locale (nu se comite)</code></pre>
+
+
+  <h2>File-based routing — cum funcționează</h2>
+
+  <p>
+    În App Router, <strong>structura de foldere definește rutele</strong>.
+    Un folder în <code>app/</code> cu un fișier <code>page.tsx</code> creează o rută accesibilă în browser.
+  </p>
+
+  <pre><code>app/
+├── page.tsx              → /
+├── about/
+│   └── page.tsx          → /about
+├── blog/
+│   ├── page.tsx          → /blog
+│   └── [slug]/
+│       └── page.tsx      → /blog/orice-slug
+└── dashboard/
+    ├── layout.tsx        ← layout aplicat doar la /dashboard/*
+    ├── page.tsx          → /dashboard
+    └── settings/
+        └── page.tsx      → /dashboard/settings</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">Regulă de bază</div>
+    Dacă un folder NU are un fișier <code>page.tsx</code>, ruta respectivă nu există.
+    Folderele fără <code>page.tsx</code> pot conține <code>layout.tsx</code>, <code>loading.tsx</code> etc. fără să creeze rute.
+  </div>
+
+
+  <h2>Fișiere speciale în App Router</h2>
+
+  <p>
+    Next.js recunoaște câteva nume de fișiere cu roluri speciale. Trebuie să le cunoști pe de rost:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.62rem;background:#0070f3;">page</div>
+      <div class="arch-info">
+        <h4><code>page.tsx</code></h4>
+        <p>UI-ul paginii pentru acea rută. Singurul fișier care face ruta accesibilă public.</p>
+      </div>
+      <div class="arch-tag">obligatoriu</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.62rem;background:#16a34a;">layout</div>
+      <div class="arch-info">
+        <h4><code>layout.tsx</code></h4>
+        <p>UI wrapping aplicat la pagina curentă și toate sub-rutele. Persistent între navigări — nu se remontează.</p>
+      </div>
+      <div class="arch-tag">opțional</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.62rem;background:#f59e0b;">load</div>
+      <div class="arch-info">
+        <h4><code>loading.tsx</code></h4>
+        <p>UI afișat automat cât timp pagina se încarcă (Suspense boundary automat). Ex: spinner, skeleton.</p>
+      </div>
+      <div class="arch-tag">opțional</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.62rem;background:#dc2626;">error</div>
+      <div class="arch-info">
+        <h4><code>error.tsx</code></h4>
+        <p>UI pentru erori în acea rută. Trebuie să fie Client Component (<code>'use client'</code>).</p>
+      </div>
+      <div class="arch-tag">opțional</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.62rem;background:#9333ea;">404</div>
+      <div class="arch-info">
+        <h4><code>not-found.tsx</code></h4>
+        <p>UI pentru 404. Se activează când dai <code>notFound()</code> din Server Component.</p>
+      </div>
+      <div class="arch-tag">opțional</div>
+    </div>
+  </div>
+
+
+  <h2>Layouts nested — cum funcționează</h2>
+
+  <p>
+    Layouts se compun. Dacă ai layout în <code>app/</code> și layout în <code>app/dashboard/</code>,
+    cel de la <code>dashboard</code> este <em>wrapat</em> de cel din <code>app/</code>:
+  </p>
+
+  <pre><code>// app/layout.tsx — layout rădăcină (OBLIGATORIU)
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    &lt;html lang="ro"&gt;
+      &lt;body&gt;
+        &lt;header&gt;Nav global&lt;/header&gt;
+        {children}  {/* pagina sau layout-ul copil intră aici */}
+        &lt;footer&gt;Footer global&lt;/footer&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  );
+}
+
+// app/dashboard/layout.tsx — layout pentru /dashboard/*
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    &lt;div style={{ display: 'flex' }}&gt;
+      &lt;aside&gt;Sidebar dashboard&lt;/aside&gt;
+      &lt;main&gt;{children}&lt;/main&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+  <p>
+    Rezultat: pagina <code>/dashboard</code> va fi wrapată de ambele layout-uri: mai întâi cel de dashboard,
+    apoi cel rădăcină. Navigarea între pagini din <code>/dashboard/*</code> nu remontează layout-ul de dashboard.
+  </p>
+
+
+  <h2>Route Groups — organizare fără a afecta rutele</h2>
+
+  <p>
+    Poți crea foldere cu paranteze <code>(group)</code> pentru a organiza fișierele fără a adăuga prefix la URL:
+  </p>
+
+  <pre><code>app/
+├── (auth)/
+│   ├── login/page.tsx     → /login   (nu /auth/login)
+│   └── register/page.tsx  → /register
+└── (dashboard)/
+    └── settings/page.tsx  → /settings</code></pre>
+
+  <p>
+    Route Groups sunt utile pentru a aplica layout-uri diferite unor grupuri de pagini fără a le schimba URL-ul.
+  </p>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Mapare URL → fișier</div>
+    <p>Scrie calea fișierului <code>page.tsx</code> corespunzătoare fiecărui URL:</p>
+    <ol>
+      <li><code>/products/123/reviews</code></li>
+      <li><code>/blog</code></li>
+      <li><code>/</code> (home)</li>
+      <li><code>/users/[id]/posts</code></li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: 1→<code>app/products/[id]/reviews/page.tsx</code>, 2→<code>app/blog/page.tsx</code>,
+      3→<code>app/page.tsx</code>, 4→<code>app/users/[id]/posts/page.tsx</code>.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nextjs.org/docs/app/building-your-application/routing" target="_blank">
+        Next.js Docs — Routing Fundamentals
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială a App Router cu diagrame vizuale. Citește „Defining Routes" și „Pages and Layouts".
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce fișier face o rută accesibilă în browser în App Router?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Orice fișier .tsx dintr-un folder din <code>app/</code></button></li>
+        <li><button data-correct="true">Fișierul <code>page.tsx</code> din folderul respectiv</button></li>
+        <li><button data-correct="false">Fișierul <code>index.tsx</code> din folderul respectiv</button></li>
+        <li><button data-correct="false">Fișierul <code>route.tsx</code> din folderul respectiv</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Numai <code>page.tsx</code> creează o rută publică. Fișierele <code>layout.tsx</code>, <code>loading.tsx</code>, <code>error.tsx</code> sunt speciale dar nu creează rute accesibile direct.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Cum creezi o rută dinamică pentru URL-ul <code>/posts/[id]</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Fișier <code>app/posts/dynamic.tsx</code> cu configurare în frontmatter</button></li>
+        <li><button data-correct="false">Fișier <code>app/posts/:id/page.tsx</code> cu sintaxă Express-like</button></li>
+        <li><button data-correct="true">Folder <code>app/posts/[id]/</code> cu fișier <code>page.tsx</code> în el</button></li>
+        <li><button data-correct="false">Fișier <code>app/posts/page.tsx</code> cu <code>useParams</code> în el</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Parantezele pătrate în numele folderului (<code>[id]</code>) marchează un segment dinamic. Valoarea din URL devine disponibilă ca prop <code>params.id</code> în componenta paginii.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce se întâmplă cu un layout când utilizatorul navighează între pagini din același grup?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Se remontează complet la fiecare navigare</button></li>
+        <li><button data-correct="true">Rămâne montat — doar conținutul paginii se schimbă</button></li>
+        <li><button data-correct="false">Se re-randează pe server la fiecare navigare</button></li>
+        <li><button data-correct="false">Se distruge și se recreează la fiecare navigare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Layouts sunt persistente — aceasta este una dintre marile avantaje față de Pages Router. Navigarea între <code>/dashboard</code> și <code>/dashboard/settings</code> nu remontează layout-ul de dashboard, deci starea componentelor din layout supraviețuiește.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce este un Route Group (folder cu paranteze) în App Router?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un grup de rute care partajează același middleware de autentificare</button></li>
+        <li><button data-correct="true">Un folder de organizare care nu adaugă prefix la URL și poate partaja un layout</button></li>
+        <li><button data-correct="false">O rută opțională care se poate accesa cu sau fără acel segment</button></li>
+        <li><button data-correct="false">Un sistem de namespace pentru a evita coliziunile de nume</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Folderul <code>(auth)</code> nu apare în URL. <code>app/(auth)/login/page.tsx</code> creează ruta <code>/login</code>, nu <code>/auth/login</code>. Util pentru organizare și pentru a aplica layout-uri diferite unor grupuri de pagini.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care fișier special trebuie să fie obligatoriu un Client Component (<code>'use client'</code>)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>loading.tsx</code> — pentru că afișează animații</button></li>
+        <li><button data-correct="false"><code>layout.tsx</code> — pentru că gestionează navigarea</button></li>
+        <li><button data-correct="true"><code>error.tsx</code> — pentru că folosește error boundaries React</button></li>
+        <li><button data-correct="false"><code>not-found.tsx</code> — pentru că verifică starea browserului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>error.tsx</code> trebuie să fie Client Component deoarece React error boundaries funcționează numai pe client. Next.js îți va afișa o eroare dacă uiți să adaugi <code>'use client'</code> în <code>error.tsx</code>.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre cum se combină layouts nested? Vrei să știi cum funcționează rutele paralele (parallel routes)?
+      Ai o întrebare despre structura de foldere pentru un proiect real?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0001-ce-este-nextjs.html">← Lecția 1: Ce este Next.js</a>
+    <a href="0003-server-vs-client-components.html">Lecția 3: Server vs Client Components →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1: Ce este Nuxt 3 — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 1 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Ce este Nuxt 3 și de ce îl folosim</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Mental model complet: Vue vs Nuxt, Nitro server engine, moduri de randare și unde se plasează față de Next.js.
+  </p>
+
+
+  <h2>Nuxt este Next.js-ul ecosistemului Vue</h2>
+
+  <p>
+    Dacă știi deja Next.js, ai înțeles deja 70% din Nuxt — rezolvă aceleași probleme,
+    cu aceleași soluții conceptuale. Diferența esențială: Nuxt folosește <strong>Vue 3</strong> în loc de React.
+  </p>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Aspect</th><th class="nuxt-col">Nuxt 3</th><th class="next-col">Next.js 15</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Framework UI</td>
+        <td class="nuxt-col">Vue 3 (Composition API)</td>
+        <td class="next-col">React 19</td>
+      </tr>
+      <tr>
+        <td>Server engine</td>
+        <td class="nuxt-col">Nitro — portabil pe orice runtime</td>
+        <td class="next-col">Node.js (optimizat pentru Vercel)</td>
+      </tr>
+      <tr>
+        <td>Template syntax</td>
+        <td class="nuxt-col"><code>&lt;template&gt;</code> HTML-like în SFC .vue</td>
+        <td class="next-col">JSX în fișiere .tsx</td>
+      </tr>
+      <tr>
+        <td>Auto-imports</td>
+        <td class="nuxt-col">Da — componente și composables automat</td>
+        <td class="next-col">Nu — import-uri explicite</td>
+      </tr>
+      <tr>
+        <td>File routing</td>
+        <td class="nuxt-col"><code>pages/about.vue</code> → <code>/about</code></td>
+        <td class="next-col"><code>app/about/page.tsx</code> → <code>/about</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout next">
+    <div class="callout-label">Dacă știi Next.js</div>
+    Vei recunoaște imediat: SSR, SSG, file-based routing, middleware, layouts, fetch pe server, deploy cu zero config.
+    Adaptarea principală este sintaxa Vue (template + composables) față de JSX + hooks React.
+  </div>
+
+
+  <h2>Cele două inovații cheie ale Nuxt 3</h2>
+
+  <h3>1. Nitro — server engine universal</h3>
+
+  <p>
+    <strong>Nitro</strong> este motorul de server al Nuxt 3. Spre deosebire de Next.js care e strâns
+    legat de Node.js (și optimizat pentru Vercel), Nitro produce output care rulează pe:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.65rem;">NOD</div>
+      <div class="arch-info">
+        <h4>Node.js</h4>
+        <p>Serverul clasic — VPS, Docker, Railway, Render</p>
+      </div>
+      <div class="arch-tag">implicit</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.65rem;">VRL</div>
+      <div class="arch-info">
+        <h4>Vercel / Netlify</h4>
+        <p>Serverless functions — același cod, alt preset de build</p>
+      </div>
+      <div class="arch-tag">preset: vercel</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.65rem;">CF</div>
+      <div class="arch-info">
+        <h4>Cloudflare Workers</h4>
+        <p>Edge computing global — latență minimă, fără cold starts</p>
+      </div>
+      <div class="arch-tag">preset: cloudflare</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.65rem;">STC</div>
+      <div class="arch-info">
+        <h4>Static (SSG complet)</h4>
+        <p>HTML pur — GitHub Pages, Netlify, orice CDN</p>
+      </div>
+      <div class="arch-tag">nuxi generate</div>
+    </div>
+  </div>
+
+  <h3>2. Auto-imports — zero boilerplate</h3>
+
+  <p>
+    În Nuxt, nu trebuie să importi manual componente sau composables. Dacă există
+    <code>components/Button.vue</code>, poți folosi <code>&lt;Button /&gt;</code> în orice template.
+    Dacă există <code>composables/useUser.ts</code>, poți apela <code>useUser()</code> oriunde.
+  </p>
+
+  <pre><code>&lt;!-- pages/dashboard.vue — FĂRĂ import-uri manuale --&gt;
+&lt;script setup lang="ts"&gt;
+// Nu trebuie: import { ref } from 'vue'
+// Nu trebuie: import MyCard from '~/components/MyCard.vue'
+// Nu trebuie: import { useUser } from '~/composables/useUser'
+
+const user = useUser()       // composable auto-importat
+const count = ref(0)         // ref() auto-importat din Vue
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;MyCard :title="user.name"&gt;  &lt;!-- componentă auto-importată --&gt;
+    {{ count }}
+  &lt;/MyCard&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>Modurile de randare în Nuxt 3</h2>
+
+  <p>
+    La fel ca Next.js, Nuxt suportă mai multe moduri — dar decizia se ia diferit:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.58rem;background:#00856d;">SSR</div>
+      <div class="arch-info">
+        <h4>Universal (SSR + Hydration) — implicit</h4>
+        <p>Pagina se randează pe server la fiecare request, apoi React/Vue preia controlul în browser. SEO perfect.</p>
+      </div>
+      <div class="arch-tag">renderMode: universal</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.58rem;background:#16a34a;">SPA</div>
+      <div class="arch-info">
+        <h4>SPA — Client-only</h4>
+        <p>HTML minim, tot se randează în browser. Util pentru dashboard-uri autentificate fără nevoi SEO.</p>
+      </div>
+      <div class="arch-tag">renderMode: client</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.58rem;background:#f59e0b;">SSG</div>
+      <div class="arch-info">
+        <h4>Static (SSG)</h4>
+        <p>HTML pre-generat la build cu <code>nuxi generate</code>. Cel mai rapid — servit din CDN.</p>
+      </div>
+      <div class="arch-tag">nuxi generate</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.58rem;background:#2563eb;">HYB</div>
+      <div class="arch-info">
+        <h4>Hybrid — per rută</h4>
+        <p>Nuxt 3 permite configurarea modului de randare per rută: unele statice, altele SSR, altele SPA.</p>
+      </div>
+      <div class="arch-tag">routeRules</div>
+    </div>
+  </div>
+
+  <pre><code>// nuxt.config.ts — Hybrid rendering cu routeRules
+export default defineNuxtConfig({
+  routeRules: {
+    '/':           { prerender: true },    // static
+    '/blog/**':    { isr: 3600 },          // ISR: regenerare la oră
+    '/dashboard':  { ssr: true },          // SSR la fiecare request
+    '/account/**': { ssr: false },         // SPA (client only)
+  }
+})</code></pre>
+
+
+  <h2>Single File Component (.vue) — formatul de bază</h2>
+
+  <p>
+    Spre deosebire de Next.js unde fiecare fișier e TSX cu React,
+    Nuxt folosește <strong>Single File Components</strong> — un format <code>.vue</code>
+    cu trei secțiuni distincte:
+  </p>
+
+  <pre><code>&lt;!-- components/UserCard.vue --&gt;
+&lt;script setup lang="ts"&gt;
+// Logica componentei (Composition API)
+interface Props {
+  name: string
+  email: string
+}
+const props = defineProps&lt;Props&gt;()
+const initials = computed(() =&gt; props.name.slice(0, 2).toUpperCase())
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;!-- Template HTML + Vue directives --&gt;
+  &lt;div class="card"&gt;
+    &lt;span class="avatar"&gt;{{ initials }}&lt;/span&gt;
+    &lt;div&gt;
+      &lt;strong&gt;{{ props.name }}&lt;/strong&gt;
+      &lt;p&gt;{{ props.email }}&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;style scoped&gt;
+/* CSS scoped — aplicat numai acestei componente */
+.card { display: flex; gap: 1rem; padding: 1rem; border: 1px solid #eee; border-radius: 8px; }
+.avatar { width: 40px; height: 40px; background: #00856d; color: white; border-radius: 50%; display: grid; place-items: center; }
+&lt;/style&gt;</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">SFC vs JSX</div>
+    SFC (Single File Component) este mai familiară pentru cei cu background HTML/CSS —
+    template-ul arată ca HTML cu atribute speciale (<code>v-if</code>, <code>v-for</code>, <code>:prop</code>, <code>@event</code>).
+    JSX (React/Next.js) este JavaScript cu sintaxă asemănătoare HTML-ului — mai flexibil programatic,
+    dar mai diferit față de HTML pur.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Identificare echivalențe</div>
+    <p>Mapează fiecare concept Next.js la echivalentul Nuxt:</p>
+    <ol>
+      <li><code>'use client'</code> în Next.js → ? în Nuxt</li>
+      <li><code>app/page.tsx</code> în Next.js → ? în Nuxt</li>
+      <li>Server Actions → ? în Nuxt</li>
+      <li><code>next.config.js</code> → ? în Nuxt</li>
+      <li><code>useRouter()</code> din next/navigation → ? în Nuxt</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: 1→nu există (Vue componente sunt isomorfice implicit), 2→<code>pages/index.vue</code>,
+      3→Server Routes în <code>server/api/</code>, 4→<code>nuxt.config.ts</code>, 5→<code>useRouter()</code> din Vue Router (auto-importat).
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/getting-started/introduction" target="_blank">
+        Nuxt 3 Documentation — nuxt.com/docs
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Citește „Introduction" și „Key Concepts" înainte de Lecția 2.
+        Documentația Nuxt 3 include și un tutorial interactiv excelent.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este principala diferență între Nuxt 3 și Next.js?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nuxt are performanță mai bună deoarece folosește un runtime propriu</button></li>
+        <li><button data-correct="true">Nuxt folosește Vue 3 ca framework UI, Next.js folosește React</button></li>
+        <li><button data-correct="false">Nuxt nu suportă TypeScript, spre deosebire de Next.js</button></li>
+        <li><button data-correct="false">Nuxt este exclusiv pentru aplicații statice, Next.js pentru SSR</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Ambele framework-uri rezolvă aceleași probleme (SSR, file routing, optimizări, deploy) dar pentru ecosisteme diferite. Nuxt → Vue. Next.js → React. Conceptele sunt identice, sintaxa diferă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce avantaj oferă Nitro față de serverul Next.js?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nitro este mai rapid deoarece e scris în Rust</button></li>
+        <li><button data-correct="true">Nitro produce output portabil — același cod rulează pe Node, Vercel, Cloudflare Workers</button></li>
+        <li><button data-correct="false">Nitro include o bază de date integrată pentru producție</button></li>
+        <li><button data-correct="false">Nitro elimină necesitatea unui proces de build</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nitro este server engine-ul Nuxt 3 — abstractizează runtime-ul. Schimbi un preset în <code>nuxt.config.ts</code> și același cod se deployează pe Node.js, Vercel, Netlify sau Cloudflare Workers fără modificări.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce sunt auto-imports în Nuxt 3?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un bundler care importă automat pachete npm de pe internet la build</button></li>
+        <li><button data-correct="true">Componente și composables devin disponibile în toată aplicația fără import explicit</button></li>
+        <li><button data-correct="false">Un sistem de lazy-loading care importă componentele numai când sunt vizibile</button></li>
+        <li><button data-correct="false">O funcție care importă automat CSS-ul componentelor la randare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt scanează directoarele <code>components/</code> și <code>composables/</code> și face disponibile toate fișierele fără import manual. Avantaj: mai puțin boilerplate. Dezavantaj: mai greu de urmărit de unde vine o funcție sau componentă.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce conține un Single File Component (.vue)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Numai template HTML — logica se scrie în fișiere separate .ts</button></li>
+        <li><button data-correct="false">Numai script și template — CSS se importă dintr-un fișier global</button></li>
+        <li><button data-correct="true">Trei secțiuni: &lt;script setup&gt; (logică), &lt;template&gt; (UI), &lt;style scoped&gt; (CSS)</button></li>
+        <li><button data-correct="false">JSX combinat cu CSS-in-JS — similar cu styled-components din React</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> SFC-urile sunt formatul caracteristic Vue: logică, template și stiluri colocate în același fișier <code>.vue</code>. CSS <code>scoped</code> se aplică numai componentei respective — fără coliziuni. Toate trei secțiunile sunt opționale, dar template-ul e de obicei prezent.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Cum configurezi o pagină să se randeze static (SSG) iar alta SSR în același proiect Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Creezi două proiecte separate și le combini cu un proxy Nginx</button></li>
+        <li><button data-correct="false">Adaugi o directivă <code>'use static'</code> la începutul fișierului .vue</button></li>
+        <li><button data-correct="true">Folosești <code>routeRules</code> în <code>nuxt.config.ts</code> pentru a specifica comportamentul per rută</button></li>
+        <li><button data-correct="false">Pui paginile statice în <code>pages/static/</code> și cele SSR în <code>pages/dynamic/</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>routeRules</code> este una dintre cele mai puternice funcții Nuxt 3 — permite „Hybrid Rendering". Poți seta <code>prerender: true</code> pentru pagini de marketing, <code>isr: 3600</code> pentru blog, <code>ssr: true</code> pentru dashboard, totul în același proiect.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre diferența dintre SPA mode și SSR în Nuxt? Vrei să știi mai mult despre Nitro presets?
+      Ai o întrebare despre cum se compară SFC-urile cu JSX-ul din React?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <span class="current">← Începutul cursului</span>
+    <a href="0002-structura-proiect.html">Lecția 2: Structura proiectului →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

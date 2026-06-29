@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5: Conectare la Supabase — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 5 din 9</span>
+    <span class="tag">~30 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Conectare la Supabase</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Setup complet: creezi proiectul Supabase, configurezi variabilele de mediu, inițializezi clientul pentru server și client, și faci primele query-uri.
+  </p>
+
+
+  <h2>Ce este Supabase?</h2>
+
+  <p>
+    Supabase este „Firebase open-source" — oferă o bază de date PostgreSQL, autentificare, storage,
+    realtime și un API REST generat automat din schema bazei de date.
+    Pentru Next.js, Supabase oferă pachetul <code>@supabase/ssr</code> special optimizat pentru App Router.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#0070f3;font-size:0.65rem;">DB</div>
+      <div class="arch-info">
+        <h4>PostgreSQL</h4>
+        <p>Baza de date relațională completă. Poți scrie SQL direct, sau folosești Supabase Query Builder.</p>
+      </div>
+      <div class="arch-tag">principal</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#16a34a;font-size:0.6rem;">AUTH</div>
+      <div class="arch-info">
+        <h4>Supabase Auth</h4>
+        <p>Email/password, magic link, OAuth (Google, GitHub, etc.). Sesiunile sunt gestionate prin cookies.</p>
+      </div>
+      <div class="arch-tag">integrat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#f59e0b;font-size:0.6rem;">RLS</div>
+      <div class="arch-info">
+        <h4>Row Level Security</h4>
+        <p>Politici de securitate la nivel de rând — utilizatorii văd numai datele lor, definit direct în DB.</p>
+      </div>
+      <div class="arch-tag">securitate</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#9333ea;font-size:0.58rem;">RT</div>
+      <div class="arch-info">
+        <h4>Realtime</h4>
+        <p>Subscripții WebSocket la schimbări din DB — poți actualiza UI-ul instant când datele se schimbă.</p>
+      </div>
+      <div class="arch-tag">opțional</div>
+    </div>
+  </div>
+
+
+  <h2>Setup: 1. Creare proiect Supabase</h2>
+
+  <p>
+    Mergi la <a href="https://supabase.com" target="_blank">supabase.com</a>, creează cont și un proiect nou.
+    Din <strong>Settings → API</strong> copiezi două valori esențiale:
+  </p>
+
+  <ul>
+    <li><strong>Project URL</strong> — ex: <code>https://xyzcompany.supabase.co</code></li>
+    <li><strong>anon (public) key</strong> — cheie publică, sigură să fie în browser</li>
+    <li><strong>service_role key</strong> — cheie privată, NUMAI pe server, niciodată în browser</li>
+  </ul>
+
+
+  <h2>Setup: 2. Variabile de mediu în Next.js</h2>
+
+  <p>
+    Creează fișierul <code>.env.local</code> în rădăcina proiectului (gitignored implicit):
+  </p>
+
+  <pre><code># .env.local
+NEXT_PUBLIC_SUPABASE_URL=https://xyzcompany.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# NUMAI pe server — nu adaugă NEXT_PUBLIC_ la service_role!
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Securitate critică</div>
+    <code>SUPABASE_SERVICE_ROLE_KEY</code> bypasează toate politicile RLS — are acces total la DB.
+    Niciodată în variabile cu prefix <code>NEXT_PUBLIC_</code>, niciodată în Client Components.
+  </div>
+
+
+  <h2>Setup: 3. Instalare pachet</h2>
+
+  <pre><code>npm install @supabase/supabase-js @supabase/ssr</code></pre>
+
+  <p>
+    <code>@supabase/ssr</code> este pachetul specializat pentru SSR (Next.js, SvelteKit, Nuxt).
+    Gestionează cookie-urile de sesiune corect pe server și client.
+  </p>
+
+
+  <h2>Configurare: Client Supabase pentru Server Components</h2>
+
+  <p>
+    Creează utilitarul <code>lib/supabase/server.ts</code>:
+  </p>
+
+  <pre><code>// lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export function createClient() {
+  const cookieStore = cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =&gt;
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server Components nu pot seta cookies direct — ignorăm
+          }
+        },
+      },
+    }
+  );
+}</code></pre>
+
+
+  <h2>Configurare: Client Supabase pentru Client Components</h2>
+
+  <pre><code>// lib/supabase/client.ts
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}</code></pre>
+
+
+  <h2>Exemple de query-uri</h2>
+
+  <p><strong>Server Component</strong> — fetch date cu autentificarea utilizatorului:</p>
+
+  <pre><code>// app/dashboard/page.tsx
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+
+export default async function DashboardPage() {
+  const supabase = createClient();
+
+  // Verifică autentificarea
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  // Query cu RLS — returnează NUMAI datele utilizatorului autentificat
+  const { data: tasks, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (
+    &lt;ul&gt;
+      {tasks?.map(task =&gt; (
+        &lt;li key={task.id}&gt;{task.title}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+
+  <p><strong>Client Component</strong> — operații la eveniment (ex: login):</p>
+
+  <pre><code>'use client';
+
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+
+export default function LoginForm() {
+  const supabase = createClient();
+  const router = useRouter();
+
+  async function handleLogin(email: string, password: string) {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    router.push('/dashboard');
+    router.refresh();  // reîncarcă Server Components cu noua sesiune
+  }
+
+  // ... return JSX cu formular
+}</code></pre>
+
+
+  <h2>Middleware pentru sesiuni (recomandat)</h2>
+
+  <p>
+    Creează <code>middleware.ts</code> în rădăcina proiectului pentru a reîmprospăta sesiunile automat:
+  </p>
+
+  <pre><code>// middleware.ts
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =&gt;
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Reîmprospătează sesiunea
+  await supabase.auth.getUser();
+
+  return supabaseResponse;
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Setup de la zero</div>
+    <p>Urmează acești pași pentru a configura Supabase în propriul proiect:</p>
+    <ol>
+      <li>Creează un proiect Supabase nou pe supabase.com</li>
+      <li>Copiază URL-ul și cheile în <code>.env.local</code></li>
+      <li>Rulează <code>npm install @supabase/supabase-js @supabase/ssr</code></li>
+      <li>Creează <code>lib/supabase/server.ts</code> și <code>lib/supabase/client.ts</code></li>
+      <li>Creează un tabel simplu în Supabase Dashboard (ex: <code>notes</code> cu coloane <code>id</code>, <code>content</code>, <code>created_at</code>)</li>
+      <li>Fă un select din Server Component și afișează rezultatele</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://supabase.com/docs/guides/getting-started/quickstarts/nextjs" target="_blank">
+        Supabase Docs — Next.js Quickstart
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Ghidul oficial include setup complet cu autentificare și RLS. Include și un template gata de pornit.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce ai nevoie de două utilitare Supabase diferite (server.ts și client.ts)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Din motive de performanță — fiecare client e optimizat pentru mediul său</button></li>
+        <li><button data-correct="true">Gestionarea sesiunilor diferă: serverul citește cookies din request, browserul le gestionează automat</button></li>
+        <li><button data-correct="false">Clientul de browser suportă mai multe funcții decât cel de server</button></li>
+        <li><button data-correct="false">Din motive de licențiere — @supabase/ssr necesită doi clienți separați</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Pe server, Next.js trebuie să citească și să scrie cookies manual din <code>next/headers</code>. Pe browser, <code>createBrowserClient</code> gestionează cookies automat via document.cookie. Mecanismele diferă fundamental.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care cheie Supabase TREBUIE să rămână doar pe server, niciodată în browser?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cheia <code>anon</code> (publică) — pentru că identifică proiectul</button></li>
+        <li><button data-correct="false">Project URL — pentru că dezvăluie infrastructura</button></li>
+        <li><button data-correct="true">Cheia <code>service_role</code> — bypasează RLS, acces total la DB</button></li>
+        <li><button data-correct="false">JWT Secret — pentru că permite generarea de token-uri</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cheia <code>service_role</code> are acces complet la baza de date, ignorând toate politicile RLS. Dacă ajunge în browser, oricine poate citi/modifica/șterge orice date. Pune-o NUMAI în variabile de server (fără prefix <code>NEXT_PUBLIC_</code>).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce face Row Level Security (RLS) în Supabase?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Criptează fiecare rând din tabel cu cheia utilizatorului</button></li>
+        <li><button data-correct="true">Definește politici SQL care restricționează ce rânduri poate vedea/modifica fiecare utilizator</button></li>
+        <li><button data-correct="false">Limitează viteza query-urilor pentru a preveni abuzurile</button></li>
+        <li><button data-correct="false">Validează schema datelor înainte de INSERT/UPDATE</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> RLS permite politici ca „un utilizator poate vedea numai rândurile unde <code>user_id = auth.uid()</code>". Aceste reguli sunt aplicate de PostgreSQL la nivel de DB — nu de aplicație. Chiar dacă un bug din cod face un SELECT greșit, DB-ul returnează numai rândurile permise.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce apelezi <code>router.refresh()</code> după un login reușit în Client Component?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru a forța browser-ul să verifice updates la framework</button></li>
+        <li><button data-correct="false">Pentru a reîmprospăta token-ul JWT expirat din browser</button></li>
+        <li><button data-correct="true">Pentru a reîncărca Server Components care acum trebuie să citească noua sesiune</button></li>
+        <li><button data-correct="false">Pentru a curăța cache-ul de query-uri Supabase din memorie</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Server Components citesc sesiunea din cookies la runtime. După login, cookie-ul de sesiune e setat. <code>router.refresh()</code> forțează Next.js să re-randeze Server Components pe pagina curentă — acestea vor vedea noua sesiune și pot randeze conținut autentificat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce rol are middleware-ul Supabase configurat în <code>middleware.ts</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Protejează rutele — redirecționează utilizatorii neautentificați la login</button></li>
+        <li><button data-correct="false">Validează și sanitizează input-ul utilizatorilor înainte de a ajunge la pagini</button></li>
+        <li><button data-correct="true">Reîmprospătează automat token-ul de sesiune la fiecare request pentru a nu expira</button></li>
+        <li><button data-correct="false">Logează toate request-urile în tabelul de audit din Supabase</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Token-urile JWT de sesiune expiră. Middleware-ul apelează <code>supabase.auth.getUser()</code> la fiecare request, care reîmprospătează automat token-ul dacă e pe cale să expire. Fără middleware, sesiunile utilizatorilor ar expira după câteva minute de inactivitate.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum configurezi RLS pentru tabelele tale? Cum implementezi OAuth cu Google sau GitHub?
+      Ai întrebări despre Supabase Storage sau Realtime?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0004-routing-navigare.html">← Lecția 4: Routing și navigare</a>
+    <a href="0006-server-actions-fetching.html">Lecția 6: Server Actions și fetching →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

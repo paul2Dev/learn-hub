@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar — Nuxt 3</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">referință</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Glosar Nuxt 3</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Termeni cheie din cursul Nuxt 3 — de la auto-imports la Nitro presets. Referință rapidă pentru review.
+  </p>
+
+  <div class="glossary">
+
+    <div class="glossary-entry">
+      <div class="glossary-term">App Router</div>
+      <div class="glossary-def">
+        Sistemul de rutare bazat pe directorul <code>pages/</code> — fiecare fișier <code>.vue</code>
+        devine automat o rută URL. <em>Lecția 3 — Routing și Layouts</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">Auto-imports</div>
+      <div class="glossary-def">
+        Funcționalitate Nuxt prin care composable-urile din <code>composables/</code>, componentele
+        din <code>components/</code> și utilitarele Vue (<code>ref</code>, <code>computed</code>)
+        sunt disponibile fără import explicit. <em>Lecția 1</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">Composable</div>
+      <div class="glossary-def">
+        Funcție Vue 3 reutilizabilă cu prefix <code>use</code> care encapsulează logică reactivă.
+        Exemple: <code>useFetch()</code>, <code>useRoute()</code>, <code>useSupabaseUser()</code>.
+        <em>Lecția 4</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">createError()</div>
+      <div class="glossary-def">
+        Utilitar Nitro pentru a arunca erori HTTP standardizate din server routes:
+        <code>throw createError({ statusCode: 401, message: '...' })</code>.
+        Nitro le transformă automat în răspunsuri HTTP corespunzătoare. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">defineEventHandler()</div>
+      <div class="glossary-def">
+        Funcția Nitro cu care definești un server route handler. Primește un <code>event</code>
+        (request, response, context) și returnează datele serializate automat ca JSON. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">definePageMeta()</div>
+      <div class="glossary-def">
+        Macro Nuxt apelat în <code>&lt;script setup&gt;</code> pentru a configura meta-date ale unei pagini:
+        layout-ul folosit, middleware aplicat, titlul paginii etc. <em>Lecția 3</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">event.context</div>
+      <div class="glossary-def">
+        Obiect disponibil pe fiecare request Nitro, destinat pentru a partaja date între
+        middleware de server și endpoint-uri. Middleware setează date pe el (ex: user autentificat),
+        endpoint-urile le citesc. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">getQuery()</div>
+      <div class="glossary-def">
+        Utilitar Nitro pentru a citi parametrii din query string-ul URL-ului:
+        <code>const { page } = getQuery(event)</code> pentru <code>/api/tasks?page=2</code>. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">getRouterParam()</div>
+      <div class="glossary-def">
+        Utilitar Nitro pentru a citi parametrii dinamici din ruta URL-ului:
+        <code>const id = getRouterParam(event, 'id')</code> pentru <code>/api/tasks/[id]</code>. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">Nitro</div>
+      <div class="glossary-def">
+        Motorul de server universal care alimentează Nuxt 3. Generează output adaptat platformei
+        de hosting prin <strong>presets</strong> — Vercel, Netlify, Cloudflare Workers, Node.js.
+        Rulează server routes, middleware de server și SSR. <em>Lecția 1, Lecția 8</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">Nitro Preset</div>
+      <div class="glossary-def">
+        Configurare care transformă output-ul <code>nuxt build</code> în formatul specific
+        platformei de hosting. Detectat automat pe Vercel/Netlify sau specificat manual în
+        <code>nitro: { preset: 'cloudflare-workers' }</code>. <em>Lecția 8</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">NuxtLink</div>
+      <div class="glossary-def">
+        Componenta de navigare Nuxt — înlocuiește <code>&lt;a href&gt;</code> pentru rute interne.
+        Activează client-side routing (SPA), prefetching automat și active class pe link-ul curent.
+        Echivalentul <code>&lt;Link&gt;</code> din Next.js. <em>Lecția 3</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">NuxtPage</div>
+      <div class="glossary-def">
+        Componenta care randează pagina curentă corespunzătoare rutei — folosită în <code>app.vue</code>
+        sau în layout-uri. Echivalentul <code>{children}</code> din Next.js layout-uri. <em>Lecția 3</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">Pinia</div>
+      <div class="glossary-def">
+        Librăria oficială de state management Vue 3. Definești store-uri cu <code>defineStore()</code>,
+        state cu <code>ref()</code>, getters cu <code>computed()</code> și actions cu funcții async.
+        Cu modulul <code>@pinia/nuxt</code>, store-urile sunt auto-importate. <em>Lecția 7</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">readBody()</div>
+      <div class="glossary-def">
+        Utilitar Nitro async pentru a citi și parsa automat body-ul JSON dintr-un request POST/PATCH:
+        <code>const body = await readBody(event)</code>. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">runtimeConfig</div>
+      <div class="glossary-def">
+        Sistemul Nuxt pentru variabile de mediu. <code>runtimeConfig.*</code> = privat (numai server);
+        <code>runtimeConfig.public.*</code> = expus și pe client. Variabilele <code>.env</code> cu
+        prefixul <code>NUXT_</code> overrideaza automat config-ul. <em>Lecția 7</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">server/api/</div>
+      <div class="glossary-def">
+        Directorul pentru server routes Nitro. Fișierele numite <code>*.get.ts</code>,
+        <code>*.post.ts</code>, <code>*.patch.ts</code>, <code>*.delete.ts</code> răspund
+        numai metodei HTTP corespunzătoare. Accesibile la <code>/api/*</code>. <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">server/middleware/</div>
+      <div class="glossary-def">
+        Middleware Nitro care rulează înaintea fiecărui request HTTP (inclusiv API routes).
+        Diferit de <code>middleware/</code> Vue Router (care rulează pe client la navigare SPA).
+        <em>Lecția 5</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">serverSupabaseClient(event)</div>
+      <div class="glossary-def">
+        Utilitar <code>@nuxtjs/supabase</code> pentru a obține un client Supabase cu sesiunea
+        utilizatorului în context server (Nitro). Diferit de <code>useSupabaseClient()</code>
+        care există numai în componente Vue. <em>Lecția 6</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">serverSupabaseUser(event)</div>
+      <div class="glossary-def">
+        Utilitar <code>@nuxtjs/supabase</code> care verifică și returnează utilizatorul autentificat
+        în context server. Returnează <code>null</code> dacă nu există sesiune validă. <em>Lecția 6</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">SFC (Single File Component)</div>
+      <div class="glossary-def">
+        Formatul de fișier Vue (<code>.vue</code>) care conține template HTML, script JS/TS și
+        stiluri CSS în același fișier — separat în blocuri <code>&lt;template&gt;</code>,
+        <code>&lt;script setup&gt;</code>, <code>&lt;style scoped&gt;</code>. <em>Lecția 1</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">$fetch</div>
+      <div class="glossary-def">
+        Utilitar Nitro/Nuxt pentru request-uri HTTP — funcționează identic pe server și client
+        (nu necesită <code>window</code> check). Parsează automat JSON, aruncă erori cu
+        <code>statusCode</code> accesibil. <em>Lecția 4</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useAsyncData()</div>
+      <div class="glossary-def">
+        Composable Nuxt pentru data fetching cu caching și control complet. Returnează
+        <code>{ data, pending, error, refresh }</code>. Se execută pe server la SSR și este
+        hidratat pe client. <em>Lecția 4</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useFetch()</div>
+      <div class="glossary-def">
+        Combinație de <code>$fetch</code> + <code>useAsyncData</code> — shortcut pentru cel mai
+        comun caz de data fetching în Nuxt. Returnează aceleași valori reactive și se execută
+        isomorf (server + client). <em>Lecția 4</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useRoute()</div>
+      <div class="glossary-def">
+        Composable Vue Router pentru accesarea informațiilor despre ruta curentă:
+        <code>route.params</code>, <code>route.query</code>, <code>route.path</code>. <em>Lecția 3</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useRouter()</div>
+      <div class="glossary-def">
+        Composable Vue Router pentru navigare programatică: <code>router.push('/path')</code>,
+        <code>router.replace()</code>, <code>router.back()</code>. Alternativ, folosești
+        <code>navigateTo('/path')</code> din Nuxt. <em>Lecția 3</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useSupabaseClient()</div>
+      <div class="glossary-def">
+        Composable injectat de <code>@nuxtjs/supabase</code> — disponibil în componente Vue pentru
+        query-uri Supabase cu sesiunea utilizatorului curent și RLS activ. <em>Lecția 6</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useSupabaseUser()</div>
+      <div class="glossary-def">
+        Composable injectat de <code>@nuxtjs/supabase</code> care returnează un
+        <code>Ref&lt;User | null&gt;</code> reactiv — actualizat automat la login/logout. <em>Lecția 6</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">Vue 3 Composition API</div>
+      <div class="glossary-def">
+        API-ul modern Vue 3 pentru scrierea logicii componentelor — <code>ref()</code>,
+        <code>computed()</code>, <code>watch()</code>, <code>onMounted()</code> etc. apelate direct
+        în <code>&lt;script setup&gt;</code>. Alternativa la Options API (Vue 2). <em>Lecția 1</em>
+      </div>
+    </div>
+
+    <div class="glossary-entry">
+      <div class="glossary-term">useState()</div>
+      <div class="glossary-def">
+        Composable Nuxt pentru state global simplu — un <code>ref</code> cu cheie, accesibil din
+        orice componentă, sincronizat server-client. Alternativă la Pinia pentru state simplu. <em>Lecția 4</em>
+      </div>
+    </div>
+
+  </div>
+
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    <a href="../index.html">← Index curs Nuxt 3</a>
+  </p>
+
+</div>
+</body>
+</html>

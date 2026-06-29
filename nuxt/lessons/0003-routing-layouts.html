@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3: Routing și Layouts — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 3 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Routing și Layouts în Nuxt 3</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Navigare cu NuxtLink, rute dinamice, accesul la parametri, middleware de rute și layouts personalizate.
+  </p>
+
+
+  <h2>NuxtLink — navigare client-side</h2>
+
+  <p>
+    <code>&lt;NuxtLink&gt;</code> este echivalentul lui <code>&lt;Link&gt;</code> din Next.js.
+    Extinde tag-ul <code>&lt;a&gt;</code> cu navigare SPA (fără full reload) și prefetching automat.
+  </p>
+
+  <pre><code>&lt;template&gt;
+  &lt;nav&gt;
+    &lt;NuxtLink to="/"&gt;Home&lt;/NuxtLink&gt;
+    &lt;NuxtLink to="/about"&gt;Despre&lt;/NuxtLink&gt;
+
+    &lt;!-- Rută dinamică --&gt;
+    &lt;NuxtLink :to="`/blog/${post.slug}`"&gt;{{ post.title }}&lt;/NuxtLink&gt;
+
+    &lt;!-- Cu obiect --&gt;
+    &lt;NuxtLink :to="{ name: 'blog-slug', params: { slug: 'hello' } }"&gt;
+      Post named route
+    &lt;/NuxtLink&gt;
+
+    &lt;!-- Dezactivare prefetch --&gt;
+    &lt;NuxtLink to="/heavy-page" :prefetch="false"&gt;Pagină mare&lt;/NuxtLink&gt;
+
+    &lt;!-- Link extern --&gt;
+    &lt;NuxtLink href="https://nuxt.com" target="_blank"&gt;Nuxt.com&lt;/NuxtLink&gt;
+  &lt;/nav&gt;
+&lt;/template&gt;</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">NuxtLink vs &lt;a&gt;</div>
+    Folosește întotdeauna <code>&lt;NuxtLink&gt;</code> pentru navigare internă. <code>&lt;a href&gt;</code> face full page reload.
+    <code>&lt;NuxtLink&gt;</code> navighează SPA, păstrând starea aplicației și evitând refetch-ul inutil.
+  </div>
+
+
+  <h2>useRoute — accesul la parametrii rutei</h2>
+
+  <p>
+    Composable-ul <code>useRoute()</code> oferă acces la parametrii, query string-ul și metadatele rutei curente:
+  </p>
+
+  <pre><code>&lt;!-- pages/blog/[slug].vue --&gt;
+&lt;script setup lang="ts"&gt;
+const route = useRoute()
+
+// Parametrul dinamic din URL /blog/hello-world → slug = 'hello-world'
+const slug = route.params.slug as string
+
+// Query string: /blog/hello-world?page=2 → page = '2'
+const page = route.query.page as string
+
+// Fetch date cu parametrul
+const { data: post } = await useFetch(`/api/posts/${slug}`)
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;article v-if="post"&gt;
+    &lt;h1&gt;{{ post.title }}&lt;/h1&gt;
+    &lt;div v-html="post.content" /&gt;
+  &lt;/article&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>useRouter — navigare programatică</h2>
+
+  <pre><code>&lt;script setup lang="ts"&gt;
+const router = useRouter()
+
+async function handleLogin() {
+  // ... logică autentificare
+  await router.push('/dashboard')        // navighează, adaugă în history
+  // await router.replace('/dashboard')  // navighează fără a adăuga în history
+  // router.back()                       // înapoi
+  // router.go(-2)                       // înapoi 2 pași
+}
+&lt;/script&gt;</code></pre>
+
+
+  <h2>definePageMeta — metadata per pagină</h2>
+
+  <p>
+    <code>definePageMeta()</code> configurează comportamentul paginii: layout, middleware, titlu, etc.:
+  </p>
+
+  <pre><code>&lt;!-- pages/dashboard/index.vue --&gt;
+&lt;script setup lang="ts"&gt;
+definePageMeta({
+  layout: 'dashboard',    // folosește layouts/dashboard.vue
+  middleware: 'auth',     // rulează middleware/auth.ts înainte
+  title: 'Dashboard',     // metadata pentru &lt;head&gt;
+})
+&lt;/script&gt;</code></pre>
+
+
+  <h2>Middleware de rute</h2>
+
+  <p>
+    Middleware-ul de rute rulează <strong>pe client</strong> la navigare (nu pe server).
+    Folosit pentru protecția rutelor, redirecturi condiționare, logging:
+  </p>
+
+  <pre><code>// middleware/auth.ts
+export default defineNuxtRouteMiddleware((to, from) =&gt; {
+  const { loggedIn } = useSupabaseUser()  // sau orice altă verificare de auth
+
+  if (!loggedIn.value) {
+    return navigateTo('/login')
+  }
+})</code></pre>
+
+  <p>
+    Aplici middleware-ul pe o pagină prin <code>definePageMeta</code> sau global în <code>nuxt.config.ts</code>:
+  </p>
+
+  <pre><code>// Aplicat pe o singură pagină:
+definePageMeta({ middleware: 'auth' })
+
+// Aplicat pe mai multe pagini:
+definePageMeta({ middleware: ['auth', 'subscription'] })
+
+// Global (toate paginile) — în nuxt.config.ts:
+router: {
+  middleware: ['auth']
+}</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Client vs Server Middleware</div>
+    Middleware-ul din <code>middleware/</code> rulează pe client la navigare.
+    Middleware-ul din <code>server/middleware/</code> rulează pe server la fiecare request HTTP.
+    Sunt concepte diferite cu directoare diferite.
+  </div>
+
+
+  <h2>Layouts — mai mult control</h2>
+
+  <p>
+    Poți schimba layout-ul dinamic chiar și în funcție de date sau stare:
+  </p>
+
+  <pre><code>&lt;!-- pages/post/[id].vue --&gt;
+&lt;script setup lang="ts"&gt;
+const route = useRoute()
+const { data: post } = await useFetch(`/api/posts/${route.params.id}`)
+
+// Layout diferit pentru articolele premium
+definePageMeta({
+  layout: false  // dezactivează layout-ul automat
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;NuxtLayout :name="post?.isPremium ? 'premium' : 'default'"&gt;
+    &lt;article&gt;{{ post?.title }}&lt;/article&gt;
+  &lt;/NuxtLayout&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>NuxtPage și app.vue</h2>
+
+  <p>
+    Fișierul <code>app.vue</code> este root-ul aplicației. Implicit conține <code>&lt;NuxtPage /&gt;</code>
+    care randează pagina curentă (similară cu <code>{children}</code> din root layout Next.js):
+  </p>
+
+  <pre><code>&lt;!-- app.vue — root component --&gt;
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;!-- NuxtLayout aplică layout-ul activ din layouts/ --&gt;
+    &lt;NuxtLayout&gt;
+      &lt;!-- NuxtPage randează pagina din pages/ corespunzătoare URL-ului --&gt;
+      &lt;NuxtPage /&gt;
+    &lt;/NuxtLayout&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Protejarea rutelor</div>
+    <p>Implementează protecția rutelor pentru un dashboard:</p>
+    <ol>
+      <li>Creează <code>middleware/auth.ts</code> care redirecționează la <code>/login</code> dacă nu e autentificat</li>
+      <li>Aplică middleware-ul pe <code>pages/dashboard/index.vue</code></li>
+      <li>Creează <code>layouts/dashboard.vue</code> cu un sidebar simplu</li>
+      <li>Asociază layout-ul <code>dashboard</code> paginii de dashboard prin <code>definePageMeta</code></li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Hint: pentru verificarea autentificării, poți folosi temporar <code>const user = useState('user')</code>
+      și verifica dacă e truthy.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/guide/directory-structure/pages" target="_blank">
+        Nuxt Docs — Pages
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială cu toate opțiunile de routing: rute dinamice, catch-all, nested, middleware.
+        Citește și pagina „Layouts" din același meniu.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Cum accesezi parametrul <code>id</code> din URL-ul <code>/users/42</code> în pagina <code>pages/users/[id].vue</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cu <code>this.$route.params.id</code> în Options API</button></li>
+        <li><button data-correct="true">Cu <code>const route = useRoute(); route.params.id</code> în script setup</button></li>
+        <li><button data-correct="false">Cu <code>defineProps(['id'])</code> — Nuxt pasează parametrii ca props</button></li>
+        <li><button data-correct="false">Cu <code>window.location.pathname.split('/')[2]</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useRoute()</code> este composable-ul standard Vue Router — auto-importat în Nuxt. Returnează obiectul rutei curente cu <code>params</code>, <code>query</code>, <code>path</code>, <code>hash</code> etc. Nu ai nevoie de import.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce face <code>return navigateTo('/login')</code> dintr-un middleware Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Afișează un mesaj de eroare și oprește navigarea complet</button></li>
+        <li><button data-correct="false">Redirectează pe server cu HTTP 301 permanent</button></li>
+        <li><button data-correct="true">Anulează navigarea curentă și redirecționează la <code>/login</code></button></li>
+        <li><button data-correct="false">Salvează ruta curentă în localStorage și navighează la login</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>navigateTo()</code> în middleware face un redirect. Nuxt anulează navigarea la ruta protejată și navighează la <code>/login</code>. Poți pasa <code>{ replace: true }</code> pentru a nu adăuga în history: <code>navigateTo('/login', { replace: true })</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care este diferența dintre middleware din <code>middleware/</code> și cel din <code>server/middleware/</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu există diferență — ambele rulează la fiecare request HTTP</button></li>
+        <li><button data-correct="true">Client middleware rulează la navigare SPA; server middleware rulează la fiecare request HTTP pe server</button></li>
+        <li><button data-correct="false">Client middleware e mai rapid; server middleware e mai sigur</button></li>
+        <li><button data-correct="false">Server middleware suportă async; client middleware nu</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>middleware/auth.ts</code> rulează în browser la fiecare navigare Vue Router. <code>server/middleware/log.ts</code> rulează în Nitro la fiecare request HTTP, inclusiv la cereri API directe. Scopuri diferite, contexte diferite.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce rol are <code>&lt;NuxtPage /&gt;</code> în <code>app.vue</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Definește pagina 404 pentru rute care nu există</button></li>
+        <li><button data-correct="false">Creează o pagina virtuală de index pentru toate sub-rutele</button></li>
+        <li><button data-correct="true">Randează componenta paginii din <code>pages/</code> corespunzătoare URL-ului curent</button></li>
+        <li><button data-correct="false">Gestionează tranziția între pagini cu animații automate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>&lt;NuxtPage /&gt;</code> este echivalentul lui <code>{children}</code> din Next.js root layout. Nuxt înlocuiește această componentă cu pagina activă din <code>pages/</code> pe baza URL-ului. Fără ea, nicio pagină nu se randează.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Cum aplici layout-ul <code>layouts/admin.vue</code> pe pagina <code>pages/admin/users.vue</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Importi layout-ul și îl folosești ca wrapper în template: <code>&lt;AdminLayout&gt;...&lt;/AdminLayout&gt;</code></button></li>
+        <li><button data-correct="false">Pui pagina în folderul <code>pages/admin-layout/users.vue</code></button></li>
+        <li><button data-correct="true">Adaugi <code>definePageMeta({'{'} layout: 'admin' {'}'})</code> în <code>&lt;script setup&gt;</code></button></li>
+        <li><button data-correct="false">Configurezi în <code>nuxt.config.ts</code> un mapping folder → layout</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>definePageMeta({'{'} layout: 'admin' {'}'}) </code> spune Nuxt să folosească <code>layouts/admin.vue</code> pentru acea pagină. Valoarea este numele fișierului din <code>layouts/</code> fără extensie. Layout-ul <code>default</code> se aplică implicit dacă nu specifici.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi despre nested routes (rute imbricate)? Cum faci tranziții de pagini cu animații?
+      Cum funcționează catch-all routes (<code>[...slug].vue</code>)?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0002-structura-proiect.html">← Lecția 2: Structura proiectului</a>
+    <a href="0004-composables-data-fetching.html">Lecția 4: Composables și data fetching →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5: Server Routes cu Nitro — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 5 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Server Routes cu Nitro</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum construiești API-ul backend direct în proiectul Nuxt — endpoints, parametri, validare, middleware de server și utilizarea bazei de date.
+  </p>
+
+
+  <h2>Server Routes — echivalentul API Routes din Next.js</h2>
+
+  <p>
+    În Next.js există <code>app/api/route.ts</code> și Server Actions. În Nuxt, codul de server
+    stă în <code>server/api/</code> și urmează convenția de denumire a fișierelor pentru metoda HTTP:
+  </p>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Metodă</th><th class="nuxt-col">Fișier Nuxt</th><th class="next-col">Echivalent Next.js</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>GET</td><td class="nuxt-col"><code>server/api/users.get.ts</code></td><td class="next-col"><code>app/api/users/route.ts</code> export <code>GET</code></td></tr>
+      <tr><td>POST</td><td class="nuxt-col"><code>server/api/users.post.ts</code></td><td class="next-col"><code>app/api/users/route.ts</code> export <code>POST</code></td></tr>
+      <tr><td>DELETE</td><td class="nuxt-col"><code>server/api/users/[id].delete.ts</code></td><td class="next-col"><code>app/api/users/[id]/route.ts</code> export <code>DELETE</code></td></tr>
+      <tr><td>Orice</td><td class="nuxt-col"><code>server/api/users.ts</code> (fără sufix)</td><td class="next-col">Toate metodele exportate în același fișier</td></tr>
+    </tbody>
+  </table>
+
+
+  <h2>defineEventHandler — construirea unui endpoint</h2>
+
+  <p>
+    Orice fișier din <code>server/api/</code> exportează un handler cu <code>defineEventHandler</code>:
+  </p>
+
+  <pre><code>// server/api/products.get.ts
+export default defineEventHandler(async (event) =&gt; {
+  // event conține request, response, params, query etc.
+
+  // Returnezi direct un obiect — Nuxt îl serializează ca JSON automat
+  return {
+    products: [
+      { id: 1, name: 'Laptop', price: 3499 },
+      { id: 2, name: 'Mouse', price: 89 },
+    ]
+  }
+})</code></pre>
+
+  <p>Accesul la baza de date direct din server route:</p>
+
+  <pre><code>// server/api/tasks.get.ts
+import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
+
+export default defineEventHandler(async (event) =&gt; {
+  const user = await serverSupabaseUser(event)
+  if (!user) {
+    throw createError({ statusCode: 401, message: 'Neautorizat' })
+  }
+
+  const client = await serverSupabaseClient(event)
+  const { data: tasks, error } = await client
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw createError({ statusCode: 500, message: error.message })
+
+  return tasks
+})</code></pre>
+
+
+  <h2>Citire body, query și parametri</h2>
+
+  <pre><code>// server/api/tasks.post.ts — citire body din POST request
+export default defineEventHandler(async (event) =&gt; {
+  const body = await readBody(event)  // parsează JSON din body
+  // body = { title: 'Task nou', priority: 'high' }
+
+  if (!body.title) {
+    throw createError({ statusCode: 400, message: 'Titlul este obligatoriu' })
+  }
+
+  // ... inserare în DB
+  return { success: true, id: newTask.id }
+})
+
+// server/api/tasks/[id].get.ts — parametru dinamic din URL
+export default defineEventHandler(async (event) =&gt; {
+  const id = getRouterParam(event, 'id')  // citește :id din URL
+  // /api/tasks/42 → id = '42'
+
+  // ... fetch task după id
+  return task
+})
+
+// server/api/tasks.get.ts — query string din URL
+export default defineEventHandler(async (event) =&gt; {
+  const query = getQuery(event)
+  // /api/tasks?page=2&amp;limit=10 → query = { page: '2', limit: '10' }
+
+  const page  = Number(query.page  ?? 1)
+  const limit = Number(query.limit ?? 20)
+
+  // ... fetch paginat
+})</code></pre>
+
+
+  <h2>createError — erori HTTP standardizate</h2>
+
+  <pre><code>// Nitro știe să convertească aceste erori în răspunsuri HTTP corecte
+throw createError({
+  statusCode: 404,
+  message: 'Task-ul nu a fost găsit'
+})
+
+throw createError({
+  statusCode: 422,
+  data: {
+    errors: {
+      title: ['Titlul este obligatoriu'],
+      priority: ['Valoare invalidă'],
+    }
+  }
+})
+
+// Clientul ($fetch, useFetch) primește eroarea în catch:
+try {
+  await $fetch('/api/tasks/999')
+} catch (error: any) {
+  console.log(error.statusCode)   // 404
+  console.log(error.data.message) // 'Task-ul nu a fost găsit'
+}</code></pre>
+
+
+  <h2>Server Middleware — rulat la fiecare request</h2>
+
+  <pre><code>// server/middleware/auth.ts — rulat ÎNAINTEA oricărui endpoint
+export default defineEventHandler(async (event) =&gt; {
+  const url = getRequestURL(event)
+
+  // Permite accesul la rute publice fără autentificare
+  if (url.pathname.startsWith('/api/public/')) {
+    return  // continuă fără verificare
+  }
+
+  // Verifică token-ul din header
+  const authHeader = getHeader(event, 'authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw createError({ statusCode: 401, message: 'Token lipsă' })
+  }
+
+  // Verifică validitatea token-ului
+  const token = authHeader.slice(7)
+  const user = await verifyToken(token)
+  if (!user) {
+    throw createError({ statusCode: 401, message: 'Token invalid' })
+  }
+
+  // Salvează userul în contextul event-ului
+  event.context.user = user
+})</code></pre>
+
+  <pre><code>// Accesezi contextul în orice endpoint ulterior:
+// server/api/me.get.ts
+export default defineEventHandler((event) =&gt; {
+  return event.context.user  // setat de middleware
+})</code></pre>
+
+
+  <h2>Util Routes — non-API server routes</h2>
+
+  <p>
+    <code>server/routes/</code> funcționează la fel ca <code>server/api/</code> dar fără prefixul <code>/api</code>.
+    Util pentru webhook-uri, sitemap, RSS feed, robots.txt:
+  </p>
+
+  <pre><code>// server/routes/sitemap.xml.get.ts
+export default defineEventHandler(async (event) =&gt; {
+  setHeader(event, 'Content-Type', 'application/xml')
+
+  const posts = await getPosts()
+  const urls = posts.map(p =&gt; `
+    &lt;url&gt;
+      &lt;loc&gt;https://mysite.com/blog/${p.slug}&lt;/loc&gt;
+      &lt;lastmod&gt;${p.updatedAt}&lt;/lastmod&gt;
+    &lt;/url&gt;
+  `).join('')
+
+  return `&lt;?xml version="1.0"?&gt;&lt;urlset xmlns="http://www.sitemaps.org/..."&gt;${urls}&lt;/urlset&gt;`
+})</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — API CRUD complet</div>
+    <p>Creează un API REST pentru tabela <code>notes</code> (id, content, user_id, created_at):</p>
+    <ol>
+      <li><code>server/api/notes.get.ts</code> — returnează toate notele utilizatorului autentificat</li>
+      <li><code>server/api/notes.post.ts</code> — creează o notă nouă din body JSON</li>
+      <li><code>server/api/notes/[id].patch.ts</code> — actualizează conținutul unei note</li>
+      <li><code>server/api/notes/[id].delete.ts</code> — șterge o notă</li>
+      <li>Adaugă validare cu <code>createError({ statusCode: 400 })</code> pentru body invalid</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/guide/directory-structure/server" target="_blank">
+        Nuxt Docs — Server Directory
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială acoperă toate utilitarele Nitro: <code>defineEventHandler</code>,
+        <code>readBody</code>, <code>getQuery</code>, <code>createError</code>, middleware de server, caching.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce acceptă fișierul <code>server/api/products.post.ts</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Orice metodă HTTP — sufixul <code>.post</code> e doar un hint</button></li>
+        <li><button data-correct="false">POST și PUT — metodele de creare și actualizare</button></li>
+        <li><button data-correct="true">Numai POST — Nitro returnează 405 pentru alte metode</button></li>
+        <li><button data-correct="false">POST și PATCH — metodele de scriere</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nitro aplică routing bazat pe sufix: <code>.get.ts</code> → GET, <code>.post.ts</code> → POST, <code>.delete.ts</code> → DELETE, <code>.patch.ts</code> → PATCH. Un request cu altă metodă primește automat HTTP 405 Method Not Allowed.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Cum citești body-ul JSON dintr-un POST request în Nitro?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cu <code>event.body</code> — accesibil direct pe obiectul event</button></li>
+        <li><button data-correct="false">Cu <code>JSON.parse(event.req.body)</code> — necesită parsare manuală</button></li>
+        <li><button data-correct="true">Cu <code>await readBody(event)</code> — parsează automat JSON</button></li>
+        <li><button data-correct="false">Cu <code>event.formData()</code> — metoda standard Web Fetch API</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>readBody(event)</code> este utilitarul Nitro care citește și parsează automat body-ul request-ului. Funcționează cu JSON, form-data, text. Similar există <code>readFormData(event)</code> pentru multipart forms.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce face <code>throw createError({ statusCode: 401, message: '...' })</code> din un event handler?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Loghează eroarea și continuă executarea cu valoare null</button></li>
+        <li><button data-correct="false">Trimite eroarea la un handler global de erori fără a opri executarea</button></li>
+        <li><button data-correct="true">Oprește executarea și trimite un răspuns HTTP 401 cu body JSON care conține mesajul</button></li>
+        <li><button data-correct="false">Redirecționează clientul la pagina de eroare 401</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>createError</code> creează o eroare specială pe care Nitro o prinde și o transformă în răspuns HTTP corespunzător. Clientul (useFetch, $fetch) primește eroarea în catch cu <code>error.statusCode</code> și <code>error.data.message</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Un fișier în <code>server/middleware/</code> vs <code>middleware/</code> — unde rulează fiecare?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Ambele rulează pe server — <code>middleware/</code> e un alias pentru <code>server/middleware/</code></button></li>
+        <li><button data-correct="true"><code>server/middleware/</code> rulează pe server la fiecare request HTTP; <code>middleware/</code> rulează pe client la navigare Vue Router</button></li>
+        <li><button data-correct="false"><code>middleware/</code> rulează înaintea <code>server/middleware/</code> în pipeline</button></li>
+        <li><button data-correct="false">Nu există diferență — Nuxt le execută pe ambele la fiecare navigare</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Directoare diferite, contexte diferite. <code>server/middleware/</code> este middleware Nitro — rulează în Node.js/Edge la fiecare request HTTP, inclusiv direct la API. <code>middleware/</code> este middleware Vue Router — rulează în browser la navigarea SPA.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Cum pasezi date între middleware de server și endpoint (ex: userul autentificat)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Prin variabile globale de modul JavaScript</button></li>
+        <li><button data-correct="false">Prin localStorage — accesibil pe ambele</button></li>
+        <li><button data-correct="true">Prin <code>event.context</code> — obiect shared pe durata unui request</button></li>
+        <li><button data-correct="false">Prin header-uri de request adăugate de middleware</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>event.context</code> este un obiect gol pe fiecare request, destinat exact pentru a partaja date între middleware și endpoint-uri. Middleware setează <code>event.context.user = user</code> și endpoint-ul citește <code>event.context.user</code>. Este izolat per request — thread-safe.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi despre caching la nivel de server route? Cum faci upload de fișiere cu Nitro?
+      Cum configurezi CORS pentru API-ul tău Nuxt?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0004-composables-data-fetching.html">← Lecția 4: Composables și data fetching</a>
+    <a href="0006-supabase.html">Lecția 6: Supabase în Nuxt 3 →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

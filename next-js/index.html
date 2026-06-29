@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Next.js — Index curs</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; color: var(--muted); max-width: 560px; }
+
+    .lesson-grid { display: flex; flex-direction: column; gap: 0; margin: 0.5rem 0 2.5rem; }
+    .lesson-card {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      padding: 1rem 1.2rem; border: 1px solid var(--border);
+      border-bottom: none; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+    }
+    .lesson-card:first-child { border-radius: 8px 8px 0 0; }
+    .lesson-card:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .lesson-card:hover { background: var(--code-bg); }
+    .lesson-num {
+      width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold; flex-shrink: 0;
+    }
+    .lesson-card:nth-child(1) .lesson-num { background: #0070f3; }
+    .lesson-card:nth-child(2) .lesson-num { background: #2563eb; }
+    .lesson-card:nth-child(3) .lesson-num { background: #7c3aed; }
+    .lesson-card:nth-child(4) .lesson-num { background: #16a34a; }
+    .lesson-card:nth-child(5) .lesson-num { background: #0891b2; }
+    .lesson-card:nth-child(6) .lesson-num { background: #f59e0b; }
+    .lesson-card:nth-child(7) .lesson-num { background: #dc2626; }
+    .lesson-card:nth-child(8) .lesson-num { background: #9333ea; }
+    .lesson-card:nth-child(9) .lesson-num { background: #0284c7; }
+    .lesson-info h3 { font-size: 0.97rem; margin: 0 0 0.15rem; }
+    .lesson-info p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .lesson-time {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono); white-space: nowrap; align-self: center;
+    }
+
+    .reference-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0 3rem; }
+    .ref-card {
+      flex: 1; min-width: 160px;
+      padding: 0.85rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+      text-decoration: none; color: var(--text);
+      transition: background 0.12s;
+    }
+    .ref-card:hover { background: var(--code-bg); }
+    .ref-card h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ref-card p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+    .quickref-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .quickref-table th {
+      text-align: left; padding: 0.5rem 0.8rem;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    }
+    .quickref-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .quickref-table tr:last-child td { border-bottom: none; }
+    .quickref-table code { font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="course-header">
+    <div class="lesson-meta">
+      <span class="tag">9 lecții</span>
+      <span class="tag">~3.5 ore total</span>
+      <span>Next.js — Curs</span>
+    </div>
+    <h1>Învață Next.js</h1>
+    <p>
+      De la mental model la producție. Înveți App Router, Server vs Client Components, routing dinamic,
+      conectarea la Supabase (DB + Auth + RLS), Server Actions pentru CRUD fără REST API,
+      deploy pe Vercel și o comparație cu Nuxt. 9 lecții cu cod concret și quiz-uri interactive.
+    </p>
+  </div>
+
+
+  <!-- ══════ LECȚII ══════ -->
+  <h2 style="margin-top:0;">Lecții</h2>
+
+  <div class="lesson-grid">
+
+    <a class="lesson-card" href="lessons/0001-ce-este-nextjs.html">
+      <div class="lesson-num">1</div>
+      <div class="lesson-info">
+        <h3>Ce este Next.js și de ce îl folosim</h3>
+        <p>Mental model: React vs Next.js, SSR/SSG/ISR/CSR, App Router, stack Next.js + Supabase + Vercel</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0002-structura-proiect.html">
+      <div class="lesson-num">2</div>
+      <div class="lesson-info">
+        <h3>Structura unui proiect Next.js</h3>
+        <p>create-next-app, directorul app/, fișiere speciale (page.tsx, layout.tsx, loading.tsx, error.tsx), Route Groups</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0003-server-vs-client-components.html">
+      <div class="lesson-num">3</div>
+      <div class="lesson-info">
+        <h3>Server Components vs Client Components</h3>
+        <p>Implicit = Server, 'use client', ce poate face fiecare, granița server-client, securitate, variabile de mediu</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0004-routing-navigare.html">
+      <div class="lesson-num">4</div>
+      <div class="lesson-info">
+        <h3>Routing și navigare</h3>
+        <p>Rute dinamice, params, searchParams, componenta Link, useRouter, redirect(), notFound(), generateStaticParams</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0005-supabase.html">
+      <div class="lesson-num">5</div>
+      <div class="lesson-info">
+        <h3>Conectare la Supabase</h3>
+        <p>Setup proiect, variabile mediu, @supabase/ssr, clientul de server și browser, query-uri, middleware sesiuni</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0006-server-actions-fetching.html">
+      <div class="lesson-num">6</div>
+      <div class="lesson-info">
+        <h3>Server Actions și fetching date</h3>
+        <p>'use server', useFormState, useFormStatus, loading.tsx, Suspense paralel, revalidatePath, revalidateTag</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0007-deploy-vercel.html">
+      <div class="lesson-num">7</div>
+      <div class="lesson-info">
+        <h3>Deploy pe Vercel</h3>
+        <p>Import GitHub repo, environment variables, preview deployments, Vercel CLI, domeniu personalizat, SSL automat</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0008-proiect-complet.html">
+      <div class="lesson-num">8</div>
+      <div class="lesson-info">
+        <h3>Proiect complet: CRUD cu Next.js + Supabase + Vercel</h3>
+        <p>Schema SQL cu RLS, Server Actions pentru auth și tasks, Dashboard Server Component, checklist producție</p>
+      </div>
+      <span class="lesson-time">~45 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0009-nextjs-vs-nuxt.html">
+      <div class="lesson-num">9</div>
+      <div class="lesson-info">
+        <h3>Next.js vs Nuxt — comparație practică</h3>
+        <p>Routing, data fetching, Server Actions vs API Routes, ecosistem, DX, când să alegi ce</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+  </div>
+
+
+  <!-- ══════ REFERINȚE ══════ -->
+  <h2>Referințe</h2>
+
+  <div class="reference-links">
+    <a class="ref-card" href="reference/glossary.html">
+      <h4>Glosar</h4>
+      <p>Toți termenii cheie din curs — SSR, ISR, Server Components, RLS, Server Actions și altele</p>
+    </a>
+    <a class="ref-card" href="RESOURCES.md">
+      <h4>Resurse</h4>
+      <p>Documentații oficiale, ghiduri și comunități recomandate</p>
+    </a>
+    <a class="ref-card" href="https://nextjs.org/docs" target="_blank">
+      <h4>Next.js Docs</h4>
+      <p>Documentația oficială — nextjs.org/docs</p>
+    </a>
+    <a class="ref-card" href="https://supabase.com/docs" target="_blank">
+      <h4>Supabase Docs</h4>
+      <p>Documentația oficială — supabase.com/docs</p>
+    </a>
+  </div>
+
+
+  <!-- ══════ QUICK REFERENCE ══════ -->
+  <h2>Referință rapidă — fișiere speciale App Router</h2>
+
+  <table class="quickref-table">
+    <thead>
+      <tr>
+        <th>Fișier</th>
+        <th>Rol</th>
+        <th>Note</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>page.tsx</code></td>
+        <td>Creează ruta publică</td>
+        <td>Obligatoriu pentru fiecare rută</td>
+        <td><a href="lessons/0002-structura-proiect.html">2</a></td>
+      </tr>
+      <tr>
+        <td><code>layout.tsx</code></td>
+        <td>UI wrapper persistent</td>
+        <td>Nu se remontează la navigare</td>
+        <td><a href="lessons/0002-structura-proiect.html">2</a></td>
+      </tr>
+      <tr>
+        <td><code>loading.tsx</code></td>
+        <td>UI de loading automat</td>
+        <td>Suspense boundary automat</td>
+        <td><a href="lessons/0006-server-actions-fetching.html">6</a></td>
+      </tr>
+      <tr>
+        <td><code>error.tsx</code></td>
+        <td>UI pentru erori runtime</td>
+        <td>Obligatoriu <code>'use client'</code></td>
+        <td><a href="lessons/0002-structura-proiect.html">2</a></td>
+      </tr>
+      <tr>
+        <td><code>not-found.tsx</code></td>
+        <td>UI pentru 404</td>
+        <td>Activat cu <code>notFound()</code></td>
+        <td><a href="lessons/0002-structura-proiect.html">2</a>, <a href="lessons/0004-routing-navigare.html">4</a></td>
+      </tr>
+      <tr>
+        <td><code>middleware.ts</code></td>
+        <td>Rulează la edge înainte de request</td>
+        <td>Reîmprospătare sesiuni Supabase</td>
+        <td><a href="lessons/0005-supabase.html">5</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <h2 style="margin-top:2.5rem;">Referință rapidă — Supabase în Next.js</h2>
+
+  <table class="quickref-table">
+    <thead>
+      <tr>
+        <th>Situație</th>
+        <th>Soluție</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Query în Server Component</td>
+        <td><code>createClient()</code> din <code>lib/supabase/server.ts</code></td>
+        <td><a href="lessons/0005-supabase.html">5</a></td>
+      </tr>
+      <tr>
+        <td>Operații în Client Component</td>
+        <td><code>createClient()</code> din <code>lib/supabase/client.ts</code></td>
+        <td><a href="lessons/0005-supabase.html">5</a></td>
+      </tr>
+      <tr>
+        <td>Verificare autentificare</td>
+        <td><code>supabase.auth.getUser()</code> → redirect dacă null</td>
+        <td><a href="lessons/0005-supabase.html">5</a>, <a href="lessons/0008-proiect-complet.html">8</a></td>
+      </tr>
+      <tr>
+        <td>Reîmprospătare date după mutație</td>
+        <td><code>revalidatePath('/ruta')</code> în Server Action</td>
+        <td><a href="lessons/0006-server-actions-fetching.html">6</a></td>
+      </tr>
+      <tr>
+        <td>Datele utilizatorului autentificat</td>
+        <td>RLS + politici SQL + <code>auth.uid()</code></td>
+        <td><a href="lessons/0005-supabase.html">5</a>, <a href="lessons/0008-proiect-complet.html">8</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    Next.js — Curs · Începe de la <a href="lessons/0001-ce-este-nextjs.html">Lecția 1</a>
+  </p>
+
+</div>
+</body>
+</html>

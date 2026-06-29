@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4: Composables și data fetching — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 4 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Composables și data fetching</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    <code>useFetch</code>, <code>useAsyncData</code>, <code>$fetch</code> și cum scrii composable-uri proprii cu reactivitate Vue 3.
+  </p>
+
+
+  <h2>Cele trei moduri de data fetching în Nuxt</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.6rem;background:#00856d;">UF</div>
+      <div class="arch-info">
+        <h4><code>useFetch(url)</code></h4>
+        <p>Shorthand convenabil — combină <code>useAsyncData</code> cu <code>$fetch</code>. Cel mai folosit pentru pagini.</p>
+      </div>
+      <div class="arch-tag">recomandat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.55rem;background:#16a34a;">UAD</div>
+      <div class="arch-info">
+        <h4><code>useAsyncData(key, fn)</code></h4>
+        <p>Mai mult control: key explicit pentru deduplicare, funcție arbitrară (nu numai fetch). Ideal pentru logică complexă.</p>
+      </div>
+      <div class="arch-tag">control maxim</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.6rem;background:#f59e0b;">$F</div>
+      <div class="arch-info">
+        <h4><code>$fetch(url)</code></h4>
+        <p>Fetch simplu fără SSR/caching — pentru event handlers, mutații, operații la click. Nu pentru date inițiale.</p>
+      </div>
+      <div class="arch-tag">mutații</div>
+    </div>
+  </div>
+
+
+  <h2>useFetch — pentru pagini și date inițiale</h2>
+
+  <p>
+    <code>useFetch</code> funcționează pe server (SSR) și pe client (navigare SPA).
+    Pe server face fetch și inserează datele în HTML. Pe client reutilizează datele fără refetch.
+  </p>
+
+  <pre><code>&lt;!-- pages/products/index.vue --&gt;
+&lt;script setup lang="ts"&gt;
+interface Product {
+  id: number
+  name: string
+  price: number
+}
+
+// Automat: SSR pe server, hydration pe client, fără refetch
+const { data: products, status, error, refresh } = await useFetch&lt;Product[]&gt;('/api/products')
+
+// Cu opțiuni
+const { data: user } = await useFetch('/api/me', {
+  headers: { 'Authorization': `Bearer ${token}` },
+  pick: ['id', 'name', 'email'],    // selectează doar câmpurile necesare
+  transform: (data) =&gt; data.user,  // transformă răspunsul
+  watch: [userId],                  // re-fetch când userId se schimbă
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;p v-if="status === 'pending'"&gt;Se încarcă...&lt;/p&gt;
+    &lt;p v-else-if="error"&gt;Eroare: {{ error.message }}&lt;/p&gt;
+    &lt;ul v-else&gt;
+      &lt;li v-for="p in products" :key="p.id"&gt;
+        {{ p.name }} — {{ p.price }} RON
+      &lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;button @click="refresh()"&gt;Reîncarcă&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Față de Next.js</div>
+    În Next.js (App Router) faci <code>const data = await fetch('/api/...')</code> direct în Server Component.
+    În Nuxt, <code>useFetch</code> gestionează SSR + hydration automat în SFC — nu ai Server Components separate,
+    logica de fetch stă în <code>&lt;script setup&gt;</code> al paginii.
+  </div>
+
+
+  <h2>useAsyncData — pentru logică complexă</h2>
+
+  <pre><code>&lt;!-- pages/dashboard.vue --&gt;
+&lt;script setup lang="ts"&gt;
+const userId = useSupabaseUser()  // presupunând că ai modulul Supabase
+
+// Key explicit previne fetch duplicat dacă componenta se montează de două ori
+const { data: stats } = await useAsyncData(
+  'dashboard-stats',          // key unic — cache-uit între navigări
+  async () =&gt; {
+    // Funcție arbitrară — poți apela orice, nu numai $fetch
+    const [users, orders, revenue] = await Promise.all([
+      $fetch('/api/stats/users'),
+      $fetch('/api/stats/orders'),
+      $fetch('/api/stats/revenue'),
+    ])
+    return { users, orders, revenue }
+  },
+  {
+    server: true,    // rulează pe server (implicit true)
+    lazy: false,     // blochează randarea până termină (implicit false)
+  }
+)
+&lt;/script&gt;</code></pre>
+
+
+  <h2>$fetch — pentru mutații și event handlers</h2>
+
+  <p>
+    <code>$fetch</code> este un wrapper peste <code>fetch</code> nativ, cu suport pentru JSON automat,
+    error handling și interceptori. Folosit pentru operații la click (nu pentru date inițiale):
+  </p>
+
+  <pre><code>&lt;script setup lang="ts"&gt;
+const isLoading = ref(false)
+const error = ref&lt;string | null&gt;(null)
+
+async function createPost(title: string, content: string) {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    const newPost = await $fetch('/api/posts', {
+      method: 'POST',
+      body: { title, content },
+    })
+    await navigateTo(`/blog/${newPost.slug}`)
+  } catch (e: any) {
+    error.value = e.data?.message ?? 'Eroare la creare'
+  } finally {
+    isLoading.value = false
+  }
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;form @submit.prevent="createPost(title, content)"&gt;
+    &lt;input v-model="title" placeholder="Titlu" /&gt;
+    &lt;textarea v-model="content" /&gt;
+    &lt;p v-if="error" style="color:red"&gt;{{ error }}&lt;/p&gt;
+    &lt;button :disabled="isLoading"&gt;
+      {{ isLoading ? 'Se salvează...' : 'Publică' }}
+    &lt;/button&gt;
+  &lt;/form&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>Composable-uri proprii — cum le scrii</h2>
+
+  <p>
+    Un composable este o funcție care folosește Vue 3 Composition API (ref, computed, watch, etc.)
+    și encapsulează logică reutilizabilă:
+  </p>
+
+  <pre><code>// composables/usePosts.ts
+export function usePosts() {
+  const posts = ref&lt;Post[]&gt;([])
+  const isLoading = ref(false)
+  const error = ref&lt;string | null&gt;(null)
+
+  async function fetchPosts(page = 1) {
+    isLoading.value = true
+    try {
+      posts.value = await $fetch(`/api/posts?page=${page}`)
+    } catch (e: any) {
+      error.value = e.message
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function deletePost(id: number) {
+    await $fetch(`/api/posts/${id}`, { method: 'DELETE' })
+    posts.value = posts.value.filter(p =&gt; p.id !== id)
+  }
+
+  return { posts, isLoading, error, fetchPosts, deletePost }
+}</code></pre>
+
+  <pre><code>&lt;!-- Folosit în pagini (auto-importat, fără import explicit): --&gt;
+&lt;script setup lang="ts"&gt;
+const { posts, isLoading, fetchPosts, deletePost } = usePosts()
+await fetchPosts()
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div v-if="isLoading"&gt;Se încarcă...&lt;/div&gt;
+  &lt;ul v-else&gt;
+    &lt;li v-for="post in posts" :key="post.id"&gt;
+      {{ post.title }}
+      &lt;button @click="deletePost(post.id)"&gt;Șterge&lt;/button&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>useState — state global simplu</h2>
+
+  <p>
+    <code>useState</code> în Nuxt creează state reactiv <strong>shared între componente</strong>
+    și persistent între navigări SSR→client:
+  </p>
+
+  <pre><code>// composables/useUser.ts
+export const useUser = () =&gt; useState&lt;User | null&gt;('user', () =&gt; null)
+
+// Componenta A — setează userul
+const user = useUser()
+user.value = { id: 1, name: 'Paul' }
+
+// Componenta B — citește același user (shared state)
+const user = useUser()
+console.log(user.value?.name)  // 'Paul'</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">useState vs ref</div>
+    <code>ref()</code> creează state local componentei — fiecare componentă are propria valoare.
+    <code>useState(key)</code> creează state global identificat prin <code>key</code> — toate componentele care
+    apelează <code>useState('user')</code> partajează același obiect reactiv.
+    Funcționează și pentru hydration SSR→client.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Composable CRUD</div>
+    <p>Scrie un composable <code>useTasks()</code> care:</p>
+    <ol>
+      <li>Are starea <code>tasks: ref&lt;Task[]&gt;([])</code> și <code>isLoading: ref(false)</code></li>
+      <li>Funcția <code>fetchTasks()</code> face <code>GET /api/tasks</code></li>
+      <li>Funcția <code>createTask(title: string)</code> face <code>POST /api/tasks</code> și adaugă în array local</li>
+      <li>Funcția <code>toggleTask(id, completed)</code> face <code>PATCH /api/tasks/:id</code></li>
+      <li>Returnează toate cele trei + state-ul</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Salvează fișierul ca <code>composables/useTasks.ts</code> — va fi auto-importat în orice pagină.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/getting-started/data-fetching" target="_blank">
+        Nuxt Docs — Data Fetching
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială compară <code>useFetch</code>, <code>useAsyncData</code> și <code>$fetch</code>
+        cu diagrame și exemple pentru fiecare caz de utilizare.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este diferența cheie între <code>useFetch</code> și <code>$fetch</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>useFetch</code> e pentru GET, <code>$fetch</code> e pentru POST/PUT/DELETE</button></li>
+        <li><button data-correct="true"><code>useFetch</code> are SSR + cache + hydration; <code>$fetch</code> e un fetch simplu fără aceste funcționalități</button></li>
+        <li><button data-correct="false"><code>$fetch</code> este mai rapid deoarece nu are overhead de reactivitate</button></li>
+        <li><button data-correct="false"><code>useFetch</code> funcționează numai pe client; <code>$fetch</code> pe ambele</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useFetch</code> este un composable care gestionează SSR (fetch pe server, date în HTML), deduplicare (nu face fetch de două ori pentru același key) și hydration (clientul preia datele fără refetch). <code>$fetch</code> e echivalentul lui <code>fetch()</code> din browser — simplu, fără magic.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Când să folosești <code>useAsyncData</code> în loc de <code>useFetch</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când datele sunt mai mari de 1MB — useFetch are limitări de dimensiune</button></li>
+        <li><button data-correct="true">Când ai nevoie de un key explicit, de o funcție mai complexă decât un URL simplu, sau de control fin asupra cache-ului</button></li>
+        <li><button data-correct="false">Când datele se schimbă frecvent — useAsyncData nu cache-uiește</button></li>
+        <li><button data-correct="false">Când ești pe client — useFetch funcționează numai pe server</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useFetch('/api/users')</code> este shorthand pentru <code>useAsyncData('users', () =&gt; $fetch('/api/users'))</code>. Folosești <code>useAsyncData</code> când ai nevoie de un key custom, de a combina mai multe fetch-uri (<code>Promise.all</code>), sau de opțiuni avansate de cache.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce se întâmplă cu datele din <code>useFetch</code> când utilizatorul navighează de la pagina A la pagina B și înapoi la A?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Datele se pierd și se face un nou fetch la revenirea pe pagina A</button></li>
+        <li><button data-correct="true">Datele sunt cache-uite — revenirea pe pagina A nu declanșează un nou request</button></li>
+        <li><button data-correct="false">Datele sunt invalidate automat după 30 de secunde</button></li>
+        <li><button data-correct="false">Comportamentul depinde de metoda HTTP folosită (GET vs POST)</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt cache-uiește payload-ul din <code>useFetch</code> în starea aplicației. Revenirea pe pagina A (prin Back sau NuxtLink) reutilizează datele — zero request-uri suplimentare. Poți forța refetch cu <code>refresh()</code> sau prin opțiunea <code>watch</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Care este diferența dintre <code>ref()</code> și <code>useState()</code> în Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>useState</code> e pentru stare booleană, <code>ref</code> e pentru orice tip</button></li>
+        <li><button data-correct="false">Nu există diferență funcțională — sunt aliasuri unul pentru altul</button></li>
+        <li><button data-correct="true"><code>ref</code> e state local componentei; <code>useState(key)</code> e state global shared între componente</button></li>
+        <li><button data-correct="false"><code>useState</code> persistă în localStorage; <code>ref</code> se pierde la refresh</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>ref()</code> e local — fiecare componentă are propria instanță. <code>useState('key')</code> creează state global identificat prin key — toate componentele care îl apelează cu același key partajează același obiect reactiv. Funcționează și pentru hydration SSR: starea de pe server e transferată clientului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Prin ce convenie trebuie să înceapă numele unui composable pentru a fi auto-importat de Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cu <code>$</code> — ex: <code>$useUser</code></button></li>
+        <li><button data-correct="false">Cu <code>nuxt</code> — ex: <code>nuxtUser</code></button></li>
+        <li><button data-correct="true">Cu <code>use</code> — ex: <code>useUser</code>, <code>usePosts</code></button></li>
+        <li><button data-correct="false">Orice nume — Nuxt auto-importă toate funcțiile exportate din <code>composables/</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt auto-importă funcțiile care încep cu <code>use</code> din directorul <code>composables/</code>. Aceasta e și convenția Vue 3 pentru composable-uri — urmând-o, codul e predictibil și tooling-ul (TypeScript, ESLint) înțelege că e un composable.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre opțiunile <code>lazy</code>, <code>server</code> sau <code>watch</code> ale <code>useFetch</code>?
+      Vrei să știi cum funcționează interceptorii <code>$fetch</code>? Cum faci refresh la date după o mutație?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0003-routing-layouts.html">← Lecția 3: Routing și Layouts</a>
+    <a href="0005-server-routes-nitro.html">Lecția 5: Server Routes cu Nitro →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

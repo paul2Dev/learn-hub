@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3: Server vs Client Components — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 3 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Server Components vs Client Components</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cel mai important concept al App Router: unde rulează codul, ce poate face fiecare tip și cum decizi.
+  </p>
+
+
+  <h2>Conceptul de bază</h2>
+
+  <p>
+    În Next.js App Router, <strong>toate componentele sunt Server Components implicit</strong>.
+    Ele rulează pe server, au acces la baza de date, fișiere sistem, variabile de mediu secrete —
+    și HTML-ul lor ajunge la browser gata generat.
+  </p>
+
+  <p>
+    <strong>Client Components</strong> sunt componente care trebuie să ruleze în browser —
+    pentru că folosesc stare (<code>useState</code>), efecte (<code>useEffect</code>), event handlers
+    sau API-uri disponibile numai în browser (localStorage, window).
+    Le declari cu directiva <code>'use client'</code> la începutul fișierului.
+  </p>
+
+  <div class="callout">
+    <div class="callout-label">Regulă de bază</div>
+    Implicit = Server Component. Adaugi <code>'use client'</code> numai când componenta <em>are nevoie</em> de browser.
+    Nu adăuga <code>'use client'</code> preventiv — pierzi avantajele serverului.
+  </div>
+
+
+  <h2>Ce poate face fiecare tip</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#0070f3;font-size:0.58rem;">SRV</div>
+      <div class="arch-info">
+        <h4>Server Component — poate face:</h4>
+        <p><code>async/await</code> direct în componentă, acces la DB/fișiere, variabile secrete, fetch fără CORS, reducere bundle JS</p>
+      </div>
+      <div class="arch-tag">server only</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#dc2626;font-size:0.58rem;">SRV</div>
+      <div class="arch-info">
+        <h4>Server Component — NU poate face:</h4>
+        <p><code>useState</code>, <code>useEffect</code>, event handlers (<code>onClick</code>), <code>window</code>, <code>localStorage</code>, hooks React</p>
+      </div>
+      <div class="arch-tag">limitări</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#16a34a;font-size:0.58rem;">CLI</div>
+      <div class="arch-info">
+        <h4>Client Component — poate face:</h4>
+        <p><code>useState</code>, <code>useEffect</code>, <code>onClick</code>, <code>window</code>, <code>localStorage</code>, toate hook-urile React</p>
+      </div>
+      <div class="arch-tag">browser</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#f59e0b;font-size:0.58rem;">CLI</div>
+      <div class="arch-info">
+        <h4>Client Component — NU poate face:</h4>
+        <p>Acces direct la DB, variabile secrete (le expui prin API sau Server Actions), async direct fără workaround</p>
+      </div>
+      <div class="arch-tag">limitări</div>
+    </div>
+  </div>
+
+
+  <h2>Exemple de cod</h2>
+
+  <p><strong>Server Component</strong> — fetch date direct, fără boilerplate:</p>
+
+  <pre><code>// app/products/page.tsx — Server Component (implicit)
+// Nu are nevoie de 'use client'
+
+async function getProducts() {
+  // Poți apela direct DB, API intern, etc.
+  const res = await fetch('https://api.example.com/products', {
+    next: { revalidate: 3600 }  // cache ISR: regenerează la o oră
+  });
+  return res.json();
+}
+
+export default async function ProductsPage() {
+  const products = await getProducts();  // async/await direct în componentă!
+
+  return (
+    &lt;ul&gt;
+      {products.map(p =&gt; (
+        &lt;li key={p.id}&gt;{p.name} — {p.price} RON&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+
+  <p><strong>Client Component</strong> — interactivitate cu stare:</p>
+
+  <pre><code>'use client';  // ← directiva obligatorie, prima linie din fișier
+
+import { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;div&gt;
+      &lt;p&gt;Contor: {count}&lt;/p&gt;
+      &lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+        Incrementează
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+
+  <h2>Granița Server–Client și cum o traversezi</h2>
+
+  <p>
+    Poți compune Server și Client Components împreună. Regula: datele curg de la server la client
+    prin props. Un Server Component poate <em>importa și folosi</em> un Client Component,
+    dar un Client Component nu poate importa un Server Component.
+  </p>
+
+  <pre><code>// app/dashboard/page.tsx — Server Component
+import { InteractiveChart } from './InteractiveChart';  // Client Component
+
+export default async function DashboardPage() {
+  // Fetch date pe server — fără a expune cheile API la client
+  const data = await getChartData();
+
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;Dashboard&lt;/h1&gt;
+      &lt;InteractiveChart data={data} /&gt;  {/* datele sunt serializate și trimise */}
+    &lt;/div&gt;
+  );
+}
+
+// app/dashboard/InteractiveChart.tsx — Client Component
+'use client';
+import { useState } from 'react';
+
+export function InteractiveChart({ data }: { data: ChartData[] }) {
+  const [activePoint, setActivePoint] = useState(null);
+  // ... interactivitate în browser
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Pattern recomandat</div>
+    Mută <code>'use client'</code> cât mai jos în arborele de componente. Dacă numai butonul are nevoie de stare,
+    extrage doar butonul ca Client Component — nu întreaga pagină.
+  </div>
+
+
+  <h2>Server Components și securitatea</h2>
+
+  <p>
+    Un avantaj major al Server Components: codul nu ajunge niciodată în browser.
+    Cheile API, credentials, logica de business sensibilă — rămân pe server.
+  </p>
+
+  <pre><code>// SIGUR: variabila secretă nu apare în bundle-ul clientului
+const data = await fetch('https://api.example.com/data', {
+  headers: {
+    'Authorization': `Bearer ${process.env.SECRET_API_KEY}`
+  }
+});
+
+// PERICULOS: variabila cu NEXT_PUBLIC_ prefix e vizibilă în browser!
+const key = process.env.NEXT_PUBLIC_ANON_KEY;  // ← intenționat public</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Variabile de mediu</div>
+    Orice variabilă cu prefix <code>NEXT_PUBLIC_</code> este inclusă în bundle-ul de browser — e publică.
+    Fără prefix = disponibilă numai pe server. Niciodată nu pune chei secrete cu prefix <code>NEXT_PUBLIC_</code>.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Clasifică componentele</div>
+    <p>Pentru fiecare componentă de mai jos, decide: Server sau Client Component?</p>
+    <ol>
+      <li>Un header cu navbar și un dropdown menu care se deschide la click</li>
+      <li>O pagină care afișează lista de produse din baza de date</li>
+      <li>Un formular de căutare cu input și debounce</li>
+      <li>O componentă care afișează data și ora curentă (statică, fără actualizare)</li>
+      <li>Un modal care se deschide/închide cu animație</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: 1→Client (onClick), 2→Server (fetch DB), 3→Client (useState, onChange),
+      4→Server (data e statică la render), 5→Client (useState pentru deschis/închis).
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nextjs.org/docs/app/building-your-application/rendering/server-components" target="_blank">
+        Next.js Docs — Server Components
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială acoperă beneficiile, limitele și pattern-urile de compoziție.
+        Citește și pagina „Client Components" din același meniu.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce tip de componentă este implicit în App Router dacă nu specifici nimic?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Client Component — pentru compatibilitate cu React pur</button></li>
+        <li><button data-correct="true">Server Component — rulează pe server, fără JS în browser</button></li>
+        <li><button data-correct="false">Shared Component — rulează pe ambele simultan</button></li>
+        <li><button data-correct="false">Static Component — generat o singură dată la build</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Implicit toate componentele sunt Server Components în App Router. Trebuie să adaugi explicit <code>'use client'</code> pentru a face o componentă să ruleze în browser.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Un Server Component vrea să acceseze <code>localStorage</code>. Ce se întâmplă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Funcționează — Next.js emulează browser APIs pe server</button></li>
+        <li><button data-correct="false">Returnează <code>null</code> pe server și valoarea reală în browser</button></li>
+        <li><button data-correct="true">Eroare la runtime — <code>localStorage</code> nu există pe server</button></li>
+        <li><button data-correct="false">Funcționează dar valorile nu sunt persistente între request-uri</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>localStorage</code> este o API de browser — nu există în Node.js. Un Server Component care încearcă să acceseze <code>window</code>, <code>localStorage</code> sau <code>document</code> va arunca o eroare. Mută logica în Client Component.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care este avantajul principal al Server Components din perspectiva securității?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Codul lor este obfuscat automat de Next.js în producție</button></li>
+        <li><button data-correct="true">Codul și cheile secrete nu ajung niciodată în bundle-ul de browser</button></li>
+        <li><button data-correct="false">Sunt protejate de CSRF automat prin token-uri generate de framework</button></li>
+        <li><button data-correct="false">Rulează într-un sandbox izolat care blochează accesul la rețea</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Server Components nu trimit niciun cod JavaScript în browser — numai HTML. Cheile API, logica de business, credentials — rămân pe server și nu pot fi inspectate de utilizatori.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Cum transmiți date dintr-un Server Component într-un Client Component copil?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Prin <code>localStorage</code> — Server Component scrie, Client Component citește</button></li>
+        <li><button data-correct="false">Prin Redux store — Server Component populează, Client Component consumă</button></li>
+        <li><button data-correct="true">Prin props — datele sunt serializate și pasate ca proprietăți JSX</button></li>
+        <li><button data-correct="false">Prin context React — Provider în Server Component, Consumer în Client Component</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Datele curg prin props. Server Component face fetch la date, le pasează ca props Client Component-ului copil. Datele trebuie să fie serializabile (JSON-friendly) — nu poți pasa funcții sau obiecte non-serializabile.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care variabilă de mediu este accesibilă și în browser, nu doar pe server?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>process.env.DATABASE_URL</code></button></li>
+        <li><button data-correct="true"><code>process.env.NEXT_PUBLIC_SUPABASE_URL</code></button></li>
+        <li><button data-correct="false"><code>process.env.SECRET_API_KEY</code></button></li>
+        <li><button data-correct="false"><code>process.env.NODE_ENV</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Prefixul <code>NEXT_PUBLIC_</code> face ca variabila să fie inclusă în bundle-ul JavaScript trimis browserului. Oricine poate vedea valoarea în DevTools. Niciodată nu pune chei secrete cu acest prefix.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre cum trimiți date de la un Client Component înapoi la server? Vrei să știi despre Server Actions?
+      Ai o componentă specifică și nu știi dacă e Server sau Client?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0002-structura-proiect.html">← Lecția 2: Structura proiectului</a>
+    <a href="0004-routing-navigare.html">Lecția 4: Routing și navigare →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

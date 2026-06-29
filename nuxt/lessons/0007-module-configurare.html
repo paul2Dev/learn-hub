@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7: Module și Configurare — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 7 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Module și Configurare</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Ecosistemul de module Nuxt — cum extinzi funcționalitatea cu module oficiale și comunitare, și cum configurezi proiectul prin <code>nuxt.config.ts</code>.
+  </p>
+
+
+  <h2>Module Nuxt — ce sunt și de ce există</h2>
+
+  <p>
+    Un <strong>modul Nuxt</strong> este un pachet npm care se injectează în build-ul Nuxt la runtime —
+    adaugă auto-imports, modifică configurația webpack/vite, adaugă server routes, sau configurează
+    runtimeConfig. Echivalentul Next.js ar fi o combinație de plugin Webpack + middleware + config manual.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">MOD</div>
+      <div class="arch-info">
+        <h4>Module oficiale Nuxtjs</h4>
+        <p><code>@nuxtjs/supabase</code>, <code>@nuxtjs/i18n</code>, <code>@nuxtjs/tailwindcss</code>, <code>@nuxt/image</code>, <code>@nuxt/ui</code>, <code>@pinia/nuxt</code></p>
+      </div>
+      <div class="arch-tag">recomandat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">COM</div>
+      <div class="arch-info">
+        <h4>Module comunitare</h4>
+        <p>Peste 200 module în catalogul oficial. Caută la <code>nuxt.com/modules</code>.</p>
+      </div>
+      <div class="arch-tag">comunitate</div>
+    </div>
+  </div>
+
+
+  <h2>Adăugare module în nuxt.config.ts</h2>
+
+  <pre><code>// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: [
+    '@nuxtjs/supabase',
+    '@pinia/nuxt',
+    '@nuxtjs/tailwindcss',
+    '@nuxt/image',
+    // Forma alternativă cu opțiuni inline:
+    ['@nuxtjs/i18n', { defaultLocale: 'ro' }],
+  ],
+
+  // Opțiuni per-modul în secțiunile lor dedicate:
+  supabase: {
+    redirect: true,
+    redirectOptions: { login: '/login', callback: '/confirm', exclude: ['/'] }
+  },
+  image: {
+    quality: 80,
+    format: ['webp'],
+  }
+})</code></pre>
+
+
+  <h2>Pinia — state management</h2>
+
+  <p>
+    Pinia este librăria oficială de state management Vue 3 — echivalentul Redux/Zustand din ecosistemul
+    Next.js/React. Cu modulul <code>@pinia/nuxt</code>, store-urile sunt auto-importate:
+  </p>
+
+  <pre><code>npm install pinia @pinia/nuxt</code></pre>
+
+  <pre><code>// stores/tasks.ts
+import { defineStore } from 'pinia'
+
+export const useTasksStore = defineStore('tasks', () =&gt; {
+  // State
+  const tasks = ref&lt;Task[]&gt;([])
+  const loading = ref(false)
+  const error   = ref&lt;string | null&gt;(null)
+
+  // Getters (computed)
+  const completedTasks   = computed(() =&gt; tasks.value.filter(t =&gt; t.done))
+  const incompleteTasks  = computed(() =&gt; tasks.value.filter(t =&gt; !t.done))
+  const completionRate   = computed(() =&gt;
+    tasks.value.length ? completedTasks.value.length / tasks.value.length : 0
+  )
+
+  // Actions
+  async function fetchTasks() {
+    loading.value = true
+    const { data } = await $fetch('/api/tasks')
+    tasks.value = data ?? []
+    loading.value = false
+  }
+
+  async function addTask(title: string) {
+    const { data } = await $fetch('/api/tasks', {
+      method: 'POST',
+      body: { title }
+    })
+    tasks.value.unshift(data)
+  }
+
+  async function toggleTask(id: number) {
+    const task = tasks.value.find(t =&gt; t.id === id)
+    if (!task) return
+    await $fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      body: { done: !task.done }
+    })
+    task.done = !task.done
+  }
+
+  return { tasks, loading, error, completedTasks, incompleteTasks, completionRate, fetchTasks, addTask, toggleTask }
+})</code></pre>
+
+  <pre><code>&lt;!-- Utilizare în componente — auto-importat cu @pinia/nuxt --&gt;
+&lt;script setup lang="ts"&gt;
+const store = useTasksStore()
+
+onMounted(() =&gt; store.fetchTasks())
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;p&gt;{{ store.incompleteTasks.length }} task-uri rămase&lt;/p&gt;
+    &lt;ul&gt;
+      &lt;li v-for="task in store.tasks" :key="task.id"&gt;
+        &lt;input type="checkbox" :checked="task.done" @change="store.toggleTask(task.id)" /&gt;
+        {{ task.title }}
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>nuxt.config.ts — configurare completă</h2>
+
+  <pre><code>export default defineNuxtConfig({
+  // Comportament la development
+  devtools: { enabled: true },     // DevTools browser
+
+  // TypeScript strict
+  typescript: { strict: true },
+
+  // CSS global
+  css: ['~/assets/styles/main.css'],
+
+  // Variabile disponibile pe client și server
+  runtimeConfig: {
+    // Privat — NUMAI server:
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+
+    // Public — expus și pe client:
+    public: {
+      appName: 'MyApp',
+      apiBase: process.env.API_BASE ?? '/api',
+    }
+  },
+
+  // Head HTML global (meta, title default, fonts)
+  app: {
+    head: {
+      title: 'MyApp',
+      meta: [
+        { name: 'description', content: 'Aplicația mea Nuxt 3' },
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      ],
+      link: [
+        { rel: 'icon', href: '/favicon.ico' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap' }
+      ]
+    }
+  },
+
+  // Optimizări build
+  experimental: {
+    payloadExtraction: false,  // dezactivează payload.json pentru SSG static
+  },
+
+  // Nitro server config
+  nitro: {
+    preset: 'vercel',          // override preset la deploy
+    storage: {                 // storage pentru Nitro KV
+      redis: {
+        driver: 'redis',
+        url: process.env.REDIS_URL,
+      }
+    }
+  }
+})</code></pre>
+
+
+  <h2>runtimeConfig — variabile de mediu în Nuxt</h2>
+
+  <pre><code>// Cum accesezi runtimeConfig:
+
+// În server routes:
+const config = useRuntimeConfig()
+const key = config.supabaseServiceRoleKey  // privat, numai server
+
+// În componente Vue (public):
+const config = useRuntimeConfig()
+const apiBase = config.public.apiBase  // disponibil pe client și server</code></pre>
+
+  <pre><code># .env — variabilele sunt citite automat
+NUXT_SUPABASE_SERVICE_ROLE_KEY=eyJ...  # overrideaza runtimeConfig.supabaseServiceRoleKey
+NUXT_PUBLIC_API_BASE=https://api.myapp.com  # overrideaza runtimeConfig.public.apiBase
+
+# Observă convenția de naming:
+# NUXT_ + camelCase → runtimeConfig (server private)
+# NUXT_PUBLIC_ + camelCase → runtimeConfig.public (client+server)</code></pre>
+
+
+  <h2>@nuxt/ui — componente UI gata de folosit</h2>
+
+  <pre><code>npm install @nuxt/ui</code></pre>
+
+  <pre><code>// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxt/ui'],
+  // Tailwind + Nuxt UI sunt configurate automat
+})</code></pre>
+
+  <pre><code>&lt;!-- Componente @nuxt/ui — auto-importate --&gt;
+&lt;template&gt;
+  &lt;UCard&gt;
+    &lt;template #header&gt;
+      &lt;h2&gt;Task Manager&lt;/h2&gt;
+    &lt;/template&gt;
+
+    &lt;UInput v-model="title" placeholder="Task nou..." /&gt;
+    &lt;UButton @click="addTask" color="primary"&gt;Adaugă&lt;/UButton&gt;
+
+    &lt;UTable :rows="tasks" :columns="columns" /&gt;
+  &lt;/UCard&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Configurare proiect</div>
+    <p>Adaugă și configurează în proiectul tău:</p>
+    <ol>
+      <li>Instalează <code>@pinia/nuxt</code> și creează un store <code>stores/user.ts</code> cu state-ul user-ului curent</li>
+      <li>Adaugă <code>runtimeConfig</code> cu o variabilă publică <code>appName</code> și una privată <code>apiSecret</code></li>
+      <li>Accesează <code>appName</code> dintr-o componentă și <code>apiSecret</code> dintr-un server route</li>
+      <li>Configurează <code>app.head</code> cu title-ul și meta description ale aplicației tale</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/modules" target="_blank">
+        nuxt.com/modules — Catalog oficial module Nuxt
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Lista completă a modulelor oficiale și comunitare, cu număr de download-uri, rating și link la documentație.
+        Include și un ghid de creare a propriilor module.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Unde adaugi un modul Nuxt instalat prin npm?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">În <code>package.json</code> la secțiunea <code>"nuxtModules"</code></button></li>
+        <li><button data-correct="false">În <code>app.vue</code> la <code>useModule()</code> în setup</button></li>
+        <li><button data-correct="true">În <code>nuxt.config.ts</code> în array-ul <code>modules: []</code></button></li>
+        <li><button data-correct="false">În <code>plugins/</code> ca fișier cu <code>defineNuxtPlugin()</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modulele Nuxt se înregistrează în <code>nuxt.config.ts</code> în array-ul <code>modules: []</code>. Nuxt le procesează la build time — injectează composable-uri, modifică configurația Vite, adaugă server routes etc. Pluginurile din <code>plugins/</code> sunt altceva — rulează runtime în browser sau pe server.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care dintre aceste variabile din <code>runtimeConfig</code> este disponibilă și pe client?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>runtimeConfig.apiSecret</code> — toate variabilele sunt publice</button></li>
+        <li><button data-correct="true"><code>runtimeConfig.public.apiBase</code> — variabilele din <code>public</code> sunt expuse clientului</button></li>
+        <li><button data-correct="false"><code>runtimeConfig.dbPassword</code> — variabilele top-level sunt disponibile peste tot</button></li>
+        <li><button data-correct="false">Niciuna — runtimeConfig este exclusiv server</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>runtimeConfig.public.*</code> este serializat și trimis clientului (similar <code>NEXT_PUBLIC_</code> din Next.js). <code>runtimeConfig.*</code> (la top-level, în afara <code>public</code>) rămâne exclusiv pe server — niciodată nu ajunge în browser.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce face convenția de naming <code>NUXT_PUBLIC_API_BASE</code> în <code>.env</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Creează o variabilă de mediu Node.js accesibilă prin <code>process.env.NUXT_PUBLIC_API_BASE</code></button></li>
+        <li><button data-correct="false">Adaugă variabila la toate componentele Vue prin provide/inject</button></li>
+        <li><button data-correct="true">Overrideaza <code>runtimeConfig.public.apiBase</code> — transformă snake_case în camelCase</button></li>
+        <li><button data-correct="false">Adaugă variabila în headers la toate request-urile HTTP</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt mapează automat variabile de mediu la <code>runtimeConfig</code>: <code>NUXT_PUBLIC_API_BASE</code> → <code>runtimeConfig.public.apiBase</code>. Snake_case devine camelCase. La fel <code>NUXT_DB_PASSWORD</code> → <code>runtimeConfig.dbPassword</code>. Asta permite override ușor per mediu (dev/staging/prod) fără a edita config.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce diferență există între un store Pinia și <code>useState()</code> din Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu există diferență — Pinia este implementat pe baza useState în Nuxt 3</button></li>
+        <li><button data-correct="false"><code>useState</code> este reactiv, Pinia nu — Pinia stochează date statice</button></li>
+        <li><button data-correct="true">Pinia oferă actions, getters, DevTools — potrivit pentru state complex; useState e simplu, bun pentru state global ușor</button></li>
+        <li><button data-correct="false">Pinia rulează pe server, useState rulează pe client</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useState()</code> din Nuxt e simplu — un ref global cu cheie, accesibil din orice componentă, sincronizat server-client. Pinia adaugă actions structurate, computed getters, suport DevTools, subscriptions, plugins și o arhitectură mai scalabilă. Pentru un <code>ref</code> simplu shared → useState; pentru logică de business complexă → Pinia.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Cum configurezi meta-tagurile HTML (title, description) global în Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Editând <code>public/index.html</code> — fișierul HTML template</button></li>
+        <li><button data-correct="false">Prin <code>head.vue</code> în <code>components/</code> — componenta specială Head</button></li>
+        <li><button data-correct="true">Prin <code>app.head</code> în <code>nuxt.config.ts</code> sau <code>useHead()</code> per componentă</button></li>
+        <li><button data-correct="false">Prin fișierul <code>public/meta.json</code> — citit automat de Nuxt</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>app.head</code> în <code>nuxt.config.ts</code> configurează head-ul global. Per pagină/componentă, folosești <code>useHead({ title: '...', meta: [...] })</code> sau <code>useSeoMeta()</code> care oferă TypeScript types pentru toate meta-tagurile SEO. Nuxt 3 folosește <code>@unhead/vue</code> internaly.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum creezi propriul modul Nuxt? Cum configurezi Tailwind CSS cu Nuxt UI?
+      Cum funcționează Pinia cu SSR și hidratarea state-ului?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0006-supabase.html">← Lecția 6: Supabase în Nuxt 3</a>
+    <a href="0008-deploy.html">Lecția 8: Deploy pe Vercel, Netlify, Cloudflare →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

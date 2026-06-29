@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4: Routing și navigare — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 4 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Routing și navigare</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Rute dinamice, componenta Link, hooks de navigare — tot ce ai nevoie pentru a construi navigarea unei aplicații reale.
+  </p>
+
+
+  <h2>Rute dinamice și cum accesezi parametrii</h2>
+
+  <p>
+    Un segment dinamic se creează cu paranteze pătrate în numele folderului: <code>[id]</code>.
+    Componenta paginii primește parametrii ca prop <code>params</code>:
+  </p>
+
+  <pre><code>// app/blog/[slug]/page.tsx
+interface Props {
+  params: { slug: string };
+}
+
+export default async function BlogPost({ params }: Props) {
+  const { slug } = params;
+  const post = await getPostBySlug(slug);
+
+  if (!post) {
+    notFound();  // afișează not-found.tsx
+  }
+
+  return (
+    &lt;article&gt;
+      &lt;h1&gt;{post.title}&lt;/h1&gt;
+      &lt;p&gt;{post.content}&lt;/p&gt;
+    &lt;/article&gt;
+  );
+}
+
+// Generare statică a rutelor cunoscute (opțional)
+export async function generateStaticParams() {
+  const posts = await getAllPosts();
+  return posts.map(post =&gt; ({ slug: post.slug }));
+}</code></pre>
+
+  <p>
+    <code>generateStaticParams</code> spune Next.js ce slugs există — va pre-genera paginile la build.
+    Dacă un slug nu e în listă, Next.js va genera pagina la runtime (ISR comportament).
+  </p>
+
+
+  <h2>Search params și query string</h2>
+
+  <p>
+    URL-ul <code>/search?q=nextjs&amp;page=2</code> — parametrii după <code>?</code> sunt search params.
+    În Server Components îi primești ca prop <code>searchParams</code>:
+  </p>
+
+  <pre><code>// app/search/page.tsx
+interface Props {
+  searchParams: { q?: string; page?: string };
+}
+
+export default async function SearchPage({ searchParams }: Props) {
+  const query = searchParams.q ?? '';
+  const page  = Number(searchParams.page ?? 1);
+
+  const results = await search(query, page);
+
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;Rezultate pentru: {query}&lt;/h1&gt;
+      {results.map(r =&gt; &lt;div key={r.id}&gt;{r.title}&lt;/div&gt;)}
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+
+  <h2>Componenta Link — navigare client-side</h2>
+
+  <p>
+    <code>&lt;Link&gt;</code> din Next.js extinde tag-ul <code>&lt;a&gt;</code> cu prefetching automat și navigare
+    client-side (fără full page reload). Este singura modalitate corectă de a naviga intern.
+  </p>
+
+  <pre><code>import Link from 'next/link';
+
+export default function Navbar() {
+  return (
+    &lt;nav&gt;
+      &lt;Link href="/"&gt;Home&lt;/Link&gt;
+      &lt;Link href="/about"&gt;Despre&lt;/Link&gt;
+      &lt;Link href="/blog/primul-post"&gt;Post fix&lt;/Link&gt;
+
+      {/* Rută dinamică construită cu template string */}
+      &lt;Link href={`/users/${userId}/profile`}&gt;Profil&lt;/Link&gt;
+
+      {/* href ca obiect pentru search params */}
+      &lt;Link href={{ pathname: '/search', query: { q: 'nextjs' } }}&gt;
+        Caută Next.js
+      &lt;/Link&gt;
+    &lt;/nav&gt;
+  );
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Prefetching automat</div>
+    Când un <code>&lt;Link&gt;</code> intră în viewport, Next.js prefetchează automat pagina destinație.
+    Navigarea va fi instant. Poți dezactiva cu <code>prefetch={false}</code> dacă pagina e mare sau costisitoare.
+  </div>
+
+
+  <h2>Navigare programatică cu useRouter</h2>
+
+  <p>
+    Pentru navigare declanșată din cod (ex: după submit form), folosești hook-ul <code>useRouter</code>.
+    Funcționează numai în Client Components:
+  </p>
+
+  <pre><code>'use client';
+
+import { useRouter } from 'next/navigation';
+
+export default function LoginForm() {
+  const router = useRouter();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    // ... logică autentificare
+    router.push('/dashboard');      // navighează și adaugă în history
+    // router.replace('/dashboard'); // navighează fără a adăuga în history
+    // router.back();                // înapoi în history
+    // router.refresh();             // reîncarcă Server Components pe pagină curentă
+  }
+
+  return &lt;form onSubmit={handleSubmit}&gt;...&lt;/form&gt;;
+}</code></pre>
+
+
+  <h2>usePathname și useSearchParams</h2>
+
+  <p>
+    Pentru a citi ruta curentă sau search params în Client Components:
+  </p>
+
+  <pre><code>'use client';
+
+import { usePathname, useSearchParams } from 'next/navigation';
+
+export default function Breadcrumb() {
+  const pathname = usePathname();      // '/dashboard/settings'
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q'); // 'nextjs' din ?q=nextjs
+
+  return &lt;p&gt;Ești pe: {pathname}&lt;/p&gt;;
+}</code></pre>
+
+
+  <h2>Redirects programatice din Server Components</h2>
+
+  <p>
+    Din Server Components poți redirecta fără JavaScript în browser:
+  </p>
+
+  <pre><code>import { redirect, notFound } from 'next/navigation';
+
+export default async function ProtectedPage() {
+  const user = await getUser();
+
+  if (!user) {
+    redirect('/login');  // HTTP 307 redirect — instant, fără JS client
+  }
+
+  if (!user.isAdmin) {
+    notFound();  // afișează not-found.tsx
+  }
+
+  return &lt;div&gt;Pagina protejată&lt;/div&gt;;
+}</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Atenție</div>
+    <code>redirect()</code> aruncă o excepție internă pentru a opri execuția — nu pune niciodată
+    un <code>try/catch</code> care ar prinde <code>redirect()</code>. Va bloca redirectarea.
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Construiește un mini-router</div>
+    <p>Creează structura de foldere și fișierele necesare pentru aceste rute:</p>
+    <ol>
+      <li><code>/</code> — home page</li>
+      <li><code>/shop</code> — lista produse</li>
+      <li><code>/shop/[productId]</code> — detalii produs</li>
+      <li><code>/shop/[productId]/reviews</code> — recenzii produs</li>
+      <li><code>/account</code> cu layout propriu (sidebar)</li>
+      <li><code>/account/orders</code> și <code>/account/settings</code></li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: <code>app/page.tsx</code>, <code>app/shop/page.tsx</code>, <code>app/shop/[productId]/page.tsx</code>,
+      <code>app/shop/[productId]/reviews/page.tsx</code>, <code>app/account/layout.tsx</code>,
+      <code>app/account/page.tsx</code>, <code>app/account/orders/page.tsx</code>, <code>app/account/settings/page.tsx</code>.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nextjs.org/docs/app/building-your-application/routing/linking-and-navigating" target="_blank">
+        Next.js Docs — Linking and Navigating
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Acoperă toate formele de navigare: Link, useRouter, redirect, notFound. Include animații și diagrame.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Cum accesezi <code>params.id</code> dintr-o rută dinamică <code>/users/[id]</code> într-un Server Component?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Prin hook-ul <code>useParams()</code> importat din next/navigation</button></li>
+        <li><button data-correct="true">Din prop-ul <code>params</code> primit de componenta paginii</button></li>
+        <li><button data-correct="false">Din <code>window.location.pathname</code> pe server</button></li>
+        <li><button data-correct="false">Prin request headers din funcția <code>headers()</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Server Components primesc <code>params</code> ca prop direct: <code>export default function Page({'{'} params {'}'}: {'{'} params: {'{'} id: string {'}'} {'}'}) {'{'} ... {'}'}</code>. Hook-urile (<code>useParams</code>) funcționează numai în Client Components.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce <code>&lt;Link&gt;</code> este preferată față de <code>&lt;a href="..."&gt;</code> pentru navigare internă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că <code>&lt;a&gt;</code> nu suportă TypeScript în Next.js</button></li>
+        <li><button data-correct="true">Navigare client-side fără full reload, cu prefetching automat al paginii destinație</button></li>
+        <li><button data-correct="false">Pentru că <code>&lt;a&gt;</code> nu funcționează cu rute dinamice parametrizate</button></li>
+        <li><button data-correct="false">Pentru că <code>&lt;Link&gt;</code> adaugă token CSRF automat pentru securitate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>&lt;Link&gt;</code> interceptează click-ul și navighează client-side — fără a reîncărca pagina. Plus prefetchează paginile vizibile în viewport. Un <code>&lt;a&gt;</code> obișnuit face un full page reload, pierzând starea aplicației.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Care este diferența dintre <code>router.push()</code> și <code>router.replace()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>push</code> navighează imediat, <code>replace</code> navighează după confirmare utilizator</button></li>
+        <li><button data-correct="false"><code>push</code> e client-side, <code>replace</code> face un full page reload</button></li>
+        <li><button data-correct="true"><code>push</code> adaugă în history (Back funcționează), <code>replace</code> suprascrie fără a adăuga</button></li>
+        <li><button data-correct="false"><code>push</code> e pentru rute interne, <code>replace</code> e pentru URL-uri externe</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>push</code> adaugă o intrare nouă în browser history — utilizatorul poate da Back. <code>replace</code> suprascrie intrarea curentă — Back duce la pagina de dinaintea celei suprascrise. Util pentru flow-uri de autentificare unde nu vrei ca utilizatorul să dea Back la pagina de login.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Funcția <code>generateStaticParams()</code> dintr-un <code>page.tsx</code> cu rută dinamică ce face?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Validează parametrii URL la runtime și returnează eroare dacă nu sunt corecți</button></li>
+        <li><button data-correct="true">Definește setul de parametri pentru care Next.js va pre-genera pagini statice la build</button></li>
+        <li><button data-correct="false">Generează automat metadate (title, description) pentru fiecare pagină dinamică</button></li>
+        <li><button data-correct="false">Creează un cache local pentru parametrii folosiți frecvent</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>generateStaticParams</code> returnează array-ul de parametri pentru care Next.js va genera HTML static la build. Ex: <code>return posts.map(p =&gt; ({'{'} slug: p.slug {'}'}))</code>. Paginile respective vor fi instant — HTML pre-generat, fără DB la runtime.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce se întâmplă dacă pui un <code>try/catch</code> în jurul funcției <code>redirect()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nimic — <code>redirect()</code> ignoră try/catch</button></li>
+        <li><button data-correct="false">Next.js afișează un warning în consolă dar redirectarea are loc</button></li>
+        <li><button data-correct="true">Catch-ul prinde excepția internă și blochează redirectarea</button></li>
+        <li><button data-correct="false">Funcționează normal — try/catch nu afectează <code>redirect()</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>redirect()</code> funcționează aruncând o excepție specială pe care Next.js o prinde. Dacă pui <code>try/catch</code>, codul tău prinde excepția și redirectarea nu mai are loc. Soluția: pune <code>redirect()</code> în afara blocului try, sau re-aruncă excepția dacă e de tip <code>RedirectError</code>.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi despre Middleware (rulat la edge, înainte de request)?
+      Cum faci rute cu segmente multiple opționale? Cum funcționează Intercepting Routes?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0003-server-vs-client-components.html">← Lecția 3: Server vs Client Components</a>
+    <a href="0005-supabase.html">Lecția 5: Conectare la Supabase →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

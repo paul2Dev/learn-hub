@@ -236,3 +236,7 @@ Fiecare curs trebuie să aibă un `index.html` în rădăcina lui care servește
 | `claude-tutorial/` | 12 |
 | `ai-harness/` | 8 |
 | `engineering-principles/` | 10 |
+| `agentic-workflow/` | 10 |
+| `embedings/` | 8 |
+| `next-js/` | 9 |
+| `nuxt/` | 9 |

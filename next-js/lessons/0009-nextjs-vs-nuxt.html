@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 9: Next.js vs Nuxt — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 9 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Next.js vs Nuxt — comparație practică</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Aceleași probleme, două ecosisteme: React (Next.js) și Vue (Nuxt). Cum se compară arhitectura, DX-ul și ecosistemul?
+  </p>
+
+
+  <h2>Contextul comparației</h2>
+
+  <p>
+    <strong>Next.js</strong> și <strong>Nuxt</strong> sunt framework-uri meta care rezolvă aceleași probleme
+    (SSR, routing, optimizări, deploy) dar pentru ecosisteme diferite:
+    Next.js pentru React, Nuxt pentru Vue.
+    Dacă ești la alegere, decizia e adesea: „preferi React sau Vue?"
+  </p>
+
+  <div class="callout">
+    <div class="callout-label">Notă importantă</div>
+    Versiunile actuale sunt Next.js 15 și Nuxt 3. Ambele au App Router (Next.js) / Nitro server (Nuxt 3).
+    Comparațiile cu Nuxt 2 sau Next.js 12 sunt parțial irelevante astăzi.
+  </div>
+
+
+  <h2>Comparație generală</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Criteriu</th>
+        <th class="nextjs-col">Next.js 15</th>
+        <th class="nuxt-col">Nuxt 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Framework UI</strong></td>
+        <td class="nextjs-col">React 19</td>
+        <td class="nuxt-col">Vue 3 (Composition API)</td>
+      </tr>
+      <tr>
+        <td><strong>Creat de</strong></td>
+        <td class="nextjs-col">Vercel</td>
+        <td class="nuxt-col">Nuxt Labs (comunitate)</td>
+      </tr>
+      <tr>
+        <td><strong>Stars GitHub</strong></td>
+        <td class="nextjs-col">~130k ⭐</td>
+        <td class="nuxt-col">~55k ⭐</td>
+      </tr>
+      <tr>
+        <td><strong>Server runtime</strong></td>
+        <td class="nextjs-col">Node.js / Edge (Vercel)</td>
+        <td class="nuxt-col">Nitro (rulează oriunde: Node, Deno, Bun, Cloudflare Workers)</td>
+      </tr>
+      <tr>
+        <td><strong>Deploy recomandat</strong></td>
+        <td class="nextjs-col">Vercel (optimizat), dar merge pe orice Node</td>
+        <td class="nuxt-col">Agnostic — Vercel, Netlify, Cloudflare, VPS</td>
+      </tr>
+      <tr>
+        <td><strong>TypeScript</strong></td>
+        <td class="nextjs-col">Suportat, nu implicit</td>
+        <td class="nuxt-col">TypeScript first — activat implicit</td>
+      </tr>
+      <tr>
+        <td><strong>Auto-imports</strong></td>
+        <td class="nextjs-col">Nu — import-urile sunt explicite</td>
+        <td class="nuxt-col">Da — componente și composables importate automat</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <h2>Routing — structura fișierelor</h2>
+
+  <p>Ambele framework-uri folosesc file-based routing, dar cu convenții ușor diferite:</p>
+
+  <pre><code>/* Next.js App Router */
+app/
+├── page.tsx              → /
+├── about/
+│   └── page.tsx          → /about
+├── blog/
+│   └── [slug]/
+│       └── page.tsx      → /blog/:slug   (paramURL: params.slug)
+└── layout.tsx            ← layout aplicat la toate paginile
+
+/* Nuxt 3 */
+pages/
+├── index.vue             → /
+├── about.vue             → /about
+├── blog/
+│   └── [slug].vue        → /blog/:slug   (paramURL: useRoute().params.slug)
+└── app.vue               ← root layout (opțional)</code></pre>
+
+  <p>
+    Nuxt e ușor mai compact — un singur fișier <code>.vue</code> pentru o rută,
+    față de un folder + <code>page.tsx</code> în Next.js. Ambele suportă layouts nested.
+  </p>
+
+
+  <h2>Data Fetching</h2>
+
+  <pre><code>/* Next.js — Server Component async */
+// app/products/page.tsx
+export default async function ProductsPage() {
+  const data = await fetch('https://api.example.com/products').then(r =&gt; r.json());
+  return &lt;ul&gt;{data.map(p =&gt; &lt;li key={p.id}&gt;{p.name}&lt;/li&gt;)}&lt;/ul&gt;;
+}
+
+/* Nuxt 3 — useFetch / useAsyncData composables */
+// pages/products.vue
+&lt;script setup lang="ts"&gt;
+const { data: products } = await useFetch('/api/products')
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;ul&gt;
+    &lt;li v-for="p in products" :key="p.id"&gt;{{ p.name }}&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/template&gt;</code></pre>
+
+  <p>
+    Abordările diferă fundamental. Next.js folosește async/await direct în Server Components —
+    conceptul e mai aproape de PHP clasic. Nuxt folosește composables (<code>useFetch</code>) care funcționează
+    atât pe server cât și pe client, cu hydration automată.
+  </p>
+
+  <div class="callout">
+    <div class="callout-label">Diferență cheie</div>
+    În Next.js, granița server/client este la nivel de <em>componentă</em> (<code>'use client'</code>).
+    În Nuxt, granița e mai fluidă — codul dintr-un <code>.vue</code> poate rula pe ambele, composables
+    ca <code>useFetch</code> gestionând automat contextul.
+  </div>
+
+
+  <h2>Server Actions vs Nuxt Server Routes</h2>
+
+  <pre><code>/* Next.js — Server Action */
+// lib/actions.ts
+'use server';
+export async function createPost(formData: FormData) {
+  const title = formData.get('title') as string;
+  await db.insert({ title });
+  revalidatePath('/posts');
+}
+
+// Folosit în formular:
+&lt;form action={createPost}&gt;...&lt;/form&gt;
+
+/* Nuxt 3 — API Route (server endpoint) */
+// server/api/posts.post.ts
+export default defineEventHandler(async (event) =&gt; {
+  const body = await readBody(event);
+  await db.insert({ title: body.title });
+  return { success: true };
+});
+
+// Apelat din client:
+await $fetch('/api/posts', { method: 'POST', body: { title: '...' } });</code></pre>
+
+  <p>
+    Next.js Server Actions sunt mai strâns integrate cu formularele React.
+    Nuxt are API Routes explicite (fișiere în <code>server/api/</code>) — mai explicit, mai aproape de REST tradițional.
+  </p>
+
+
+  <h2>Ecosistem și tooling</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Aspect</th>
+        <th class="nextjs-col">Next.js</th>
+        <th class="nuxt-col">Nuxt 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Ecosistem npm</strong></td>
+        <td class="nextjs-col">React: cel mai mare ecosistem UI din web</td>
+        <td class="nuxt-col">Vue: ecosistem mai mic dar mai coerent</td>
+      </tr>
+      <tr>
+        <td><strong>UI Libraries</strong></td>
+        <td class="nextjs-col">shadcn/ui, Radix, Chakra, MUI, Mantine...</td>
+        <td class="nuxt-col">Nuxt UI, PrimeVue, Vuetify, NaiveUI...</td>
+      </tr>
+      <tr>
+        <td><strong>Modules / Plugins</strong></td>
+        <td class="nextjs-col">Pachete npm standard + Next.js specific plugins</td>
+        <td class="nuxt-col">Sistem de module Nuxt — nuxt.com/modules (400+)</td>
+      </tr>
+      <tr>
+        <td><strong>State Management</strong></td>
+        <td class="nextjs-col">Zustand, Jotai, Redux Toolkit</td>
+        <td class="nuxt-col"><code>useState</code> composable inclus + Pinia</td>
+      </tr>
+      <tr>
+        <td><strong>Styling</strong></td>
+        <td class="nextjs-col">CSS Modules, Tailwind, CSS-in-JS, orice</td>
+        <td class="nuxt-col">CSS în .vue (scoped), Tailwind, UnoCSS</td>
+      </tr>
+      <tr>
+        <td><strong>Locuri de muncă</strong></td>
+        <td class="nextjs-col">Mai multe joburi pe piață (React dominant)</td>
+        <td class="nuxt-col">Mai puțin dar cerere stabilă, popular în Europa</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <h2>DX — Developer Experience</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>DX Aspect</th>
+        <th class="nextjs-col">Next.js</th>
+        <th class="nuxt-col">Nuxt 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Curba de învățare</strong></td>
+        <td class="nextjs-col">Mai abruptă — React + JSX + Server Components e mult</td>
+        <td class="nuxt-col">Mai lină pentru cei cu background HTML/CSS — SFC <code>.vue</code> e intuitiv</td>
+      </tr>
+      <tr>
+        <td><strong>Hot Reload</strong></td>
+        <td class="nextjs-col">Fast Refresh (React-based)</td>
+        <td class="nuxt-col">Nuxt DevTools + Vite HMR — instant</td>
+      </tr>
+      <tr>
+        <td><strong>DevTools</strong></td>
+        <td class="nextjs-col">React DevTools (browser extension)</td>
+        <td class="nuxt-col">Nuxt DevTools (integrat, extrem de bogat)</td>
+      </tr>
+      <tr>
+        <td><strong>Config</strong></td>
+        <td class="nextjs-col"><code>next.config.js</code> — opțional, vine cu defaults bune</td>
+        <td class="nuxt-col"><code>nuxt.config.ts</code> — TypeScript first, extensibil</td>
+      </tr>
+      <tr>
+        <td><strong>Auto-imports</strong></td>
+        <td class="nextjs-col">Nu — toate import-urile sunt explicite (mai predictibil)</td>
+        <td class="nuxt-col">Da — componente și composables disponibile fără import</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <h2>Când să alegi ce</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#0070f3;font-size:0.58rem;">NXT</div>
+      <div class="arch-info">
+        <h4>Alege Next.js când:</h4>
+        <p>Echipa știe React, cauți joburi pe piață, ecosistem React (shadcn, etc.), deploy pe Vercel, proiecte enterprise</p>
+      </div>
+      <div class="arch-tag">React</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#16a34a;font-size:0.58rem;">NXT</div>
+      <div class="arch-info">
+        <h4>Alege Nuxt când:</h4>
+        <p>Echipa știe Vue, preferi SFC <code>.vue</code> față de JSX, vrei auto-imports, deploy pe Cloudflare Workers, vrei Nuxt DevTools</p>
+      </div>
+      <div class="arch-tag">Vue</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#f59e0b;font-size:0.58rem;">MIG</div>
+      <div class="arch-info">
+        <h4>Migrare între ele:</h4>
+        <p>Conceptele sunt similare (routing, SSR, SSG, middleware) — dacă știi unul, îl înveți pe celălalt în câteva zile</p>
+      </div>
+      <div class="arch-tag">transferabil</div>
+    </div>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/getting-started/introduction" target="_blank">
+        Nuxt 3 Documentation — nuxt.com/docs
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Dacă vrei să explorezi Nuxt după ce ai înțeles Next.js, documentația Nuxt 3 e de înaltă calitate.
+        Compară secțiunile de routing și data fetching cu ce ai învățat în acest curs.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Nuxt 3 folosește ce framework UI?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">React cu un wrapper special pentru sintaxa .vue</button></li>
+        <li><button data-correct="false">Svelte — pentru performanță maximă fără virtual DOM</button></li>
+        <li><button data-correct="true">Vue 3 cu Composition API</button></li>
+        <li><button data-correct="false">Web Components native — fără framework UI specific</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt este Next.js-ul ecosistemului Vue — face pentru Vue ce Next.js face pentru React. Nuxt 3 folosește Vue 3 cu Composition API, Vite ca bundler și Nitro ca server engine.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Care este o diferență cheie între Server Components (Next.js) și <code>useFetch</code> (Nuxt)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Server Components nu suportă TypeScript; useFetch da</button></li>
+        <li><button data-correct="true">Server Components rulează numai pe server; useFetch funcționează pe server și client cu hydration automată</button></li>
+        <li><button data-correct="false">useFetch e mai performant deoarece nu trimite date din server</button></li>
+        <li><button data="false">Server Components pot accesa DB; useFetch poate accesa numai REST APIs</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Server Components sunt exclusive server — codul lor nu ajunge în browser. <code>useFetch</code> în Nuxt funcționează isomorfic: pe server face fetch și inserează datele în HTML (SSR), pe client le preia din starea hidratată fără a reface fetch-ul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce avantaj specific oferă Nuxt față de Next.js în privința deployului?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nuxt are un CDN propriu gratuit pentru aplicații Nuxt</button></li>
+        <li><button data-correct="false">Nuxt produce bundle-uri mai mici prin compilare AOT</button></li>
+        <li><button data-correct="true">Nitro permite deployment pe orice runtime: Node, Deno, Bun, Cloudflare Workers</button></li>
+        <li><button data-correct="false">Nuxt nu necesită build step — fișierele .vue sunt servite direct</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nitro (server engine al Nuxt 3) produce output portabil pentru multiple targets. Poți deploya aceeași aplicație pe Vercel, Netlify, un VPS Node.js, sau Cloudflare Workers fără modificări. Next.js e mai strâns optimizat pentru Vercel, deși merge și pe alte platforme.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce înseamnă auto-imports în Nuxt și care e avantajul/dezavantajul față de Next.js?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nuxt importă automat pachete npm la pornire — reduce timpul de cold start</button></li>
+        <li><button data-correct="true">Componente și composables devin disponibile fără import explicit — DX mai rapid dar mai puțin predictibil</button></li>
+        <li><button data-correct="false">Nuxt generează automat import-urile TypeScript la build — elimină erorile de tip</button></li>
+        <li><button data-correct="false">Auto-imports înseamnă că Nuxt descarcă dependențele la runtime, nu la build</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> În Nuxt, dacă ai un fișier <code>components/Button.vue</code>, îl poți folosi în orice template fără <code>import Button from './components/Button.vue'</code>. Avantaj: mai puțin boilerplate. Dezavantaj: e mai greu de înțeles de unde vine o componentă — Next.js cu import-uri explicite e mai predictibil.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Dacă cineva știe deja Next.js bine, cât timp îi ia să învețe Nuxt la nivel productiv?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">6-12 luni — arhitectura e complet diferită, trebuie reînvățat totul</button></li>
+        <li><button data-correct="false">Imediat — Nuxt e un superset al Next.js, codul e identic</button></li>
+        <li><button data-correct="true">Câteva zile-săptămâni — conceptele (SSR, routing, middleware) sunt identice, sintaxa diferă</button></li>
+        <li><button data-correct="false">1-2 luni — Vue are un model mental fundamental diferit față de React</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Problemele pe care le rezolvă sunt identice: SSR, file-based routing, middleware, optimizări. Un developer Next.js va recunoaște imediat structura unui proiect Nuxt. Principala adaptare e sintaxa Vue (template vs JSX, composables vs hooks) — nu conceptele arhitecturale.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să compari Next.js cu Remix sau SvelteKit? Cum se compară Nuxt UI cu shadcn/ui?
+      Ai un proiect specific și vrei să discutăm ce framework se potrivește mai bine?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0008-proiect-complet.html">← Lecția 8: Proiect complet CRUD</a>
+    <span class="current">Finalul cursului ✓</span>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8: Proiect complet CRUD — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 8 din 9</span>
+    <span class="tag">~45 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Proiect complet: Task Manager cu Next.js + Supabase + Vercel</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Construiești de la zero o aplicație CRUD completă — autentificare, creare/citire/actualizare/ștergere date, deploy în producție.
+  </p>
+
+
+  <h2>Ce construim</h2>
+
+  <p>
+    Un Task Manager cu autentificare — utilizatorii se pot înregistra, autentifica și gestiona propriile task-uri.
+    Fiecare utilizator vede numai task-urile lui. Datele sunt în Supabase, aplicația e deployată pe Vercel.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#0070f3;font-size:0.58rem;">AUTH</div>
+      <div class="arch-info">
+        <h4>Autentificare</h4>
+        <p>Pagini <code>/login</code> și <code>/register</code> cu Supabase Auth (email + password)</p>
+      </div>
+      <div class="arch-tag">Supabase Auth</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#16a34a;font-size:0.6rem;">LIST</div>
+      <div class="arch-info">
+        <h4>Lista de task-uri</h4>
+        <p>Server Component care face fetch la task-urile utilizatorului autentificat</p>
+      </div>
+      <div class="arch-tag">SSR + RLS</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#f59e0b;font-size:0.58rem;">CRUD</div>
+      <div class="arch-info">
+        <h4>Operații CRUD</h4>
+        <p>Server Actions pentru creare, marcare completat, ștergere task-uri</p>
+      </div>
+      <div class="arch-tag">Server Actions</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="background:#9333ea;font-size:0.6rem;">SEC</div>
+      <div class="arch-info">
+        <h4>Securitate</h4>
+        <p>RLS în Supabase + verificare autentificare în Server Actions</p>
+      </div>
+      <div class="arch-tag">RLS + middleware</div>
+    </div>
+  </div>
+
+
+  <h2>Pasul 1: Schema Supabase</h2>
+
+  <p>
+    În Supabase Dashboard → SQL Editor, rulează:
+  </p>
+
+  <pre><code>-- Tabel tasks
+CREATE TABLE tasks (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title       TEXT NOT NULL,
+  completed   BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Activează RLS
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+-- Politică: utilizatorii văd/modifică NUMAI task-urile lor
+CREATE POLICY "users_own_tasks" ON tasks
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);</code></pre>
+
+
+  <h2>Pasul 2: Structura proiectului</h2>
+
+  <pre><code>app/
+├── (auth)/
+│   ├── login/page.tsx          ← formular login
+│   └── register/page.tsx       ← formular înregistrare
+├── (app)/
+│   ├── layout.tsx              ← layout cu navbar pentru utilizatori autentificați
+│   └── dashboard/
+│       └── page.tsx            ← lista de task-uri (Server Component)
+├── layout.tsx                  ← root layout
+└── page.tsx                    ← redirect la /dashboard sau /login
+
+lib/
+├── supabase/
+│   ├── server.ts
+│   └── client.ts
+└── actions/
+    ├── auth.ts                 ← Server Actions: login, register, logout
+    └── tasks.ts                ← Server Actions: createTask, toggleTask, deleteTask
+
+middleware.ts                   ← reîmprospătare sesiune Supabase</code></pre>
+
+
+  <h2>Pasul 3: Server Actions pentru autentificare</h2>
+
+  <pre><code>// lib/actions/auth.ts
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+
+export async function login(formData: FormData) {
+  const email    = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const supabase = createClient();
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: error.message };
+
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
+}
+
+export async function register(formData: FormData) {
+  const email    = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const supabase = createClient();
+
+  const { error } = await supabase.auth.signUp({ email, password });
+  if (error) return { error: error.message };
+
+  redirect('/dashboard');
+}
+
+export async function logout() {
+  const supabase = createClient();
+  await supabase.auth.signOut();
+  redirect('/login');
+}</code></pre>
+
+
+  <h2>Pasul 4: Server Actions pentru tasks</h2>
+
+  <pre><code>// lib/actions/tasks.ts
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+
+async function getAuthUser() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+  return { supabase, user };
+}
+
+export async function createTask(formData: FormData) {
+  const title = (formData.get('title') as string)?.trim();
+  if (!title) return { error: 'Titlul nu poate fi gol.' };
+
+  const { supabase, user } = await getAuthUser();
+  const { error } = await supabase
+    .from('tasks')
+    .insert({ title, user_id: user.id });
+
+  if (error) return { error: error.message };
+  revalidatePath('/dashboard');
+}
+
+export async function toggleTask(id: number, completed: boolean) {
+  const { supabase } = await getAuthUser();
+  await supabase.from('tasks').update({ completed }).eq('id', id);
+  revalidatePath('/dashboard');
+}
+
+export async function deleteTask(id: number) {
+  const { supabase } = await getAuthUser();
+  await supabase.from('tasks').delete().eq('id', id);
+  revalidatePath('/dashboard');
+}</code></pre>
+
+
+  <h2>Pasul 5: Pagina Dashboard (Server Component)</h2>
+
+  <pre><code>// app/(app)/dashboard/page.tsx
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { createTask, toggleTask, deleteTask } from '@/lib/actions/tasks';
+import { logout } from '@/lib/actions/auth';
+
+export default async function DashboardPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const done  = tasks?.filter(t =&gt; t.completed).length ?? 0;
+  const total = tasks?.length ?? 0;
+
+  return (
+    &lt;div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}&gt;
+      &lt;div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}&gt;
+        &lt;h1&gt;Task-urile mele ({done}/{total} completate)&lt;/h1&gt;
+        &lt;form action={logout}&gt;
+          &lt;button type="submit"&gt;Logout&lt;/button&gt;
+        &lt;/form&gt;
+      &lt;/div&gt;
+
+      {/* Formular adăugare */}
+      &lt;form action={createTask} style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0' }}&gt;
+        &lt;input
+          name="title"
+          placeholder="Task nou..."
+          required
+          style={{ flex: 1, padding: '0.5rem 0.8rem', borderRadius: '4px', border: '1px solid #ccc' }}
+        /&gt;
+        &lt;button type="submit"&gt;+ Adaugă&lt;/button&gt;
+      &lt;/form&gt;
+
+      {/* Lista task-uri */}
+      &lt;ul style={{ listStyle: 'none', padding: 0 }}&gt;
+        {tasks?.map(task =&gt; (
+          &lt;li key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.6rem 0', borderBottom: '1px solid #eee' }}&gt;
+            {/* Toggle completat */}
+            &lt;form action={toggleTask.bind(null, task.id, !task.completed)}&gt;
+              &lt;button type="submit" style={{ fontSize: '1.2rem' }}&gt;
+                {task.completed ? '✅' : '⬜'}
+              &lt;/button&gt;
+            &lt;/form&gt;
+            &lt;span style={{ flex: 1, textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? '#999' : 'inherit' }}&gt;
+              {task.title}
+            &lt;/span&gt;
+            {/* Ștergere */}
+            &lt;form action={deleteTask.bind(null, task.id)}&gt;
+              &lt;button type="submit" style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}&gt;✕&lt;/button&gt;
+            &lt;/form&gt;
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+
+      {tasks?.length === 0 &amp;&amp; (
+        &lt;p style={{ color: '#999', textAlign: 'center', marginTop: '2rem' }}&gt;
+          Nicio sarcină. Adaugă prima ta sarcină mai sus!
+        &lt;/p&gt;
+      )}
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+
+  <h2>Checklist producție</h2>
+
+  <div class="exercise">
+    <div class="exercise-label">Checklist înainte de deploy</div>
+    <ol>
+      <li>RLS activat pe toate tabelele (<code>ALTER TABLE x ENABLE ROW LEVEL SECURITY;</code>)</li>
+      <li>Toate Server Actions verifică autentificarea (<code>getUser()</code> înainte de orice query)</li>
+      <li>Nicio cheie secretă cu prefix <code>NEXT_PUBLIC_</code></li>
+      <li><code>npm run build</code> trece fără erori TypeScript</li>
+      <li>Variabilele de mediu adăugate în Vercel Dashboard</li>
+      <li>Domeniu de producție adăugat în Supabase Auth URL Configuration</li>
+      <li>Middleware configurat pentru reîmprospătarea sesiunilor</li>
+      <li>Testat fluxul complet: înregistrare → login → CRUD → logout</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://supabase.com/docs/guides/getting-started/quickstarts/nextjs" target="_blank">
+        Supabase + Next.js Tutorial complet — supabase.com
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Tutorialul oficial include și o aplicație demo completă cu autentificare. Recomandat ca referință paralel cu această lecție.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce este importantă această linie în politica RLS: <code>USING (auth.uid() = user_id)</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Creează automat coloana <code>user_id</code> la INSERT cu valoarea utilizatorului curent</button></li>
+        <li><button data-correct="true">Restricționează SELECT/UPDATE/DELETE — utilizatorul vede numai rândurile lui</button></li>
+        <li><button data-correct="false">Indexează coloana user_id pentru query-uri mai rapide</button></li>
+        <li><button data-correct="false">Validează că user_id-ul există în tabelul auth.users</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>USING</code> definește condiția pentru operațiile de citire. Orice SELECT, UPDATE sau DELETE pe acel tabel va fi filtrat automat de PostgreSQL la rândurile unde <code>user_id = auth.uid()</code>. Chiar dacă un bug din cod face un <code>SELECT *</code>, DB-ul returnează numai rândurile utilizatorului autentificat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce folosim <code>toggleTask.bind(null, task.id, !task.completed)</code> în formular?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că Server Actions nu pot primi argumente — numai FormData</button></li>
+        <li><button data-correct="true">Parțial aplicăm argumentele statice — formularul nu are input-uri pentru id și completed</button></li>
+        <li><button data-correct="false">Pentru că <code>bind</code> transformă Server Action-ul într-un Client Component</button></li>
+        <li><button data-correct="false">Din motive de securitate — ascunde valorile de utilizator</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>.bind(null, id, value)</code> pre-aplică argumente la o funcție. Aceasta e o tehnică standard pentru Server Actions care primesc argumente dinamice (din lista randată de server) dar nu au câmpuri de formular corespunzătoare.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">În schema SQL, ce face <code>ON DELETE CASCADE</code> pe <code>user_id</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Șterge utilizatorul dacă task-ul asociat este șters</button></li>
+        <li><button data-correct="true">Șterge automat toate task-urile când utilizatorul care le deține este șters</button></li>
+        <li><button data-correct="false">Blochează ștergerea utilizatorilor care au task-uri active</button></li>
+        <li><button data-correct="false">Actualizează user_id la NULL când utilizatorul este șters</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>ON DELETE CASCADE</code> spune PostgreSQL: „când rândul referit (utilizatorul) este șters, șterge și rândurile care îl referențiază (task-urile)". Previne orfanarea datelor — nu rămân task-uri fără utilizator.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce este util Route Group-ul <code>(app)</code> din structura proiectului?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Face ca rutele din grup să fie mai rapide prin caching special</button></li>
+        <li><button data-correct="true">Permite un layout separat pentru utilizatori autentificați fără a afecta URL-ul</button></li>
+        <li><button data-correct="false">Protejează rutele din grup cu autentificare automată</button></li>
+        <li><button data-correct="false">Grupează rutele în aceeași bucată de bundle JavaScript</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>(app)/layout.tsx</code> poate conține navbar-ul cu butonul de logout — aplicat numai paginilor autentificate. Paginile de <code>(auth)/login</code> și <code>(auth)/register</code> au un alt layout (fără navbar). URL-urile rămân <code>/dashboard</code> și <code>/login</code>, nu <code>/app/dashboard</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce verificăm <code>getUser()</code> în fiecare Server Action, chiar dacă RLS e activ?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">RLS nu funcționează cu Supabase JS SDK — numai cu SQL direct</button></li>
+        <li><button data-correct="false">Performanță — verificarea JS e mai rapidă decât politicile PostgreSQL</button></li>
+        <li><button data-correct="true">Defense in depth — două straturi de securitate, plus RLS nu dă erori explicite la neautentificați</button></li>
+        <li><button data-correct="false">Altfel Server Actions pot fi apelate de oricine direct prin URL</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> RLS protejează datele la nivel de DB, dar verificarea în Server Action oferă: 1) un mesaj de eroare clar pentru utilizatorul neautentificat, 2) posibilitatea de redirect la login, 3) un strat de securitate suplimentar. „Defense in depth" — nu te baza numai pe un singur mecanism.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să adaugi funcționalități: editare inline, drag-and-drop, categorii, date scadente?
+      Cum adaugi autentificare cu Google? Cum faci upload de fișiere atașate la task-uri?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0007-deploy-vercel.html">← Lecția 7: Deploy pe Vercel</a>
+    <a href="0009-nextjs-vs-nuxt.html">Lecția 9: Next.js vs Nuxt →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

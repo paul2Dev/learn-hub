@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 9: Proiect Complet — Task Manager — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 9 din 9</span>
+    <span class="tag">~45 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Proiect Complet: Task Manager</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Construiești o aplicație CRUD completă cu Nuxt 3 + Supabase — autentificare, liste de task-uri per utilizator,
+    CRUD cu server routes Nitro și deploy pe Vercel. Totul din lecțiile anterioare, pus împreună.
+  </p>
+
+
+  <h2>Arhitectura proiectului</h2>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">PGS</div>
+      <div class="arch-info">
+        <h4>pages/ — rutare automată</h4>
+        <p><code>index.vue</code> (landing), <code>login.vue</code> (auth), <code>dashboard/index.vue</code> (task list), <code>dashboard/[id].vue</code> (task detail)</p>
+      </div>
+      <div class="arch-tag">Vue Router</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">API</div>
+      <div class="arch-info">
+        <h4>server/api/ — API REST cu Nitro</h4>
+        <p><code>tasks.get.ts</code>, <code>tasks.post.ts</code>, <code>tasks/[id].patch.ts</code>, <code>tasks/[id].delete.ts</code></p>
+      </div>
+      <div class="arch-tag">Nitro</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">STO</div>
+      <div class="arch-info">
+        <h4>stores/tasks.ts — state management</h4>
+        <p>Pinia store cu actions pentru CRUD și getters pentru filtrare și statistici.</p>
+      </div>
+      <div class="arch-tag">Pinia</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">DB</div>
+      <div class="arch-info">
+        <h4>Supabase — baza de date și auth</h4>
+        <p>Tabelă <code>tasks</code> cu RLS: fiecare utilizator vede numai task-urile lui.</p>
+      </div>
+      <div class="arch-tag">PostgreSQL + RLS</div>
+    </div>
+  </div>
+
+
+  <h2>Pasul 1 — Supabase: schema și RLS</h2>
+
+  <pre><code>-- În Supabase SQL Editor:
+CREATE TABLE tasks (
+  id          UUID    DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title       TEXT    NOT NULL CHECK (char_length(title) &gt; 0),
+  description TEXT,
+  done        BOOLEAN DEFAULT false NOT NULL,
+  priority    TEXT    DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+  due_date    DATE,
+  created_at  TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at  TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- RLS: activat + politici
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Utilizatorii văd numai task-urile lor" ON tasks
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Setează user_id automat la INSERT
+CREATE OR REPLACE FUNCTION set_user_id()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.user_id = auth.uid();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER tasks_set_user_id
+  BEFORE INSERT ON tasks
+  FOR EACH ROW EXECUTE FUNCTION set_user_id();</code></pre>
+
+
+  <h2>Pasul 2 — Nuxt: structura folderelor</h2>
+
+  <pre><code>nuxt-task-manager/
+├── nuxt.config.ts
+├── .env
+├── layouts/
+│   ├── default.vue         ← cu Navbar + footer
+│   └── auth.vue            ← layout simplu pentru /login
+├── pages/
+│   ├── index.vue           ← landing page publică
+│   ├── login.vue           ← formular email + password
+│   └── dashboard/
+│       ├── index.vue       ← lista de task-uri
+│       └── [id].vue        ← detalii task (opțional)
+├── components/
+│   ├── TaskCard.vue        ← card task cu checkbox, delete
+│   ├── TaskForm.vue        ← formular creare task
+│   └── TaskStats.vue       ← statistici (total, completate)
+├── stores/
+│   └── tasks.ts            ← Pinia store
+├── server/
+│   ├── middleware/
+│   │   └── auth.ts         ← verifică sesiunea Supabase pe fiecare request API
+│   └── api/
+│       ├── tasks.get.ts
+│       ├── tasks.post.ts
+│       ├── tasks/[id].patch.ts
+│       └── tasks/[id].delete.ts
+└── composables/
+    └── useTaskFilters.ts   ← filtrare și sortare locală</code></pre>
+
+
+  <h2>Pasul 3 — nuxt.config.ts și .env</h2>
+
+  <pre><code>// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/supabase', '@pinia/nuxt'],
+
+  supabase: {
+    redirect: true,
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/'],
+    }
+  },
+
+  app: {
+    head: {
+      title: 'Task Manager — Nuxt 3',
+      meta: [{ name: 'description', content: 'Gestionează task-urile cu Nuxt 3 și Supabase' }]
+    }
+  }
+})</code></pre>
+
+  <pre><code># .env
+SUPABASE_URL=https://xyzcompany.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+
+
+  <h2>Pasul 4 — Server Routes API</h2>
+
+  <pre><code>// server/api/tasks.get.ts
+import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
+
+export default defineEventHandler(async (event) =&gt; {
+  const user = await serverSupabaseUser(event)
+  if (!user) throw createError({ statusCode: 401, message: 'Neautorizat' })
+
+  const client = await serverSupabaseClient(event)
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  return data
+})</code></pre>
+
+  <pre><code>// server/api/tasks.post.ts
+import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
+
+export default defineEventHandler(async (event) =&gt; {
+  const user = await serverSupabaseUser(event)
+  if (!user) throw createError({ statusCode: 401, message: 'Neautorizat' })
+
+  const body = await readBody(event)
+  if (!body?.title?.trim()) {
+    throw createError({ statusCode: 400, message: 'Titlul este obligatoriu' })
+  }
+
+  const client = await serverSupabaseClient(event)
+  const { data, error } = await client
+    .from('tasks')
+    .insert({ title: body.title.trim(), description: body.description, priority: body.priority ?? 'medium' })
+    .select()
+    .single()
+
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  return data
+})</code></pre>
+
+  <pre><code>// server/api/tasks/[id].patch.ts
+import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
+
+export default defineEventHandler(async (event) =&gt; {
+  const user = await serverSupabaseUser(event)
+  if (!user) throw createError({ statusCode: 401, message: 'Neautorizat' })
+
+  const id   = getRouterParam(event, 'id')
+  const body = await readBody(event)
+
+  const client = await serverSupabaseClient(event)
+  const { data, error } = await client
+    .from('tasks')
+    .update({ ...body, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  return data
+})</code></pre>
+
+  <pre><code>// server/api/tasks/[id].delete.ts
+import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
+
+export default defineEventHandler(async (event) =&gt; {
+  const user = await serverSupabaseUser(event)
+  if (!user) throw createError({ statusCode: 401, message: 'Neautorizat' })
+
+  const id     = getRouterParam(event, 'id')
+  const client = await serverSupabaseClient(event)
+  const { error } = await client.from('tasks').delete().eq('id', id)
+
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  return { success: true }
+})</code></pre>
+
+
+  <h2>Pasul 5 — Pinia Store</h2>
+
+  <pre><code>// stores/tasks.ts
+import { defineStore } from 'pinia'
+
+interface Task {
+  id: string
+  title: string
+  description: string | null
+  done: boolean
+  priority: 'low' | 'medium' | 'high'
+  due_date: string | null
+  created_at: string
+}
+
+export const useTasksStore = defineStore('tasks', () =&gt; {
+  const tasks   = ref&lt;Task[]&gt;([])
+  const loading = ref(false)
+
+  const pending   = computed(() =&gt; tasks.value.filter(t =&gt; !t.done))
+  const completed = computed(() =&gt; tasks.value.filter(t =&gt; t.done))
+
+  async function fetchTasks() {
+    loading.value = true
+    tasks.value   = await $fetch('/api/tasks')
+    loading.value = false
+  }
+
+  async function addTask(payload: Pick&lt;Task, 'title'&gt; &amp; Partial&lt;Pick&lt;Task, 'description' | 'priority'&gt;&gt;) {
+    const newTask = await $fetch('/api/tasks', { method: 'POST', body: payload })
+    tasks.value.unshift(newTask)
+  }
+
+  async function toggleTask(id: string) {
+    const task = tasks.value.find(t =&gt; t.id === id)
+    if (!task) return
+    task.done = !task.done  // optimistic update
+    try {
+      await $fetch(`/api/tasks/${id}`, { method: 'PATCH', body: { done: task.done } })
+    } catch {
+      task.done = !task.done  // rollback dacă eșuează
+    }
+  }
+
+  async function deleteTask(id: string) {
+    tasks.value = tasks.value.filter(t =&gt; t.id !== id)  // optimistic remove
+    try {
+      await $fetch(`/api/tasks/${id}`, { method: 'DELETE' })
+    } catch {
+      await fetchTasks()  // refetch dacă eșuează
+    }
+  }
+
+  return { tasks, loading, pending, completed, fetchTasks, addTask, toggleTask, deleteTask }
+})</code></pre>
+
+
+  <h2>Pasul 6 — Dashboard Page</h2>
+
+  <pre><code>&lt;!-- pages/dashboard/index.vue --&gt;
+&lt;script setup lang="ts"&gt;
+definePageMeta({ middleware: 'auth' })  // sau prin supabase redirect automat
+
+const store  = useTasksStore()
+const user   = useSupabaseUser()
+
+const newTitle = ref('')
+const filter   = ref&lt;'all' | 'pending' | 'done'&gt;('all')
+
+const filteredTasks = computed(() =&gt; {
+  if (filter.value === 'pending')  return store.pending
+  if (filter.value === 'done')     return store.completed
+  return store.tasks
+})
+
+onMounted(() =&gt; store.fetchTasks())
+
+async function handleSubmit() {
+  if (!newTitle.value.trim()) return
+  await store.addTask({ title: newTitle.value.trim() })
+  newTitle.value = ''
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div class="dashboard"&gt;
+    &lt;header&gt;
+      &lt;h1&gt;Task-urile mele&lt;/h1&gt;
+      &lt;p&gt;{{ store.completed.length }} / {{ store.tasks.length }} completate&lt;/p&gt;
+    &lt;/header&gt;
+
+    &lt;!-- Formular adăugare --&gt;
+    &lt;form @submit.prevent="handleSubmit"&gt;
+      &lt;input v-model="newTitle" placeholder="Task nou..." required /&gt;
+      &lt;button type="submit"&gt;Adaugă&lt;/button&gt;
+    &lt;/form&gt;
+
+    &lt;!-- Filtre --&gt;
+    &lt;div class="filters"&gt;
+      &lt;button :class="{ active: filter === 'all' }"     @click="filter = 'all'"&gt;Toate&lt;/button&gt;
+      &lt;button :class="{ active: filter === 'pending' }" @click="filter = 'pending'"&gt;În așteptare&lt;/button&gt;
+      &lt;button :class="{ active: filter === 'done' }"    @click="filter = 'done'"&gt;Completate&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Lista task-uri --&gt;
+    &lt;div v-if="store.loading"&gt;Se încarcă...&lt;/div&gt;
+    &lt;ul v-else&gt;
+      &lt;li v-for="task in filteredTasks" :key="task.id"&gt;
+        &lt;input
+          type="checkbox"
+          :checked="task.done"
+          @change="store.toggleTask(task.id)"
+        /&gt;
+        &lt;span :class="{ done: task.done }"&gt;{{ task.title }}&lt;/span&gt;
+        &lt;button @click="store.deleteTask(task.id)"&gt;✕&lt;/button&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>Checklist producție</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Item</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>RLS activat pe tabela tasks</td><td>✅ Necesar</td></tr>
+      <tr><td>SUPABASE_SERVICE_ROLE_KEY nu e expusă public</td><td>✅ Verificat</td></tr>
+      <tr><td>Validare input pe server routes (nu numai pe client)</td><td>✅ Implementat</td></tr>
+      <tr><td>Optimistic updates cu rollback la eroare</td><td>✅ UX mai bun</td></tr>
+      <tr><td>Variabile de mediu adăugate pe Vercel</td><td>⬜ Deploy</td></tr>
+      <tr><td>HTTPS activat automat pe Vercel</td><td>✅ Automat</td></tr>
+      <tr><td>Preview deployments pentru review înainte de merge</td><td>✅ Automat</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu final — Extinde aplicația</div>
+    <p>Adaugă una din aceste funcționalități pentru a consolida ce ai învățat:</p>
+    <ol>
+      <li><strong>Priorități cu culori</strong> — afișează badge colorat (roșu/galben/verde) pe fiecare task după <code>priority</code></li>
+      <li><strong>Due date</strong> — adaugă câmp de dată în formularul de creare și afișează tasks expirate cu roșu</li>
+      <li><strong>Drag &amp; Drop reorder</strong> — permite reordonarea task-urilor (salvează ordinea în Supabase cu câmp <code>position</code>)</li>
+      <li><strong>Categorii</strong> — adaugă tabela <code>categories</code> și permite asignarea unui task la o categorie</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Resurse pentru proiect</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs" target="_blank">Nuxt 3 Documentation</a></strong> ·
+      <strong><a href="https://supabase.nuxtjs.org/" target="_blank">@nuxtjs/supabase</a></strong> ·
+      <strong><a href="https://pinia.vuejs.org/" target="_blank">Pinia Docs</a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Toate cele trei documentații oficiale — verifică-le când implementezi funcționalitățile opționale.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări finale. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce este un <strong>optimistic update</strong> și de ce îl folosim în <code>toggleTask</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un update care se face numai dacă request-ul API a reușit, fără a risca erori</button></li>
+        <li><button data-correct="false">Un update care folosește cache Supabase pentru a reduce latența</button></li>
+        <li><button data-correct="true">UI-ul se actualizează imediat, înainte de confirmare din API — cu rollback dacă API eșuează</button></li>
+        <li><button data-correct="false">Un update care se aplică simultan pe toate sesiunile utilizatorului deschise</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Optimistic update înseamnă: modifici state-ul local imediat (UI reacționează instant), faci request-ul API în background, și dacă API eșuează, dai rollback. Rezultatul: aplicația pare mai rapidă (0ms lag vizual), chiar dacă internaly tot există latența de rețea.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce validăm input-ul în server route, deși avem validare și în componenta Vue?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu e necesar — dacă UI validează, backend-ul e protejat automat</button></li>
+        <li><button data-correct="false">Validarea server-side e numai pentru performanță, nu pentru securitate</button></li>
+        <li><button data-correct="true">API-ul poate fi apelat direct (Postman, curl, alt client) ocolind UI-ul complet</button></li>
+        <li><button data-correct="false">Supabase RLS validează oricum toate request-urile, deci e redundant</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Validarea pe client (Vue) este pentru UX — feedback rapid, fără round-trip. Validarea pe server este pentru securitate — oricine poate trimite un request direct la <code>/api/tasks</code> cu Postman sau curl, ocolind complet UI-ul. Niciodată nu te baza exclusiv pe validarea clientului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">În Pinia, care este diferența dintre <code>ref()</code> (state) și <code>computed()</code> (getter)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>ref()</code> stochează primitive, <code>computed()</code> stochează obiecte complexe</button></li>
+        <li><button data-correct="false"><code>computed()</code> este async, <code>ref()</code> este sync</button></li>
+        <li><button data-correct="true"><code>ref()</code> este state modificabil; <code>computed()</code> este valoare derivată read-only, re-calculată automat</button></li>
+        <li><button data-correct="false"><code>ref()</code> persistă pe server, <code>computed()</code> existp numai pe client</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>ref(tasks)</code> este state-ul sursă — îl modifici din actions. <code>computed(() =&gt; tasks.filter(...))</code> este un getter derivat — se recalculează automat când <code>tasks</code> se schimbă, este cached, și este read-only. Nu ai nevoie să gestionezi sincronizarea manual.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Dacă userul șterge un task și DELETE API returnează eroare, ce face store-ul nostru?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Afișează un toast de eroare și lasă task-ul șters din UI</button></li>
+        <li><button data-correct="false">Nu face nimic — eroarea e ignorată, task-ul rămâne șters</button></li>
+        <li><button data-correct="true">Face refetch complet (<code>fetchTasks()</code>) pentru a restaura starea corectă din Supabase</button></li>
+        <li><button data-correct="false">Readaugă manual task-ul în array — inversând operația de ștergere</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> În loc să stocăm task-ul temporar pentru rollback, facem refetch complet din Supabase — mai simplu și mai robust. Dezavantajul: un request extra. Avantajul: state-ul este garantat sincronizat cu baza de date, indiferent ce s-a întâmplat în spate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">RLS (Row Level Security) pe tabela <code>tasks</code> ce garantează?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Că niciun utilizator neautentificat nu poate face request-uri la Supabase</button></li>
+        <li><button data-correct="false">Că parola bazei de date nu poate fi ghicită prin brute-force</button></li>
+        <li><button data-correct="true">Că un utilizator nu poate citi, modifica sau șterge task-urile altui utilizator, chiar dacă trimite request-uri direct la Supabase</button></li>
+        <li><button data-correct="false">Că coloanele sensibile (parole, token-uri) sunt criptate în baza de date</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> RLS este securitate la nivel de bază de date — nu la nivel de API sau UI. Chiar dacă un utilizator obține cumva URL-ul și anon key-ul tău Supabase și face request-uri direct cu propriul JWT, poate vedea/modifica NUMAI rândurile unde <code>auth.uid() = user_id</code>. Este linia de apărare finală și esențială.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ai finalizat cursul Nuxt 3! Vrei să aprofundezi performanța, testarea cu Vitest, sau cum
+      integrezi Stripe pentru plăți în aplicația ta Nuxt?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0008-deploy.html">← Lecția 8: Deploy pe Vercel, Netlify, Cloudflare</a>
+    <a href="../index.html">Index curs →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

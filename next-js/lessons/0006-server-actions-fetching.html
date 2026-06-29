@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6: Server Actions și fetching — Curs Next.js</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 6 din 9</span>
+    <span class="tag">~25 min</span>
+    <span>Next.js — Curs</span>
+  </div>
+
+  <h1>Server Actions și fetching date</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum muți mutațiile (create, update, delete) pe server fără a scrie un API REST separat, și cum gestionezi loading states și revalidarea.
+  </p>
+
+
+  <h2>Ce sunt Server Actions?</h2>
+
+  <p>
+    Server Actions sunt funcții async care rulează <strong>pe server</strong> dar pot fi apelate dintr-un
+    Client Component sau dintr-un formular HTML. Elimină necesitatea de a scrie un API REST separat
+    pentru operații simple de mutație.
+  </p>
+
+  <div class="callout">
+    <div class="callout-label">Analogie Laravel</div>
+    Gândește-te la Server Actions ca la Controller methods din Laravel — primesc date din formular,
+    fac operații pe DB, redirecționează sau returnează un răspuns. Dar fără a defini explicit rutele API.
+  </div>
+
+  <p>
+    O Server Action se definește cu directiva <code>'use server'</code> — fie la nivelul funcției,
+    fie la nivelul fișierului:
+  </p>
+
+  <pre><code>// Varianta 1: directivă la nivel de funcție (în Server Components)
+export default function Page() {
+  async function createTask(formData: FormData) {
+    'use server';  // ← această funcție rulează pe server
+
+    const title = formData.get('title') as string;
+    const supabase = createClient();
+    await supabase.from('tasks').insert({ title });
+    revalidatePath('/dashboard');
+  }
+
+  return (
+    &lt;form action={createTask}&gt;
+      &lt;input name="title" required /&gt;
+      &lt;button type="submit"&gt;Adaugă&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+
+  <pre><code>// Varianta 2: fișier separat lib/actions.ts (recomandat)
+'use server';  // ← toate funcțiile din fișier sunt Server Actions
+
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+
+export async function createTask(formData: FormData) {
+  const title = formData.get('title') as string;
+  if (!title) return { error: 'Titlul este obligatoriu' };
+
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { error } = await supabase
+    .from('tasks')
+    .insert({ title, user_id: user.id });
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');  // reîncarcă datele pe pagina /dashboard
+}</code></pre>
+
+
+  <h2>useFormState și useFormStatus</h2>
+
+  <p>
+    React 19 + Next.js oferă hook-uri pentru a gestiona starea formularelor cu Server Actions:
+  </p>
+
+  <pre><code>'use client';
+
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { createTask } from '@/lib/actions';
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    &lt;button type="submit" disabled={pending}&gt;
+      {pending ? 'Se salvează...' : 'Adaugă task'}
+    &lt;/button&gt;
+  );
+}
+
+export default function TaskForm() {
+  const [state, formAction] = useActionState(createTask, null);
+
+  return (
+    &lt;form action={formAction}&gt;
+      {state?.error &amp;&amp; &lt;p style={{ color: 'red' }}&gt;{state.error}&lt;/p&gt;}
+      &lt;input name="title" required /&gt;
+      &lt;SubmitButton /&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+
+
+  <h2>Fetching date în Server Components</h2>
+
+  <p>
+    Cel mai simplu pattern: <code>async/await</code> direct în componentă.
+    Nu ai nevoie de <code>useEffect</code>, loading state manual sau librării de fetching.
+  </p>
+
+  <pre><code>// app/tasks/page.tsx
+import { createClient } from '@/lib/supabase/server';
+
+export default async function TasksPage() {
+  const supabase = createClient();
+
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('id, title, completed, created_at')
+    .order('created_at', { ascending: false });
+
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;Tasks ({tasks?.length ?? 0})&lt;/h1&gt;
+      {tasks?.map(task =&gt; (
+        &lt;div key={task.id}&gt;
+          &lt;span&gt;{task.completed ? '✓' : '○'}&lt;/span&gt;
+          &lt;span&gt;{task.title}&lt;/span&gt;
+        &lt;/div&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+
+  <h2>Loading states cu Suspense și loading.tsx</h2>
+
+  <p>
+    Când un Server Component face fetch, Next.js poate afișa un fallback în timp ce se încarcă.
+    Adaugă un fișier <code>loading.tsx</code> în același folder:
+  </p>
+
+  <pre><code>// app/tasks/loading.tsx — afișat automat cât timp page.tsx se încarcă
+export default function TasksLoading() {
+  return (
+    &lt;div&gt;
+      {[1, 2, 3].map(i =&gt; (
+        &lt;div key={i} style={{ height: '40px', background: '#eee', borderRadius: '4px', marginBottom: '8px' }} /&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+  <p>
+    Pentru Suspense granular (mai mult control), poți wrapa componente individuale:
+  </p>
+
+  <pre><code>import { Suspense } from 'react';
+import { TaskList } from './TaskList';
+import { TaskStats } from './TaskStats';
+
+export default function DashboardPage() {
+  return (
+    &lt;div&gt;
+      &lt;Suspense fallback={&lt;div&gt;Se încarcă statistici...&lt;/div&gt;}&gt;
+        &lt;TaskStats /&gt;  {/* fetch async în interior */}
+      &lt;/Suspense&gt;
+
+      &lt;Suspense fallback={&lt;div&gt;Se încarcă lista...&lt;/div&gt;}&gt;
+        &lt;TaskList /&gt;   {/* fetch async în interior, paralel cu TaskStats! */}
+      &lt;/Suspense&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Fetch paralel automat</div>
+    Componentele în Suspense separate fac fetch <em>în paralel</em>, nu secvențial.
+    <code>TaskStats</code> și <code>TaskList</code> ambele pornesc fetch la același timp —
+    pagina se încarcă la fel de repede ca cel mai lent dintre ele, nu suma ambelor.
+  </div>
+
+
+  <h2>revalidatePath și revalidateTag</h2>
+
+  <p>
+    Când mutezi date (create/update/delete), trebuie să invalidezi cache-ul:
+  </p>
+
+  <pre><code>import { revalidatePath, revalidateTag } from 'next/cache';
+
+// Revalidare după path — toate paginile din /tasks/* se vor reîncărca
+export async function deleteTask(id: number) {
+  'use server';
+  const supabase = createClient();
+  await supabase.from('tasks').delete().eq('id', id);
+  revalidatePath('/tasks');
+}
+
+// Sau folosind tag-uri — mai granular
+// Fetch cu tag:
+const data = await fetch('/api/tasks', { next: { tags: ['tasks'] } });
+
+// Invalidare după tag:
+export async function updateTask(id: number, data: Partial&lt;Task&gt;) {
+  'use server';
+  await db.update(tasks).set(data).where(eq(tasks.id, id));
+  revalidateTag('tasks');  // invalidează toate fetch-urile cu tag 'tasks'
+}</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — CRUD complet</div>
+    <p>Implementează operațiile CRUD pentru un tabel <code>notes</code> (id, content, user_id):</p>
+    <ol>
+      <li>Server Action <code>createNote(formData)</code> — inserează o notă nouă</li>
+      <li>Server Action <code>deleteNote(id)</code> — șterge o notă după id</li>
+      <li>Server Action <code>updateNote(id, content)</code> — modifică conținutul</li>
+      <li>Formular în Client Component care apelează <code>createNote</code></li>
+      <li>Buton de ștergere care apelează <code>deleteNote</code></li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Asigură-te că fiecare Server Action verifică autentificarea cu <code>supabase.auth.getUser()</code>
+      și apelează <code>revalidatePath</code> după fiecare mutație.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations" target="_blank">
+        Next.js Docs — Server Actions and Mutations
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială cu toate pattern-urile: validare, error handling, optimistic updates.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">O Server Action definită cu <code>'use server'</code> rulează pe:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Browser — e o funcție React asincronă obișnuită</button></li>
+        <li><button data-correct="true">Server — codul ei nu ajunge niciodată în browser</button></li>
+        <li><button data-correct="false">Edge Network — rulează la cel mai apropiat server CDN</button></li>
+        <li><button data-correct="false">Ambele — Next.js duplică execuția pentru consistență</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>'use server'</code> marchează funcția să ruleze exclusiv pe server. Browserul trimite un request HTTP automat generat — nu vede codul funcției. Aceasta poate accesa DB, fișiere, variabile secrete.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce face <code>revalidatePath('/dashboard')</code> apelat dintr-o Server Action?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Redirecționează utilizatorul la <code>/dashboard</code> după acțiune</button></li>
+        <li><button data-correct="true">Marchează datele cache-ate pentru <code>/dashboard</code> ca expirate, forțând refetch</button></li>
+        <li><button data-correct="false">Validează că ruta <code>/dashboard</code> există în proiect</button></li>
+        <li><button data-correct="false">Actualizează starea globală a aplicației la data curentă</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>revalidatePath</code> invalidează cache-ul pentru acea rută. La următoarea vizită (sau imediat dacă utilizatorul e pe pagină), Next.js va re-randa Server Components și va face fetch nou la date. Fără revalidatePath, utilizatorul ar vedea date vechi din cache.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce avantaj oferă <code>loading.tsx</code> față de a gestiona manual loading state cu useState?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Loading.tsx se randează mai rapid pentru că e static</button></li>
+        <li><button data-correct="true">E automat — Next.js îl afișează instant la navigare, fără cod suplimentar în componentă</button></li>
+        <li><button data-correct="false">Permite animații CSS mai complexe decât useState</button></li>
+        <li><button data-correct="false">Funcționează și în Client Components, nu numai în Server Components</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>loading.tsx</code> creează automat un Suspense boundary în jurul paginii. La navigare, Next.js afișează imediat loading UI-ul din <code>loading.tsx</code> în timp ce Server Component-ul face fetch. Zero boilerplate de useState/isLoading.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Două componente Server în blocuri Suspense separate fac fetch în:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Secvență — a doua pornește după ce prima termină</button></li>
+        <li><button data-correct="true">Paralel — ambele pornesc fetch simultan, fără a se aștepta una pe alta</button></li>
+        <li><button data-correct="false">Paralel numai dacă folosești <code>Promise.all()</code> explicit</button></li>
+        <li><button data-correct="false">Alternativ — Next.js le prioritizează pe baza poziției în DOM</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Componentele în Suspense separate sunt independente — fiecare pornește fetch imediat la randare, în paralel. Pagina se încarcă în timpul celei mai lente, nu suma tuturor. Aceasta este una dintre marile diferențe față de <code>useEffect</code> secvențial.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Hook-ul <code>useFormStatus</code> returnează <code>pending: true</code> când:</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Formularul are câmpuri goale necompletate de utilizator</button></li>
+        <li><button data-correct="false">Validarea client-side a eșuat și formularul nu poate fi trimis</button></li>
+        <li><button data-correct="true">Formularul a fost trimis și Server Action-ul este în curs de execuție</button></li>
+        <li><button data-correct="false">Există o eroare de rețea care blochează trimiterea formularului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useFormStatus</code> urmărește starea formularului părinte. <code>pending: true</code> înseamnă că formularul a fost submituit și Server Action-ul nu a terminat. Util pentru a dezactiva butonul de submit și a afișa un loading indicator în acel interval.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi despre optimistic updates? Cum gestionezi erori complexe din Server Actions?
+      Cum faci upload de fișiere cu Server Actions?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0005-supabase.html">← Lecția 5: Conectare la Supabase</a>
+    <a href="0007-deploy-vercel.html">Lecția 7: Deploy pe Vercel →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

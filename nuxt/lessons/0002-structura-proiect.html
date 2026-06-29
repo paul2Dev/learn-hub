@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2: Structura proiectului — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 2 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Structura unui proiect Nuxt 3</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Creare proiect, rolul fiecărui director, convenții de fișiere și cum Nuxt deduce comportamentul din structură.
+  </p>
+
+
+  <h2>Creare proiect nou</h2>
+
+  <pre><code>npx nuxi@latest init my-app
+cd my-app
+npm install
+npm run dev   # pornești pe http://localhost:3000</code></pre>
+
+  <p>
+    <code>nuxi</code> este CLI-ul Nuxt — echivalentul lui <code>create-next-app</code>.
+    La primul rulaj, instalează automat pachetele necesare.
+    TypeScript este activ implicit — nu trebuie selectat.
+  </p>
+
+
+  <h2>Structura de directoare</h2>
+
+  <pre><code>my-app/
+├── pages/              ← rutele aplicației (file-based routing)
+│   └── index.vue       → /
+├── components/         ← componente UI (auto-importate)
+├── composables/        ← logică reutilizabilă (auto-importate)
+├── layouts/            ← layout-uri pentru pagini
+│   └── default.vue     ← layout implicit aplicat tuturor paginilor
+├── middleware/         ← middleware pentru rute
+├── plugins/            ← plugin-uri Vue care rulează la inițializare
+├── server/             ← codul de server (Nitro)
+│   ├── api/            ← endpoint-uri API
+│   └── middleware/     ← middleware de server
+├── public/             ← fișiere statice (nu procesate)
+├── assets/             ← fișiere procesate de bundler (imagini, CSS global)
+├── app.vue             ← root component (înlocuiește &lt;NuxtPage /&gt;)
+├── nuxt.config.ts      ← configurare Nuxt
+└── .env                ← variabile de mediu</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Față de Next.js</div>
+    Next.js: totul în <code>app/</code>, un singur director. Nuxt: directoare specializate pe rol —
+    <code>pages/</code> pentru rute, <code>components/</code> pentru componente, <code>composables/</code> pentru logică,
+    <code>server/</code> pentru backend. Mai explicit, mai ușor de navigat în proiecte mari.
+  </div>
+
+
+  <h2>pages/ — file-based routing</h2>
+
+  <p>
+    Fiecare fișier <code>.vue</code> din <code>pages/</code> devine o rută.
+    Structura de directoare definește URL-ul:
+  </p>
+
+  <pre><code>pages/
+├── index.vue             → /
+├── about.vue             → /about
+├── blog/
+│   ├── index.vue         → /blog
+│   └── [slug].vue        → /blog/orice-slug    (parametru dinamic)
+└── dashboard/
+    ├── index.vue         → /dashboard
+    └── settings.vue      → /dashboard/settings</code></pre>
+
+  <p>
+    Observă diferența față de Next.js: în Nuxt, un fișier <code>about.vue</code> creează ruta <code>/about</code>.
+    În Next.js, ai nevoie de un folder <code>about/</code> cu <code>page.tsx</code> în el.
+    Nuxt e mai compact — o pagină = un fișier.
+  </p>
+
+
+  <h2>layouts/ — layouts persistente</h2>
+
+  <p>
+    Layout-urile definesc structura comună a paginilor. Layout-ul implicit se numește
+    <code>default.vue</code> și se aplică automat tuturor paginilor:
+  </p>
+
+  <pre><code>&lt;!-- layouts/default.vue --&gt;
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;header&gt;
+      &lt;nav&gt;
+        &lt;NuxtLink to="/"&gt;Home&lt;/NuxtLink&gt;
+        &lt;NuxtLink to="/about"&gt;Despre&lt;/NuxtLink&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+
+    &lt;main&gt;
+      &lt;slot /&gt;  &lt;!-- conținutul paginii intră aici --&gt;
+    &lt;/main&gt;
+
+    &lt;footer&gt;© 2025&lt;/footer&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+  <p>
+    Pentru a folosi un alt layout, specifici în pagină:
+  </p>
+
+  <pre><code>&lt;!-- pages/login.vue --&gt;
+&lt;script setup lang="ts"&gt;
+definePageMeta({
+  layout: 'auth'   // folosește layouts/auth.vue în loc de default
+})
+&lt;/script&gt;</code></pre>
+
+  <pre><code>&lt;!-- layouts/auth.vue — layout fără navbar/footer pentru pagini de autentificare --&gt;
+&lt;template&gt;
+  &lt;div class="auth-wrapper"&gt;
+    &lt;slot /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>components/ — auto-import</h2>
+
+  <p>
+    Orice fișier din <code>components/</code> este disponibil în orice template fără import manual.
+    Structura de directoare se transformă în prefix al numelui componentei:
+  </p>
+
+  <pre><code>components/
+├── Button.vue              → &lt;Button /&gt;
+├── UserCard.vue            → &lt;UserCard /&gt;
+└── ui/
+    ├── Modal.vue           → &lt;UiModal /&gt;   (prefixul directorului)
+    └── Toast.vue           → &lt;UiToast /&gt;</code></pre>
+
+  <pre><code>&lt;!-- pages/index.vue — fără niciun import --&gt;
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;Button @click="doSomething"&gt;Apasă-mă&lt;/Button&gt;
+    &lt;UserCard :name="user.name" :email="user.email" /&gt;
+    &lt;UiModal v-if="showModal" @close="showModal = false" /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>composables/ — logică reutilizabilă auto-importată</h2>
+
+  <p>
+    Echivalentul hook-urilor din React. Funcții care încapsulează logică cu state reactiv:
+  </p>
+
+  <pre><code>// composables/useCounter.ts
+export function useCounter(initial = 0) {
+  const count = ref(initial)
+  const increment = () =&gt; count.value++
+  const decrement = () =&gt; count.value--
+  const reset = () =&gt; count.value = initial
+
+  return { count, increment, decrement, reset }
+}
+
+// Folosit în orice componentă fără import:
+// &lt;script setup&gt;
+// const { count, increment } = useCounter(10)
+// &lt;/script&gt;</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Convenție de denumire</div>
+    Composable-urile trebuie să înceapă cu <code>use</code> (ex: <code>useUser</code>, <code>useCart</code>).
+    Nuxt auto-importă numai fișierele din <code>composables/</code> care urmează această convenție.
+  </div>
+
+
+  <h2>server/ — backend cu Nitro</h2>
+
+  <pre><code>server/
+├── api/
+│   ├── users.get.ts      → GET  /api/users
+│   ├── users.post.ts     → POST /api/users
+│   └── users/
+│       └── [id].get.ts   → GET  /api/users/:id
+└── middleware/
+    └── auth.ts           ← middleware de server rulat la fiecare request</code></pre>
+
+  <p>
+    Sufixul HTTP (<code>.get.ts</code>, <code>.post.ts</code>, <code>.delete.ts</code>) definește metoda acceptată.
+    Fișierele fără sufix acceptă orice metodă.
+  </p>
+
+
+  <h2>nuxt.config.ts — configurare centralizată</h2>
+
+  <pre><code>// nuxt.config.ts
+export default defineNuxtConfig({
+  devtools: { enabled: true },       // Nuxt DevTools (recomandat în dev)
+  modules: [
+    '@nuxtjs/supabase',
+    '@pinia/nuxt',
+    '@nuxt/ui',
+  ],
+  runtimeConfig: {
+    // Variabile private (server only)
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    // Variabile publice (disponibile și în browser)
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_ANON_KEY,
+    }
+  }
+})</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Mapare structură</div>
+    <p>Unde pui fiecare fișier în structura Nuxt?</p>
+    <ol>
+      <li>Pagina de profil la URL-ul <code>/profile</code></li>
+      <li>Un endpoint REST care returnează lista de produse (<code>GET /api/products</code>)</li>
+      <li>O componentă reutilizabilă <code>ProductCard</code></li>
+      <li>Un hook care gestionează starea coșului de cumpărături</li>
+      <li>Layout-ul pentru paginile de admin (cu sidebar)</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: 1→<code>pages/profile.vue</code>, 2→<code>server/api/products.get.ts</code>,
+      3→<code>components/ProductCard.vue</code>, 4→<code>composables/useCart.ts</code>, 5→<code>layouts/admin.vue</code>.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/guide/directory-structure/nuxt" target="_blank">
+        Nuxt Docs — Directory Structure
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială acoperă fiecare director cu exemple detaliate. Citește cel puțin paginile pentru
+        <code>pages/</code>, <code>components/</code>, <code>composables/</code> și <code>server/</code>.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Un fișier <code>pages/blog/[slug].vue</code> creează ce rută?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Ruta <code>/blog/slug</code> — literal, cu textul "slug" în URL</button></li>
+        <li><button data-correct="true">Ruta dinamică <code>/blog/:slug</code> — orice valoare după /blog/</button></li>
+        <li><button data-correct="false">Ruta <code>/blog</code> cu un parametru opțional query <code>?slug=</code></button></li>
+        <li><button data-correct="false">Mai multe rute — câte una pentru fiecare valoare hardcodată în fișier</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Parantezele pătrate în numele fișierului (<code>[slug]</code>) marchează un parametru dinamic. Accesezi valoarea cu <code>const route = useRoute(); route.params.slug</code> în <code>&lt;script setup&gt;</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce face <code>&lt;slot /&gt;</code> în layout-ul Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Creează un spațiu pentru CSS variabile (custom properties)</button></li>
+        <li><button data-correct="false">Marchează locul unde se inserează componente lazy-loaded</button></li>
+        <li><button data-correct="true">Definește locul unde se randează conținutul paginii active</button></li>
+        <li><button data-correct="false">Rezervă spațiu în DOM pentru componente încărcate asincron</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>&lt;slot /&gt;</code> este echivalentul Vue pentru <code>{children}</code> din React. În context Nuxt layouts, marchează exact unde se inserează conținutul paginii curente în interiorul layout-ului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">O componentă <code>components/ui/Modal.vue</code> se folosește în template cu ce tag?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>&lt;Modal /&gt;</code> — directorul nu afectează numele</button></li>
+        <li><button data-correct="false"><code>&lt;ui-Modal /&gt;</code> — cu linie de legătură între director și componentă</button></li>
+        <li><button data-correct="true"><code>&lt;UiModal /&gt;</code> — prefixul directorului e adăugat în PascalCase</button></li>
+        <li><button data-correct="false"><code>&lt;ui/Modal /&gt;</code> — cu slash ca separator de path</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt transformă structura de directoare în prefix PascalCase. <code>components/ui/Modal.vue</code> → <code>&lt;UiModal /&gt;</code>. <code>components/form/Input.vue</code> → <code>&lt;FormInput /&gt;</code>. Previne coliziunile de nume în proiecte mari.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce metodă HTTP acceptă fișierul <code>server/api/users.get.ts</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Orice metodă HTTP — sufixul e doar informativ</button></li>
+        <li><button data-correct="false">GET și HEAD — metodele safe conform HTTP spec</button></li>
+        <li><button data-correct="true">Numai GET — Nitro va returna 405 Method Not Allowed pentru alte metode</button></li>
+        <li><button data-correct="false">GET și POST — metodele cele mai comune</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Sufixul din numele fișierului (<code>.get.ts</code>, <code>.post.ts</code>, <code>.delete.ts</code>) restricționează metoda HTTP acceptată. Nitro returnează automat 405 dacă cineva încearcă altă metodă. Fișierele fără sufix (<code>users.ts</code>) acceptă toate metodele.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Unde pui variabilele de mediu secrete (server-only) în Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Sub cheia <code>public</code> din <code>runtimeConfig</code> — pentru acces global</button></li>
+        <li><button data-correct="false">Direct în <code>nuxt.config.ts</code> hardcodat — fișierul nu e expus browserului</button></li>
+        <li><button data-correct="true">La nivelul rădăcină al <code>runtimeConfig</code> (nu sub <code>public</code>)</button></li>
+        <li><button data-correct="false">Într-un fișier <code>.env.server</code> separat de <code>.env</code></button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> În <code>runtimeConfig</code>: valorile la rădăcină sunt server-only (accesate cu <code>useRuntimeConfig()</code> numai pe server). Valorile sub <code>public</code> sunt disponibile și în browser. Similar cu <code>NEXT_PUBLIC_</code> prefix din Next.js.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre diferența dintre <code>assets/</code> și <code>public/</code>? Vrei să știi cum funcționează plugins/?
+      Ai o întrebare despre structura pentru proiecte mari (monorepo, layers)?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0001-ce-este-nuxt.html">← Lecția 1: Ce este Nuxt 3</a>
+    <a href="0003-routing-layouts.html">Lecția 3: Routing și Layouts →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -13,6 +13,8 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 | [Engineering Principles](engineering-principles/) | SOLID, YAGNI, KISS, DRY, systems thinking, API design, security, testing, code review — 10 lecții |
 | [Workflow Agentic Complet](agentic-workflow/) | /verify, /code-review, Greptile, Greploop, CodeRabbit, GitHub Actions, gh CLI — 10 lecții |
 | [Embeddings](embedings/) | Vectori semantici, use cases, Python, JavaScript, Laravel, vector databases, RAG — 8 lecții |
+| [Next.js cu Supabase și Vercel](next-js/) | App Router, Server Components, Supabase Auth + RLS, Server Actions, deploy Vercel, Next.js vs Nuxt — 9 lecții |
+| [Nuxt 3 cu Supabase și Vercel](nuxt/) | pages/ routing, Nitro server engine, @nuxtjs/supabase, Pinia, deploy Vercel/Netlify/Cloudflare — 9 lecții |
 
 ## Cum clonezi
 
@@ -45,7 +47,13 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── agentic-workflow/           ← curs Workflow Agentic Complet
 │   ├── index.html
 │   └── lessons/
-└── embedings/                  ← curs Embeddings
+├── embedings/                  ← curs Embeddings
+│   ├── index.html
+│   └── lessons/
+├── next-js/                    ← curs Next.js cu Supabase și Vercel
+│   ├── index.html
+│   └── lessons/
+└── nuxt/                       ← curs Nuxt 3 cu Supabase și Vercel
     ├── index.html
     └── lessons/
 ```

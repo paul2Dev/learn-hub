@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8: Deploy pe Vercel, Netlify, Cloudflare — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 8 din 9</span>
+    <span class="tag">~20 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Deploy pe Vercel, Netlify și Cloudflare</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Nitro presets — cum Nuxt se adaptează automat la orice platformă de hosting, și cum faci deploy pe cele mai populare trei platforme.
+  </p>
+
+
+  <h2>Nitro Presets — adaptare automată la platformă</h2>
+
+  <p>
+    Spre deosebire de Next.js care este strâns legat de Vercel, Nuxt prin <strong>Nitro</strong>
+    generează output diferit în funcție de platforma țintă — fără a schimba nicio linie de cod:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">VER</div>
+      <div class="arch-info">
+        <h4>Vercel Preset</h4>
+        <p>Generează funcții Edge și serverless Vercel, fișiere statice optimizate. ISR prin revalidate headers.</p>
+      </div>
+      <div class="arch-tag">auto-detect</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">NET</div>
+      <div class="arch-info">
+        <h4>Netlify Preset</h4>
+        <p>Generează Netlify Edge Functions și fișiere statice. Netlify.toml configurat automat.</p>
+      </div>
+      <div class="arch-tag">auto-detect</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">CF</div>
+      <div class="arch-info">
+        <h4>Cloudflare Workers Preset</h4>
+        <p>Generează un singur worker JS fără Node.js — rulează pe edge global (150+ locații). Cel mai rapid.</p>
+      </div>
+      <div class="arch-tag">manual</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">NOD</div>
+      <div class="arch-info">
+        <h4>Node.js Preset (default)</h4>
+        <p>Server Node.js clasic — pentru VPS, Docker, Railway, Render. <code>node .output/server/index.mjs</code></p>
+      </div>
+      <div class="arch-tag">self-hosted</div>
+    </div>
+  </div>
+
+  <pre><code>// nuxt.config.ts — specifică preset (opțional, auto-detectat pe Vercel/Netlify)
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'vercel'  // sau 'netlify', 'cloudflare-workers', 'node-server'
+  }
+})</code></pre>
+
+
+  <h2>Deploy pe Vercel</h2>
+
+  <p>Vercel detectează Nuxt automat și setează preset-ul corect:</p>
+
+  <pre><code># 1. Conectează repo GitHub la Vercel (vercel.com → New Project)
+# 2. Vercel detectează Nuxt și configurează build command automat:
+#    Build Command: nuxt build
+#    Output Directory: .output (auto)
+
+# SAU cu Vercel CLI:
+npm install -g vercel
+vercel login
+vercel deploy</code></pre>
+
+  <pre><code># vercel.json (opțional — mai mult control)
+{
+  "buildCommand": "nuxt build",
+  "framework": "nuxtjs",
+  "regions": ["fra1", "iad1"]
+}</code></pre>
+
+  <p><strong>Variabile de mediu pe Vercel:</strong></p>
+  <pre><code># Dashboard → Settings → Environment Variables:
+SUPABASE_URL          = https://xyz.supabase.co
+SUPABASE_KEY          = eyJ... (anon key)
+SUPABASE_SERVICE_ROLE_KEY = eyJ... (numai server — bifează "server" only)</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Față de Next.js</div>
+    Același flux ca Next.js pe Vercel. Singura diferență: Next.js folosește <code>.next/</code>,
+    Nuxt folosește <code>.output/</code>. Build command-ul e <code>nuxt build</code> în loc de <code>next build</code>.
+  </div>
+
+
+  <h2>Deploy pe Netlify</h2>
+
+  <pre><code># netlify.toml — Netlify îl citește automat
+[build]
+  command   = "nuxt build"
+  publish   = ".output/public"  # fișiere statice
+
+[functions]
+  directory = ".output/server"  # funcții serverless
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"  # NU pentru Nuxt, folosește @netlify/plugin-nuxt
+
+# SAU cu CLI:
+npm install -g netlify-cli
+netlify login
+netlify deploy --prod</code></pre>
+
+  <pre><code># Variabile de mediu Netlify:
+# Dashboard → Site Settings → Environment Variables
+SUPABASE_URL=https://xyz.supabase.co
+SUPABASE_KEY=eyJ...
+NUXT_PUBLIC_APP_NAME=MyApp</code></pre>
+
+
+  <h2>Deploy pe Cloudflare Workers</h2>
+
+  <p>
+    Cloudflare Workers este cel mai diferit față de celelalte platforme — codul rulează la edge
+    global fără Node.js, deci unele module Node.js nu sunt disponibile:
+  </p>
+
+  <pre><code>npm install wrangler --save-dev</code></pre>
+
+  <pre><code>// nuxt.config.ts
+export default defineNuxtConfig({
+  nitro: {
+    preset: 'cloudflare-workers'
+  }
+})</code></pre>
+
+  <pre><code>// wrangler.toml
+name = "my-nuxt-app"
+main = ".output/server/index.mjs"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]  # activează compat Node.js
+
+[vars]
+SUPABASE_URL = "https://xyz.supabase.co"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "xxxx"</code></pre>
+
+  <pre><code># Deploy
+npx nuxi build
+npx wrangler deploy</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Limitări Cloudflare Workers</div>
+    CPU time limitat (10ms–30ms per request pe planul gratuit). Fără filesystem. Fără binare native npm.
+    Verifică <code>nitro.unjs.io/deploy/providers/cloudflare</code> pentru lista completă de compatibilitate.
+  </div>
+
+
+  <h2>Preview Deployments și Git Flow</h2>
+
+  <p>
+    Toate cele trei platforme suportă <strong>preview deployments</strong> pe PR-uri —
+    identic cu Next.js pe Vercel:
+  </p>
+
+  <pre><code># Flux tipic:
+git checkout -b feature/new-dashboard
+# ... modificări ...
+git push origin feature/new-dashboard
+# → PR creat pe GitHub
+# → Preview deployment automat pe https://my-app-git-feature-new-dashboard-username.vercel.app
+
+# Merge pe main:
+# → Production deployment automat pe https://my-app.vercel.app</code></pre>
+
+
+  <h2>Build local și testare output</h2>
+
+  <pre><code># Build producție:
+nuxt build
+
+# Testează output-ul local (simulează server Nitro):
+node .output/server/index.mjs
+
+# Build static (SSG — fără server):
+nuxt generate
+# Output în .output/public/ — servit ca fișiere statice</code></pre>
+
+  <pre><code># Verificare output:
+.output/
+├── public/          ← fișiere statice (CSS, JS, assets)
+│   └── _nuxt/
+├── server/
+│   ├── index.mjs    ← entry point server Nitro
+│   └── chunks/      ← cod server chunked
+└── nitro.json       ← metadata preset</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Deploy pe Vercel</div>
+    <ol>
+      <li>Rulează <code>nuxt build</code> local și verifică că <code>.output/</code> e generat corect</li>
+      <li>Creează un cont Vercel și conectează repository-ul GitHub</li>
+      <li>Adaugă variabilele de mediu Supabase în Vercel Dashboard</li>
+      <li>Fă deploy și verifică că aplicația funcționează cu Supabase în producție</li>
+      <li>Creează un PR pe un branch nou și verifică preview deployment-ul generat automat</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nitro.unjs.io/deploy" target="_blank">
+        Nitro Deploy Documentation — nitro.unjs.io/deploy
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Lista completă a preset-urilor Nitro cu instrucțiuni specifice fiecărei platforme:
+        Vercel, Netlify, Cloudflare, AWS Lambda, Azure, Heroku, Railway, Render și self-hosted Node.js.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce rol are un <strong>Nitro preset</strong> în procesul de deploy?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Optimizează bundle-ul de CSS și imagini pentru platforma respectivă</button></li>
+        <li><button data-correct="false">Configurează CI/CD pipeline-ul platformei pentru Nuxt automat</button></li>
+        <li><button data-correct="true">Transformă output-ul build-ului în formatul specific platformei de hosting</button></li>
+        <li><button data-correct="false">Gestionează variabilele de mediu specific fiecărei platforme cloud</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un preset Nitro schimbă formatul output-ului <code>nuxt build</code> în funcție de platforma țintă: funcții serverless Vercel, Edge Functions Netlify, un singur Worker pentru Cloudflare, sau un server Node.js standard. Codul aplicației rămâne identic.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce comandă generează un site static complet fără server în Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>nuxt build --static</code> — flagul activează modul static</button></li>
+        <li><button data-correct="false"><code>nuxt export</code> — comanda de export ca în Next.js</button></li>
+        <li><button data-correct="true"><code>nuxt generate</code> — pre-rendează toate paginile ca HTML static</button></li>
+        <li><button data-correct="false"><code>nuxt build --preset=static</code> — preset specific</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>nuxt generate</code> pre-randează toate paginile ca fișiere HTML statice — echivalentul <code>next export</code> din Next.js (deprecated), sau <code>next build</code> cu <code>output: 'export'</code>. Output-ul merge în <code>.output/public/</code> și poate fi servit de orice CDN fără server.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce Cloudflare Workers e mai limitat decât Vercel/Netlify pentru Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu suportă Nuxt 3 — numai Nuxt 2 a fost oficial adoptat de Cloudflare</button></li>
+        <li><button data-correct="false">Cloudflare nu oferă HTTPS — SSL certificatele trebuie configurate manual</button></li>
+        <li><button data-correct="true">Workers rulează fără Node.js — module npm care depind de Node APIs nu funcționează</button></li>
+        <li><button data-correct="false">Workers nu suportă variabile de mediu — secretele trebuie hardcodate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cloudflare Workers rulează pe V8 Isolates (nu Node.js) — APIs ca <code>fs</code>, <code>path</code>, <code>crypto</code> nativ Node.js, sau orice modul npm care le folosește intern, nu vor funcționa. Cloudflare oferă compatibility flags pentru a emula unele Node.js APIs, dar nu totul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Unde se stochează output-ul <code>nuxt build</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">În <code>.next/</code> — directorul standard pentru framework-urile Next.js moderne</button></li>
+        <li><button data-correct="false">În <code>dist/</code> — convenția standard Vite</button></li>
+        <li><button data-correct="true">În <code>.output/</code> — cu subdirectoarele <code>public/</code> și <code>server/</code></button></li>
+        <li><button data-correct="false">În <code>build/</code> — convenția Vue CLI</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt 3 scrie output-ul în <code>.output/</code> — diferit de Next.js (<code>.next/</code>) sau Vue CLI (<code>dist/</code>). Structure: <code>.output/public/</code> conține fișierele statice servite direct, <code>.output/server/index.mjs</code> este entry point-ul serverului Nitro.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Cum testezi local output-ul de producție Nuxt înainte de deploy?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cu <code>nuxt preview</code> — comandă dedicată preview producție</button></li>
+        <li><button data-correct="false">Cu <code>nuxt start</code> — pornește serverul de producție</button></li>
+        <li><button data-correct="true">Cu <code>node .output/server/index.mjs</code> după <code>nuxt build</code></button></li>
+        <li><button data-correct="false">Cu <code>nuxt dev --mode production</code> — dev server în modul producție</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> După <code>nuxt build</code>, rulezi direct output-ul Nitro: <code>node .output/server/index.mjs</code>. Asta pornește serverul de producție local pe portul 3000 (implicit). Alternativ, <code>nuxi preview</code> face build + start automat, dar e mai lent pentru iterații rapide.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum configurezi custom domains pe Vercel? Cum faci ISR (Incremental Static Regeneration) în Nuxt?
+      Cum optimizezi bundle size-ul pentru Cloudflare Workers?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0007-module-configurare.html">← Lecția 7: Module și configurare</a>
+    <a href="0009-proiect-complet.html">Lecția 9: Proiect complet — Task Manager →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

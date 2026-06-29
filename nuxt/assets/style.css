@@ -1,0 +1,250 @@
+/* Nuxt 3 Course — Shared Stylesheet */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #fafaf8;
+  --text:     #1c1c1a;
+  --muted:    #6b6b68;
+  --accent:   #00856d;
+  --border:   #e2dfd9;
+  --code-bg:  #f0efeb;
+  --correct:  #16a34a;
+  --wrong:    #dc2626;
+  --serif:    Georgia, 'Times New Roman', serif;
+  --mono:     'Cascadia Code', Consolas, 'Courier New', monospace;
+}
+
+html { font-size: 18px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--serif);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  padding: 3rem 1.5rem 7rem;
+}
+
+.container { max-width: 680px; margin: 0 auto; }
+
+/* ── Typography ── */
+h1 { font-size: 2rem; line-height: 1.2; margin-bottom: 0.3rem; }
+h2 {
+  font-size: 1.3rem; margin: 3rem 0 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 { font-size: 1.05rem; margin: 2rem 0 0.4rem; color: var(--muted); font-style: italic; }
+p  { margin-bottom: 1.1rem; }
+a  { color: var(--accent); text-underline-offset: 3px; }
+ul, ol { margin: 0.5rem 0 1.1rem 1.4rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: bold; }
+em { font-style: italic; }
+
+.lesson-meta {
+  color: var(--muted); font-size: 0.82rem; margin-bottom: 2.8rem;
+  display: flex; gap: 1.2rem; flex-wrap: wrap;
+}
+.lesson-meta .tag {
+  background: var(--code-bg); padding: 0.15rem 0.55rem;
+  border-radius: 99px; font-family: var(--mono);
+}
+
+/* ── Code ── */
+code {
+  font-family: var(--mono); font-size: 0.83em;
+  background: var(--code-bg); padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+pre {
+  background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 7px; padding: 1.1rem 1.25rem;
+  overflow-x: auto; margin: 1.3rem 0;
+}
+pre code { background: none; padding: 0; font-size: 0.82rem; line-height: 1.6; }
+
+/* ── Callouts ── */
+.callout {
+  border-left: 3px solid var(--accent); background: #e6f4f1;
+  padding: 0.85rem 1.1rem; margin: 1.5rem 0; border-radius: 0 5px 5px 0;
+}
+.callout.tip   { border-color: var(--correct); background: #f0fdf4; }
+.callout.warn  { border-color: #d97706;       background: #fffbeb; }
+.callout.next  { border-color: #0070f3;       background: #eff6ff; }
+.callout-label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+  font-weight: bold; color: var(--muted); margin-bottom: 0.3rem;
+  font-family: var(--mono);
+}
+
+/* ── Architecture Diagram ── */
+.arch {
+  border: 1px solid var(--border); border-radius: 9px;
+  overflow: hidden; margin: 1.6rem 0;
+  font-family: var(--mono); font-size: 0.85rem;
+}
+.arch-row {
+  display: grid; grid-template-columns: 2.4rem 1fr auto;
+  align-items: center; gap: 0.75rem;
+  padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--border);
+}
+.arch-row:last-child { border-bottom: none; }
+.arch-badge {
+  width: 2rem; height: 2rem; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; font-size: 0.75rem; color: white; flex-shrink: 0;
+}
+.arch-row:nth-child(1) { background: #ecfdf5; } .arch-row:nth-child(1) .arch-badge { background: #00856d; }
+.arch-row:nth-child(2) { background: #f0fdf4; } .arch-row:nth-child(2) .arch-badge { background: #16a34a; }
+.arch-row:nth-child(3) { background: #fffbeb; } .arch-row:nth-child(3) .arch-badge { background: #f59e0b; }
+.arch-row:nth-child(4) { background: #eff6ff; } .arch-row:nth-child(4) .arch-badge { background: #2563eb; }
+.arch-row:nth-child(5) { background: #fdf4ff; } .arch-row:nth-child(5) .arch-badge { background: #9333ea; }
+.arch-info h4 { font-size: 0.88rem; margin-bottom: 0.1rem; font-family: var(--serif); }
+.arch-info p  { font-size: 0.8rem; color: var(--muted); margin: 0; font-family: var(--serif); }
+.arch-tag {
+  font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+  background: rgba(0,0,0,0.07); white-space: nowrap; align-self: flex-start; margin-top: 0.3rem;
+}
+
+/* ── Comparison Table ── */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 1.5rem 0; }
+.compare-table th {
+  text-align: left; padding: 0.6rem 0.9rem;
+  border-bottom: 2px solid var(--border);
+  font-family: var(--mono); font-size: 0.75rem;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+}
+.compare-table td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table .nuxt-col   { background: #ecfdf5; }
+.compare-table .next-col   { background: #eff6ff; }
+.compare-table code { font-size: 0.82rem; }
+
+/* ── Flow Trace ── */
+.flow { margin: 1.5rem 0; }
+.flow-step {
+  display: flex; gap: 0.9rem; align-items: flex-start; margin-bottom: 0.6rem;
+}
+.flow-num {
+  width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: bold; flex-shrink: 0; margin-top: 0.2rem;
+  font-family: var(--mono);
+}
+.flow-body { flex: 1; }
+.flow-body p { margin: 0; font-size: 0.92rem; }
+.flow-body .layer-tag {
+  font-size: 0.7rem; font-family: var(--mono); color: var(--muted); display: block; margin-top: 0.1rem;
+}
+.flow-arrow { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0.05rem 0 0.05rem 0.7rem; }
+
+/* ── Exercises ── */
+.exercise {
+  border: 2px dashed var(--border); border-radius: 9px;
+  padding: 1.2rem 1.4rem; margin: 1.8rem 0; background: #fafaf8;
+}
+.exercise-label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+  font-weight: bold; color: var(--accent); margin-bottom: 0.7rem;
+  font-family: var(--mono);
+}
+.exercise ol { margin-left: 1.2rem; }
+.exercise li { margin-bottom: 0.55rem; font-size: 0.93rem; }
+
+/* ── Primary Source ── */
+.primary-source {
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 8px; padding: 1rem 1.2rem; margin: 2rem 0;
+}
+.primary-source-label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+  font-weight: bold; color: #92400e; margin-bottom: 0.3rem; font-family: var(--mono);
+}
+.primary-source p { margin: 0; font-size: 0.92rem; }
+
+/* ── Ask Me ── */
+.ask-me {
+  background: #ecfdf5; border: 1px solid #a7f3d0;
+  border-radius: 8px; padding: 0.9rem 1.2rem; margin: 2.5rem 0 0;
+}
+.ask-me-label {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+  font-weight: bold; color: #065f46; margin-bottom: 0.25rem; font-family: var(--mono);
+}
+.ask-me p { margin: 0; font-size: 0.9rem; }
+
+/* ── Quiz ── */
+.quiz { margin: 2rem 0; }
+.quiz-question {
+  border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; margin-bottom: 1.4rem;
+}
+.quiz-q {
+  padding: 0.9rem 1.1rem; background: var(--code-bg);
+  border-bottom: 1px solid var(--border);
+}
+.quiz-q .qnum {
+  display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.25rem;
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.07em;
+}
+.quiz-q .qtext { font-size: 0.93rem; font-weight: bold; line-height: 1.45; }
+.quiz-options { list-style: none; }
+.quiz-options li { border-bottom: 1px solid var(--border); }
+.quiz-options li:last-child { border-bottom: none; }
+.quiz-options button {
+  width: 100%; text-align: left; padding: 0.7rem 1.1rem;
+  background: white; border: none; cursor: pointer;
+  font-family: var(--serif); font-size: 0.88rem; line-height: 1.45;
+  transition: background 0.12s;
+}
+.quiz-options button:hover:not(:disabled) { background: var(--code-bg); }
+.quiz-options button.correct { background: #f0fdf4 !important; color: #14532d; }
+.quiz-options button.wrong   { background: #fef2f2 !important; color: #7f1d1d; }
+.quiz-options button:disabled { cursor: default; }
+.quiz-feedback {
+  display: none; padding: 0.7rem 1.1rem;
+  font-size: 0.86rem; border-top: 1px solid var(--border); line-height: 1.5;
+}
+.quiz-feedback.show       { display: block; }
+.quiz-feedback.correct-fb { background: #f0fdf4; color: #14532d; }
+.quiz-feedback.wrong-fb   { background: #fef2f2; color: #7f1d1d; }
+.quiz-next {
+  display: inline-block; margin-top: 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.88rem; font-weight: 600;
+  padding: 0.5rem 1.3rem;
+  background: var(--accent); color: white;
+  border: none; border-radius: 6px; cursor: pointer;
+  transition: opacity 0.12s;
+}
+.quiz-next:hover { opacity: 0.88; }
+
+.quiz-score {
+  display: none; text-align: center; padding: 1.4rem 1.1rem;
+  background: var(--code-bg); border-radius: 8px; margin-top: 0.5rem;
+  border: 1px solid var(--border);
+}
+.quiz-final-score {
+  font-size: 2.6rem; font-weight: 700; color: var(--accent);
+  margin-bottom: 0.4rem; line-height: 1; font-family: var(--mono);
+}
+.quiz-score p {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.93rem; color: var(--muted); margin: 0;
+}
+
+/* ── Lesson Navigation ── */
+.lesson-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+.lesson-nav a { color: var(--accent); }
+.lesson-nav .current { color: var(--muted); font-style: italic; }
+
+/* ── Print ── */
+@media print {
+  body { background: white; padding: 1.5rem; font-size: 16px; }
+  .ask-me, .exercise, .primary-source { break-inside: avoid; }
+  .quiz-options button { border: 1px solid var(--border); margin-bottom: 2px; }
+}

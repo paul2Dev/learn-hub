@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6: Supabase în Nuxt 3 — Curs Nuxt</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 6 din 9</span>
+    <span class="tag">~30 min</span>
+    <span>Nuxt 3 — Curs</span>
+  </div>
+
+  <h1>Supabase în Nuxt 3</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Integrarea completă cu modulul oficial <code>@nuxtjs/supabase</code> — autentificare, query-uri, RLS și diferența față de integrarea cu Next.js.
+  </p>
+
+
+  <h2>De ce @nuxtjs/supabase în loc de @supabase/ssr?</h2>
+
+  <p>
+    În Next.js ai folosit <code>@supabase/ssr</code> și ai creat manual clientul de server și de browser.
+    În Nuxt, modulul oficial <code>@nuxtjs/supabase</code> face totul automat:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.55rem;background:#00856d;">MOD</div>
+      <div class="arch-info">
+        <h4>@nuxtjs/supabase</h4>
+        <p>Configurează automat clientul Supabase, injectează composable-uri, gestionează sesiunile via cookies.</p>
+      </div>
+      <div class="arch-tag">recomandat</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.55rem;background:#16a34a;">AUTO</div>
+      <div class="arch-info">
+        <h4>Auto-imports incluse</h4>
+        <p><code>useSupabaseClient()</code>, <code>useSupabaseUser()</code>, <code>serverSupabaseClient()</code>, <code>serverSupabaseUser()</code> — disponibile fără import.</p>
+      </div>
+      <div class="arch-tag">zero config</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge" style="font-size:0.55rem;background:#f59e0b;">SES</div>
+      <div class="arch-info">
+        <h4>Sesiuni automate</h4>
+        <p>Refresh automat al token-urilor de sesiune, sincronizare server-client, middleware inclus.</p>
+      </div>
+      <div class="arch-tag">integrat</div>
+    </div>
+  </div>
+
+
+  <h2>Setup: instalare și configurare</h2>
+
+  <pre><code># Instalare modul
+npm install @nuxtjs/supabase</code></pre>
+
+  <pre><code>// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/supabase'],
+
+  supabase: {
+    // Redirect după login — implicit /
+    redirect: true,
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/', '/about', '/blog/*'],  // rute publice
+    }
+  }
+})</code></pre>
+
+  <pre><code># .env
+SUPABASE_URL=https://xyzcompany.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...   # anon key
+
+# NUMAI server — fără prefix NUXT_PUBLIC_
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Față de Next.js</div>
+    Next.js: <code>NEXT_PUBLIC_SUPABASE_URL</code> și <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
+    în <code>.env.local</code>.<br>
+    Nuxt: <code>SUPABASE_URL</code> și <code>SUPABASE_KEY</code> în <code>.env</code>.
+    Modulul le citește automat și le expune public prin <code>runtimeConfig.public</code>.
+  </div>
+
+
+  <h2>useSupabaseClient — query-uri pe client</h2>
+
+  <pre><code>&lt;!-- pages/dashboard.vue --&gt;
+&lt;script setup lang="ts"&gt;
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
+
+// Redirect dacă nu e autentificat
+if (!user.value) {
+  await navigateTo('/login')
+}
+
+// Query cu RLS — returnează numai datele utilizatorului
+const { data: tasks } = await useAsyncData('tasks', async () =&gt; {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+})
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;h1&gt;Bun venit, {{ user?.email }}&lt;/h1&gt;
+    &lt;ul&gt;
+      &lt;li v-for="task in tasks" :key="task.id"&gt;{{ task.title }}&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>useSupabaseUser — starea autentificării</h2>
+
+  <p>
+    <code>useSupabaseUser()</code> returnează un <code>Ref&lt;User | null&gt;</code> reactiv.
+    Se actualizează automat la login/logout:
+  </p>
+
+  <pre><code>&lt;!-- components/Navbar.vue --&gt;
+&lt;script setup lang="ts"&gt;
+const user = useSupabaseUser()
+const supabase = useSupabaseClient()
+
+async function logout() {
+  await supabase.auth.signOut()
+  await navigateTo('/login')
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;nav&gt;
+    &lt;NuxtLink to="/"&gt;Home&lt;/NuxtLink&gt;
+
+    &lt;template v-if="user"&gt;
+      &lt;NuxtLink to="/dashboard"&gt;Dashboard&lt;/NuxtLink&gt;
+      &lt;button @click="logout"&gt;Logout ({{ user.email }})&lt;/button&gt;
+    &lt;/template&gt;
+    &lt;template v-else&gt;
+      &lt;NuxtLink to="/login"&gt;Login&lt;/NuxtLink&gt;
+    &lt;/template&gt;
+  &lt;/nav&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>Autentificare — email și password</h2>
+
+  <pre><code>&lt;!-- pages/login.vue --&gt;
+&lt;script setup lang="ts"&gt;
+definePageMeta({ layout: 'auth' })
+
+const supabase = useSupabaseClient()
+const email    = ref('')
+const password = ref('')
+const error    = ref&lt;string | null&gt;(null)
+const loading  = ref(false)
+
+async function handleLogin() {
+  loading.value = true
+  error.value   = null
+
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value,
+  })
+
+  if (authError) {
+    error.value = authError.message
+  } else {
+    await navigateTo('/dashboard')
+  }
+
+  loading.value = false
+}
+
+async function handleRegister() {
+  loading.value = true
+  const { error: authError } = await supabase.auth.signUp({
+    email: email.value,
+    password: password.value,
+  })
+  if (authError) error.value = authError.message
+  else await navigateTo('/dashboard')
+  loading.value = false
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;form @submit.prevent="handleLogin"&gt;
+    &lt;input v-model="email"    type="email"    placeholder="Email"    required /&gt;
+    &lt;input v-model="password" type="password" placeholder="Parolă"   required /&gt;
+    &lt;p v-if="error" style="color:red"&gt;{{ error }}&lt;/p&gt;
+    &lt;button type="submit" :disabled="loading"&gt;
+      {{ loading ? 'Se procesează...' : 'Login' }}
+    &lt;/button&gt;
+    &lt;button type="button" @click="handleRegister" :disabled="loading"&gt;
+      Înregistrare
+    &lt;/button&gt;
+  &lt;/form&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <h2>serverSupabaseClient — query-uri pe server (API routes)</h2>
+
+  <pre><code>// server/api/tasks.get.ts
+import { serverSupabaseUser, serverSupabaseClient } from '#supabase/server'
+
+export default defineEventHandler(async (event) =&gt; {
+  // Verificare autentificare pe server
+  const user = await serverSupabaseUser(event)
+  if (!user) {
+    throw createError({ statusCode: 401, message: 'Neautorizat' })
+  }
+
+  // Client cu sesiunea utilizatorului — RLS activ
+  const client = await serverSupabaseClient(event)
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  return data
+})</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">serverSupabaseClient vs useSupabaseClient</div>
+    <code>useSupabaseClient()</code> — în componente Vue (client-side).<br>
+    <code>serverSupabaseClient(event)</code> — în server routes Nitro (server-side).<br>
+    Nu le confunda: <code>useSupabaseClient</code> nu există în contextul de server Nitro.
+  </div>
+
+
+  <h2>OAuth — Google, GitHub, etc.</h2>
+
+  <pre><code>&lt;script setup lang="ts"&gt;
+const supabase = useSupabaseClient()
+
+async function loginWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/confirm`,
+    }
+  })
+  if (error) console.error(error)
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;button @click="loginWithGoogle"&gt;Login cu Google&lt;/button&gt;
+&lt;/template&gt;</code></pre>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Setup complet</div>
+    <p>Configurează Supabase în proiectul tău Nuxt:</p>
+    <ol>
+      <li>Instalează <code>@nuxtjs/supabase</code> și adaugă în <code>nuxt.config.ts</code></li>
+      <li>Adaugă <code>SUPABASE_URL</code> și <code>SUPABASE_KEY</code> în <code>.env</code></li>
+      <li>Creează un tabel <code>notes</code> în Supabase cu RLS activat</li>
+      <li>Creează pagina <code>pages/login.vue</code> cu formular de email + password</li>
+      <li>Creează pagina <code>pages/dashboard.vue</code> care afișează notele utilizatorului</li>
+      <li>Testează că login-ul funcționează și că datele sunt filtrate de RLS</li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://supabase.nuxtjs.org/" target="_blank">
+        @nuxtjs/supabase Documentation — supabase.nuxtjs.org
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația modulului oficial cu toate composable-urile disponibile, opțiunile de configurare
+        și exemple pentru autentificare (email, magic link, OAuth, SSO).
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Care este principalul avantaj al modulului <code>@nuxtjs/supabase</code> față de <code>@supabase/ssr</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Modulul Nuxt are performanță mai bună deoarece e mai vechi</button></li>
+        <li><button data-correct="true">Configurare zero — modulul injectează automat clientul, composable-urile și gestionează sesiunile</button></li>
+        <li><button data-correct="false">Modulul Nuxt suportă mai multe provideri OAuth decât @supabase/ssr</button></li>
+        <li><button data-correct="false">Nu există diferență funcțională — e numai o chestie de preferință</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>@nuxtjs/supabase</code> este un modul Nuxt complet integrat — configurezi URL și key în <code>.env</code>, adaugi în <code>modules[]</code> și gata. Primești automat <code>useSupabaseClient</code>, <code>useSupabaseUser</code> etc. fără a scrie niciun utilitar manual.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce returnează <code>useSupabaseUser()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Obiectul user sincron — disponibil imediat fără await</button></li>
+        <li><button data-correct="false">O Promise&lt;User&gt; pe care trebuie să o await-ezi</button></li>
+        <li><button data-correct="true">Un <code>Ref&lt;User | null&gt;</code> reactiv — actualizat automat la login/logout</button></li>
+        <li><button data-correct="false">Un boolean — <code>true</code> dacă e autentificat, <code>false</code> dacă nu</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useSupabaseUser()</code> returnează un <code>Ref</code> Vue reactiv. Când utilizatorul face login sau logout, <code>user.value</code> se actualizează automat și toate componentele care îl folosesc se re-randează. Accesezi userul cu <code>user.value</code> în JavaScript sau <code>user</code> direct în template.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Când folosești <code>serverSupabaseClient(event)</code> în loc de <code>useSupabaseClient()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Când vrei mai multă performanță — server client e optimizat</button></li>
+        <li><button data-correct="false">Când ai nevoie de service_role key — serverSupabaseClient îl folosește automat</button></li>
+        <li><button data-correct="true">În server routes Nitro (<code>server/api/</code>) — composable-urile Vue nu există în contextul de server</button></li>
+        <li><button data-correct="false">Când faci query-uri care depășesc limitele RLS</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>useSupabaseClient()</code> este un composable Vue — există numai în contextul componentelor (.vue). În <code>server/api/</code> ești în contextul Nitro (Node.js), unde composable-urile Vue nu există. Folosești <code>serverSupabaseClient(event)</code> care citește sesiunea din cookies request-ului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Cum specifici variabila de mediu pentru cheia anon Supabase în Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>NEXT_PUBLIC_SUPABASE_KEY</code> — prefixul NEXT_PUBLIC_ e standard</button></li>
+        <li><button data-correct="false"><code>NUXT_PUBLIC_SUPABASE_KEY</code> — prefixul NUXT_PUBLIC_ face variabila publică</button></li>
+        <li><button data-correct="true"><code>SUPABASE_KEY</code> — modulul @nuxtjs/supabase o citește automat cu acest nume</button></li>
+        <li><button data-correct="false"><code>VUE_APP_SUPABASE_KEY</code> — prefixul Vue CLI standard</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modulul <code>@nuxtjs/supabase</code> are numele fixe: <code>SUPABASE_URL</code> și <code>SUPABASE_KEY</code> pentru anon key (publice), și <code>SUPABASE_SERVICE_ROLE_KEY</code> pentru service role (privată, server only). Nu ai nevoie de prefixe speciale.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce opțiune din <code>nuxt.config.ts</code> configurează unde se redirecționează utilizatorul neautentificat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>auth: { loginPage: '/login' }</code> — configurare auth standard</button></li>
+        <li><button data-correct="false"><code>middleware: { auth: { redirect: '/login' } }</code> — în secțiunea middleware</button></li>
+        <li><button data-correct="true"><code>supabase: { redirectOptions: { login: '/login' } }</code> — în opțiunile modulului</button></li>
+        <li><button data-correct="false"><code>router: { middleware: { auth: { to: '/login' } } }</code> — în configurarea routerului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modulul <code>@nuxtjs/supabase</code> include un middleware de autentificare automat. Configurezi unde se duce la login (<code>login: '/login'</code>), unde se callback-uiește după OAuth (<code>callback: '/confirm'</code>) și ce rute sunt publice (<code>exclude: ['/']</code>).
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum configurezi RLS pentru tabelele Nuxt? Cum implementezi magic link auth?
+      Cum gestionezi refresh de token în Nuxt fără modulul oficial?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0005-server-routes-nitro.html">← Lecția 5: Server Routes cu Nitro</a>
+    <a href="0007-module-configurare.html">Lecția 7: Module și configurare →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
