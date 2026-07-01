@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UpNext — Index curs</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .course-header { margin-bottom: 3rem; }
+    .course-header p { font-size: 1.05rem; color: var(--muted); max-width: 560px; }
+
+    .lesson-grid { display: flex; flex-direction: column; gap: 0; margin: 0.5rem 0 2.5rem; }
+    .lesson-card {
+      display: flex; align-items: flex-start; gap: 1.1rem;
+      padding: 1rem 1.2rem; border: 1px solid var(--border);
+      border-bottom: none; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.12s;
+    }
+    .lesson-card:first-child { border-radius: 8px 8px 0 0; }
+    .lesson-card:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .lesson-card:hover { background: var(--code-bg); }
+    .lesson-num {
+      width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: bold; flex-shrink: 0;
+    }
+    .lesson-card:nth-child(1)  .lesson-num { background: #b91c1c; }
+    .lesson-card:nth-child(2)  .lesson-num { background: #c2410c; }
+    .lesson-card:nth-child(3)  .lesson-num { background: #a16207; }
+    .lesson-card:nth-child(4)  .lesson-num { background: #15803d; }
+    .lesson-card:nth-child(5)  .lesson-num { background: #0e7490; }
+    .lesson-card:nth-child(6)  .lesson-num { background: #1d4ed8; }
+    .lesson-card:nth-child(7)  .lesson-num { background: #6d28d9; }
+    .lesson-card:nth-child(8)  .lesson-num { background: #a21caf; }
+    .lesson-card:nth-child(9)  .lesson-num { background: #be123c; }
+    .lesson-card:nth-child(10) .lesson-num { background: #b45309; }
+    .lesson-card:nth-child(11) .lesson-num { background: #4d7c0f; }
+    .lesson-info h3 { font-size: 0.97rem; margin: 0 0 0.15rem; }
+    .lesson-info p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .lesson-time {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      font-family: var(--mono); white-space: nowrap; align-self: center;
+    }
+
+    .reference-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.5rem 0 3rem; }
+    .ref-card {
+      flex: 1; min-width: 160px;
+      padding: 0.85rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+      text-decoration: none; color: var(--text);
+      transition: background 0.12s;
+    }
+    .ref-card:hover { background: var(--code-bg); }
+    .ref-card h4 { font-size: 0.9rem; margin-bottom: 0.15rem; }
+    .ref-card p  { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+    .quickref-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .quickref-table th {
+      text-align: left; padding: 0.5rem 0.8rem;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    }
+    .quickref-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .quickref-table tr:last-child td { border-bottom: none; }
+    .quickref-table code { font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="course-header">
+    <div class="lesson-meta">
+      <span class="tag">11 lecții</span>
+      <span class="tag">~4.5 ore total</span>
+      <span>UpNext — Curs</span>
+    </div>
+    <h1>Cum a fost făcut UpNext</h1>
+    <p>
+      Un tur ghidat prin codul real al aplicației <strong>UpNext</strong> (<code>D:\projects\movies</code>) —
+      un discovery app pentru filme/seriale construit cu Nuxt 4, Nuxt UI, Supabase și TMDB.
+      Fiecare lecție pornește de la fișiere reale din aplicație, nu exemple sintetice: routing, componente,
+      composables, server API cu Nitro, autentificare Google OAuth, schema Postgres cu RLS, motorul de
+      recomandări, și cum se extinde aplicația cu o entitate nouă. Scopul: să te simți confortabil să
+      modifici orice parte a acestei aplicații cu Nuxt.
+    </p>
+  </div>
+
+
+  <!-- ══════ LECȚII ══════ -->
+  <h2 style="margin-top:0;">Lecții</h2>
+
+  <div class="lesson-grid">
+
+    <a class="lesson-card" href="lessons/0001-arhitectura-upnext.html">
+      <div class="lesson-num">1</div>
+      <div class="lesson-info">
+        <h3>Arhitectura aplicației UpNext</h3>
+        <p>Stack complet, structura app/+server/+supabase/, ssr: false (SPA mode), cum pornești local</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0002-routing-pagini.html">
+      <div class="lesson-num">2</div>
+      <div class="lesson-info">
+        <h3>Pagini și routing</h3>
+        <p>Toate rutele reale, [id].vue dinamic, de ce nu există layouts/, middleware pe pagină</p>
+      </div>
+      <span class="lesson-time">~20 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0003-componente-vue.html">
+      <div class="lesson-num">3</div>
+      <div class="lesson-info">
+        <h3>Componente Vue</h3>
+        <p>MediaCard.vue complet, auto-import, RatingButton.vue și pattern-ul v-model</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0004-composables.html">
+      <div class="lesson-num">4</div>
+      <div class="lesson-info">
+        <h3>Composables</h3>
+        <p>useTmdbImage, useWatchlist (useState global), useMediaActions (state local)</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0005-server-api-nitro.html">
+      <div class="lesson-num">5</div>
+      <div class="lesson-info">
+        <h3>Server API cu Nitro</h3>
+        <p>tmdbFetch(), proxy sigur pentru cheia TMDB, endpoint-uri CRUD Supabase, security middleware</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0006-auth-supabase.html">
+      <div class="lesson-num">6</div>
+      <div class="lesson-info">
+        <h3>Auth cu Supabase</h3>
+        <p>Google OAuth, login → confirm → middleware, redirect la onboarding la primul login</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0007-supabase-db-rls.html">
+      <div class="lesson-num">7</div>
+      <div class="lesson-info">
+        <h3>Schema DB și RLS</h3>
+        <p>profiles/watchlist/watched, trigger la primul login, policies RLS, migrații reale</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0008-crud-flux-complet.html">
+      <div class="lesson-num">8</div>
+      <div class="lesson-info">
+        <h3>CRUD end-to-end</h3>
+        <p>Click pe „Adaugă la watchlist" — trasat complet, din componentă până în Postgres și înapoi</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0009-motor-recomandari.html">
+      <div class="lesson-num">9</div>
+      <div class="lesson-info">
+        <h3>Motorul de recomandări</h3>
+        <p>Bucket-uri de scoring, Promise.allSettled, fallback-uri pentru utilizatori noi</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0010-extinderea-aplicatiei.html">
+      <div class="lesson-num">10</div>
+      <div class="lesson-info">
+        <h3>Extinderea aplicației</h3>
+        <p>Pattern-ul movie → tv → person → collection și cum adaugi o entitate nouă</p>
+      </div>
+      <span class="lesson-time">~25 min</span>
+    </a>
+
+    <a class="lesson-card" href="lessons/0011-config-search-deploy.html">
+      <div class="lesson-num">11</div>
+      <div class="lesson-info">
+        <h3>Config, căutare semantică și deploy</h3>
+        <p>nuxt.config.ts complet, pgvector + OpenAI embeddings, feature flags, deploy pe Vercel</p>
+      </div>
+      <span class="lesson-time">~30 min</span>
+    </a>
+
+  </div>
+
+
+  <!-- ══════ REFERINȚE ══════ -->
+  <h2>Referințe</h2>
+
+  <div class="reference-links">
+    <a class="ref-card" href="reference/glossary.html">
+      <h4>Glosar</h4>
+      <p>Toți termenii cheie din codul real — Nitro, RLS, useState, RPC și altele</p>
+    </a>
+    <a class="ref-card" href="RESOURCES.md">
+      <h4>Resurse</h4>
+      <p>Documentații oficiale și cursul conex Nuxt din acest repo</p>
+    </a>
+    <a class="ref-card" href="../nuxt/index.html">
+      <h4>Curs Nuxt 3 (concepte)</h4>
+      <p>Cursul general Nuxt din acest repo — bun ca fundație înainte de acesta</p>
+    </a>
+    <a class="ref-card" href="../embedings/index.html">
+      <h4>Curs Embeddings</h4>
+      <p>Ce sunt embeddings și vector databases — fundamentul din Lecția 11</p>
+    </a>
+  </div>
+
+
+  <!-- ══════ QUICK REFERENCE ══════ -->
+  <h2>Referință rapidă — „Unde modific X"</h2>
+
+  <table class="quickref-table">
+    <thead>
+      <tr>
+        <th>Vreau să...</th>
+        <th>Fișier / Locație</th>
+        <th>Lecție</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Adaug o pagină nouă</td>
+        <td><code>app/pages/nume.vue</code></td>
+        <td><a href="lessons/0002-routing-pagini.html">2</a></td>
+      </tr>
+      <tr>
+        <td>Protejez o pagină cu login</td>
+        <td><code>definePageMeta({ middleware: 'auth' })</code></td>
+        <td><a href="lessons/0002-routing-pagini.html">2</a>, <a href="lessons/0006-auth-supabase.html">6</a></td>
+      </tr>
+      <tr>
+        <td>Schimb un card de film/serial</td>
+        <td><code>app/components/MediaCard.vue</code></td>
+        <td><a href="lessons/0003-componente-vue.html">3</a></td>
+      </tr>
+      <tr>
+        <td>Adaug stare partajată global (ex: badge navbar)</td>
+        <td>Composable nou cu <code>useState('cheie', ...)</code></td>
+        <td><a href="lessons/0004-composables.html">4</a></td>
+      </tr>
+      <tr>
+        <td>Adaug un endpoint nou care cheamă TMDB</td>
+        <td><code>server/api/movies/nume.get.ts</code> + <code>tmdbFetch()</code></td>
+        <td><a href="lessons/0005-server-api-nitro.html">5</a></td>
+      </tr>
+      <tr>
+        <td>Adaug un endpoint CRUD protejat cu Supabase</td>
+        <td><code>server/api/user/nume.post.ts</code>, cu Zod + RLS</td>
+        <td><a href="lessons/0005-server-api-nitro.html">5</a>, <a href="lessons/0008-crud-flux-complet.html">8</a></td>
+      </tr>
+      <tr>
+        <td>Adaug un tabel nou în baza de date</td>
+        <td>Migrație nouă în <code>supabase/migrations/</code> + policies RLS</td>
+        <td><a href="lessons/0007-supabase-db-rls.html">7</a></td>
+      </tr>
+      <tr>
+        <td>Ajustez algoritmul de recomandări</td>
+        <td><code>server/api/user/recommendations.get.ts</code></td>
+        <td><a href="lessons/0009-motor-recomandari.html">9</a></td>
+      </tr>
+      <tr>
+        <td>Adaug o entitate complet nouă (ex: studio)</td>
+        <td>Endpoint + pagină + extindere MediaCard, urmând pattern-ul movie/tv/person/collection</td>
+        <td><a href="lessons/0010-extinderea-aplicatiei.html">10</a></td>
+      </tr>
+      <tr>
+        <td>Adaug o variabilă de mediu nouă</td>
+        <td><code>runtimeConfig</code> în <code>nuxt.config.ts</code> + <code>.env</code> + Vercel dashboard</td>
+        <td><a href="lessons/0011-config-search-deploy.html">11</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    UpNext — Curs · Începe de la <a href="lessons/0001-arhitectura-upnext.html">Lecția 1</a>
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 2: Pagini și routing — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 2 din 11</span>
+    <span class="tag">~20 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Pagini și routing în UpNext</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Toate rutele reale ale aplicației, cum funcționează rutele dinamice <code>[id].vue</code>,
+    și de ce login/confirm arată altfel decât restul aplicației.
+  </p>
+
+
+  <h2>Toate paginile din <code>app/pages/</code></h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Fișier</th><th>Rută</th><th>Descriere</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>index.vue</code></td><td><code>/</code></td><td>Homepage — hero, tab-uri trending, recomandări</td></tr>
+      <tr><td><code>discover.vue</code></td><td><code>/discover</code></td><td>Browsing + filtre (gen, platformă, an)</td></tr>
+      <tr><td><code>movie/[id].vue</code></td><td><code>/movie/:id</code></td><td>Detalii film</td></tr>
+      <tr><td><code>tv/[id].vue</code></td><td><code>/tv/:id</code></td><td>Detalii serial</td></tr>
+      <tr><td><code>person/[id].vue</code></td><td><code>/person/:id</code></td><td>Biografie + filmografie actor</td></tr>
+      <tr><td><code>collection/[id].vue</code></td><td><code>/collection/:id</code></td><td>Colecție/franciză (ex: Marvel)</td></tr>
+      <tr><td><code>people.vue</code></td><td><code>/people</code></td><td>Actori populari + căutare</td></tr>
+      <tr><td><code>search.vue</code></td><td><code>/search</code></td><td>Căutare semantică (feature flag)</td></tr>
+      <tr><td><code>watchlist.vue</code></td><td><code>/watchlist</code></td><td>Filmele salvate — necesită autentificare</td></tr>
+      <tr><td><code>profile.vue</code></td><td><code>/profile</code></td><td>Profil, genuri, filme văzute — necesită autentificare</td></tr>
+      <tr><td><code>onboarding.vue</code></td><td><code>/onboarding</code></td><td>Selectare genuri la primul login — necesită autentificare</td></tr>
+      <tr><td><code>login.vue</code></td><td><code>/login</code></td><td>Autentificare Google</td></tr>
+      <tr><td><code>confirm.vue</code></td><td><code>/confirm</code></td><td>Callback OAuth</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Fiecare rând din tabel corespunde 1-la-1 unui fișier în <code>app/pages/</code> — nu există configurare
+    de router separată. Nuxt scanează folderul la build time și generează rutele automat.
+  </p>
+
+
+  <h2>Rute dinamice: <code>[id].vue</code></h2>
+
+  <p>
+    Patru pagini folosesc același pattern — un segment variabil în paranteze pătrate. Iată cum
+    <code>app/pages/movie/[id].vue</code> citește parametrul din URL:
+  </p>
+
+  <div class="filepath">app/pages/movie/[id].vue</div>
+  <pre><code>const route = useRoute()
+const id = route.params.id
+
+const [{ data: movie, error }, { data: similarData }] = await Promise.all([
+  useFetch&lt;Movie&gt;(`/api/movies/${id}`),
+  useFetch&lt;{ results: MovieItem[] }&gt;(`/api/movies/${id}/similar`)
+])
+
+if (error.value) {
+  throw createError({ statusCode: 404, message: 'Movie not found' })
+}</code></pre>
+
+  <p>
+    <code>route.params.id</code> vine direct din numele fișierului. Pentru <code>/movie/27205</code>,
+    <code>id</code> este <code>"27205"</code> (string, chiar dacă TMDB ID e numeric). Observă și
+    <code>Promise.all</code> — cele două <code>useFetch</code> pornesc în paralel, nu secvențial.
+  </p>
+
+  <div class="callout tip">
+    <div class="callout-label">Pattern repetat</div>
+    <code>tv/[id].vue</code>, <code>person/[id].vue</code> și <code>collection/[id].vue</code> urmează
+    exact aceeași structură — doar endpoint-ul server și forma datelor diferă. Vezi Lecția 10 pentru
+    cum se extinde acest pattern la o entitate nouă.
+  </div>
+
+
+  <h2>Pagini fără chrome: <code>definePageMeta({ layout: false })</code></h2>
+
+  <p>
+    <code>login.vue</code> și <code>confirm.vue</code> nu vor navbar/footer — sunt pagini de tranziție.
+    Ambele setează:
+  </p>
+
+  <div class="filepath">app/pages/login.vue</div>
+  <pre><code>&lt;script setup lang="ts"&gt;
+definePageMeta({ layout: false })
+
+const supabase = useSupabaseClient()
+const loading = ref(false)
+
+async function signInWithGoogle() {
+  loading.value = true
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/confirm` }
+  })
+  loading.value = false
+}
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;UApp&gt;
+    &lt;div class="fixed inset-0 flex items-center justify-center bg-background px-4"&gt;
+      ...
+    &lt;/div&gt;
+  &lt;/UApp&gt;
+&lt;/template&gt;</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">Gotcha real din acest proiect</div>
+    UpNext <strong>nu are folder <code>layouts/</code></strong> — <code>app/app.vue</code> conține navbar-ul
+    și footer-ul direct în template, în jurul unui simplu <code>&lt;NuxtPage /&gt;</code>. Asta înseamnă
+    <code>layout: false</code> aici nu comută între două layout-uri (nu există un al doilea) — pagina
+    își desenează propriul <code>&lt;UApp&gt;</code> de la zero ca să evite complet chrome-ul din
+    <code>app.vue</code>. E o soluție validă, mai simplă, pentru aplicații cu o singură coajă vizuală —
+    dar diferă de pattern-ul „<code>layouts/default.vue</code> + <code>layouts/auth.vue</code>" din
+    cursul general <a href="../../nuxt/lessons/0002-structura-proiect.html">nuxt/</a>.
+  </div>
+
+
+  <h2>Protejarea rutelor cu middleware pe pagină</h2>
+
+  <p>
+    Trei pagini cer autentificare — fiecare o declară explicit în <code>definePageMeta</code>:
+  </p>
+
+  <pre><code>// app/pages/watchlist.vue
+definePageMeta({ middleware: 'auth' })
+
+// app/pages/profile.vue
+definePageMeta({ middleware: 'auth' })
+
+// app/pages/onboarding.vue
+definePageMeta({ middleware: 'auth' })</code></pre>
+
+  <p>
+    Numele <code>'auth'</code> se leagă automat de fișierul <code>app/middleware/auth.ts</code> —
+    Nuxt face maparea după nume, fără import manual. Detalii complete despre ce face acest middleware
+    în <a href="0006-auth-supabase.html">Lecția 6</a>.
+  </p>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Adaugă o pagină nouă</div>
+    <p>Vrei să adaugi o pagină <code>/genres</code> care listează toate genurile TMDB și le linkuiește la discover. Ce faci?</p>
+    <ol>
+      <li>Creezi <code>app/pages/genres.vue</code></li>
+      <li>În <code>&lt;script setup&gt;</code>, apelezi <code>useFetch('/api/movies/genres')</code> (endpoint deja existent)</li>
+      <li>Nu ai nevoie de nicio configurare de router — ruta <code>/genres</code> apare automat</li>
+      <li>Dacă vrei ca pagina să ceară login, adaugi <code>definePageMeta({ middleware: 'auth' })</code></li>
+    </ol>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/guide/directory-structure/pages" target="_blank">
+        Nuxt Docs — pages/
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială pentru file-based routing, rute dinamice și <code>definePageMeta</code>.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Pentru ruta <code>/movie/27205</code>, ce valoare are <code>route.params.id</code> în <code>movie/[id].vue</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Un obiect <code>{ movie: 27205 }</code></button></li>
+        <li><button data-correct="true">String-ul <code>"27205"</code></button></li>
+        <li><button data-correct="false"><code>undefined</code> — trebuie citit din query string</button></li>
+        <li><button data-correct="false">Numărul <code>27205</code>, deja convertit automat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Parametrii de rută sunt întotdeauna string-uri. De asta codul folosește <code>Number(id)</code> acolo unde are nevoie de tip numeric (ex: în <code>useMediaActions</code>).
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce nu are UpNext un folder <code>layouts/</code>, spre deosebire de multe proiecte Nuxt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că folosește <code>ssr: false</code>, iar layouts nu merg în SPA</button></li>
+        <li><button data-correct="true">Pentru că are o singură coajă vizuală, scrisă direct în app.vue</button></li>
+        <li><button data-correct="false">Pentru că Nuxt UI v4 nu suportă sistemul de layouts</button></li>
+        <li><button data-correct="false">Pentru că fiecare pagină are propriul header și footer individual</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Layouts multiple au sens când ai mai multe „forme" de shell (ex: admin vs public). UpNext are un singur shell, deci l-a scris direct în <code>app.vue</code> — mai puțină indirecție pentru un caz simplu.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Cum se protejează <code>/watchlist</code> să nu fie accesat fără login?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nitro verifică automat toate paginile din pages/ pentru sesiune activă</button></li>
+        <li><button data-correct="true"><code>definePageMeta({ middleware: 'auth' })</code> în watchlist.vue</button></li>
+        <li><button data-correct="false">Pagina e listată manual într-un array <code>protectedRoutes</code> în nuxt.config.ts</button></li>
+        <li><button data-correct="false">Componenta MovieCard ascunde conținutul dacă user e null</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fiecare pagină protejată declară explicit middleware-ul în <code>definePageMeta</code>. Nuxt leagă string-ul <code>'auth'</code> de fișierul <code>app/middleware/auth.ts</code> automat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce fac în paralel cele două <code>useFetch</code> din <code>movie/[id].vue</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Rulează secvențial — al doilea așteaptă finalizarea primului</button></li>
+        <li><button data-correct="true">Pornesc simultan prin <code>Promise.all</code> — nu se așteaptă unul pe altul</button></li>
+        <li><button data-correct="false">Fac exact același request, al doilea fiind doar pentru cache</button></li>
+        <li><button data-correct="false">Rulează pe server unul, pe client celălalt</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>Promise.all([...])</code> pornește ambele cereri (detalii film + filme similare) simultan — timpul total de așteptare e cât cel mai lent request, nu suma lor.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Vrei o pagină nouă <code>/genres</code>. Ce trebuie să configurezi în plus față de a crea fișierul?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Adaugi ruta manual într-un fișier <code>router.config.ts</code></button></li>
+        <li><button data-correct="false">Înregistrezi pagina în <code>nuxt.config.ts</code> sub <code>pages: []</code></button></li>
+        <li><button data-correct="true">Nimic — ruta apare automat din numele fișierului</button></li>
+        <li><button data-correct="false">Rulezi <code>nuxi generate-route genres</code> ca să înregistrezi ruta</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> File-based routing înseamnă exact asta — niciun pas de configurare manuală. Crearea fișierului e suficientă.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Nu ești sigur cum aș structura o rută nested nouă, sau de ce <code>discover.vue</code> nu are
+      middleware deloc? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0001-arhitectura-upnext.html">← Lecția 1: Arhitectura UpNext</a>
+    <a href="0003-componente-vue.html">Lecția 3: Componente Vue →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

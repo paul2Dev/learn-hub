@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 11: Config, căutare semantică și deploy — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 11 din 11</span>
+    <span class="tag">~30 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>nuxt.config.ts, căutare semantică și deploy</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Ultima lecție: fișierul central de configurare linie cu linie, cum funcționează feature flags,
+    arhitectura căutării semantice cu embeddings, și cum ajunge codul pe Vercel.
+  </p>
+
+
+  <h2><code>nuxt.config.ts</code> complet, explicat</h2>
+
+  <pre><code>export default defineNuxtConfig({
+  modules: [
+    '@nuxt/eslint',        // linting integrat în build
+    '@nuxt/ui',            // componente Nuxt UI v4
+    '@nuxtjs/supabase',    // client Supabase + auth (Lecția 6)
+    '@vite-pwa/nuxt'       // suport PWA (instalabil pe telefon)
+  ],
+
+  ssr: false,              // SPA mode (Lecția 1)
+
+  css: ['~/assets/css/main.css'],   // Tailwind CSS v4
+
+  runtimeConfig: {
+    tmdbApiKey: process.env.TMDB_API_KEY,          // privat — doar server (Lecția 5)
+    openaiApiKey: process.env.OPENAI_API_KEY,      // privat — pentru embeddings
+    seedSecret: process.env.SEED_SECRET,           // privat — protejează /api/admin
+    searchDailyLimit: parseInt(process.env.SEARCH_DAILY_LIMIT ?? '15', 10),
+    public: {
+      tmdbBaseUrl: 'https://api.themoviedb.org/3',
+      tmdbImageBaseUrl: 'https://image.tmdb.org/t/p',
+      featureSemanticSearch: process.env.FEATURE_SEMANTIC_SEARCH === 'true'
+    }
+  },
+
+  supabase: {
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/', '/login', '/confirm', '/discover', '/movie/*', '/tv/*', '/person/*', '/people', '/collection/*']
+    },
+    cookieOptions: { maxAge: 60 * 60 * 24 * 10, sameSite: 'lax', secure: true }
+  }
+})</code></pre>
+
+  <p>
+    Trei tipuri de config coexistă aici: <code>modules</code> (ce librării înregistrate global),
+    <code>runtimeConfig</code> (variabile de mediu, server vs public — Lecția 5), și
+    <code>supabase</code> (opțiuni specifice modulului de auth — Lecția 6).
+  </p>
+
+
+  <h2>Feature flag: <code>featureSemanticSearch</code></h2>
+
+  <p>
+    Căutarea semantică e opțională — controlată de o singură variabilă de mediu,
+    <code>FEATURE_SEMANTIC_SEARCH</code>. Trei locuri verifică acest flag:
+  </p>
+
+  <pre><code>// app/app.vue — arată sau nu link-ul "Smart Search" în navbar
+&lt;UButton v-if="user && config.public.featureSemanticSearch" to="/search" ... /&gt;
+
+// server/api/movies/semantic-search.get.ts — refuză cererea dacă flag-ul e oprit
+if (!config.public.featureSemanticSearch) {
+  throw createError({ statusCode: 404, message: 'Feature not enabled.' })
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce feature flag și nu doar „adaugi codul"</div>
+    Căutarea semantică cere infrastructură suplimentară (embeddings populate în DB, cheie OpenAI activă).
+    Flag-ul permite ca aceeași bază de cod să ruleze <em>fără</em> acea infrastructură (dezactivat),
+    fără să fie nevoie de un branch de cod separat sau de eliminarea feature-ului complet.
+  </div>
+
+
+  <h2>Cum funcționează căutarea semantică</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Utilizatorul scrie „filme triste despre pierdere și regăsire" în <code>/search</code></p>
+        <span class="layer-tag">app/pages/search.vue + QuickSearch.vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Server verifică flag-ul, autentificarea, lungimea query-ului (3-150 caractere)</p>
+        <span class="layer-tag">server/api/movies/semantic-search.get.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><code>generateEmbedding(query)</code> transformă textul într-un vector de 1536 numere, via OpenAI</p>
+        <span class="layer-tag">server/utils/embeddings.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>RPC <code>increment_search_usage</code> verifică limita zilnică (15/zi implicit) — peste limită → 429</p>
+        <span class="layer-tag">supabase.rpc(...) — Postgres</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p>RPC <code>search_media_by_embedding</code> face cosine similarity search prin index HNSW</p>
+        <span class="layer-tag">supabase.rpc(...) — pgvector</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <p>Rezultatele (movie_id + similaritate) sunt îmbogățite cu detalii complete din TMDB</p>
+        <span class="layer-tag">tmdbFetch(...)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filepath">server/api/movies/semantic-search.get.ts (esență)</div>
+  <pre><code>const embedding = await generateEmbedding(q.trim())
+
+const { data: usageCount } = await supabase.rpc('increment_search_usage', {
+  p_user_id: user.id, p_limit: dailyLimit
+})
+if (usageCount &gt; dailyLimit) {
+  throw createError({ statusCode: 429, message: `Daily search limit reached.` })
+}
+
+const { data } = await supabase.rpc('search_media_by_embedding', {
+  query_embedding: JSON.stringify(embedding), match_count: 20
+})
+
+const rows = data.filter(row =&gt; row.similarity &gt;= 0.25)   // prag minim de relevanță</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">De ce RPC și nu query direct din client?</div>
+    <code>search_media_by_embedding</code> și <code>increment_search_usage</code> sunt funcții Postgres
+    (<code>SECURITY DEFINER</code>), apelate prin <code>supabase.rpc(...)</code> — nu simple
+    <code>select</code>/<code>update</code>. Logica de search (operatorul <code>&lt;=&gt;</code> pentru
+    distanță cosine) și incrementarea atomică a contorului (evitând race conditions la cereri simultane)
+    trăiesc în baza de date, nu în server Nitro, exact pentru că ambele operații trebuie să fie atomice.
+  </div>
+
+
+  <h2>Cross-link: cursul de embeddings din acest repo</h2>
+
+  <p>
+    Dacă vrei să înțelegi <em>ce este</em> un embedding, cum se generează, și de ce cosine similarity
+    găsește sens și nu doar potriviri de cuvinte, acest curs presupune deja acele concepte. Vezi
+    cursul dedicat <a href="../../embedings/index.html">embedings/</a> din acest repo, în special
+    lecțiile despre vector databases și RAG — UpNext e o aplicație reală a exact acelor concepte.
+  </p>
+
+
+  <h2>Deploy pe Vercel</h2>
+
+  <p>
+    Nitro detectează automat platforma Vercel la deploy și generează output-ul potrivit (funcții
+    serverless pentru <code>server/api/</code>, plus asset-urile statice). Pași reali:
+  </p>
+
+  <ol>
+    <li>Conectezi repo-ul GitHub la un proiect Vercel nou</li>
+    <li>Adaugi variabilele de mediu în dashboard Vercel: <code>SUPABASE_URL</code>, <code>SUPABASE_KEY</code>, <code>TMDB_API_KEY</code>, opțional <code>OPENAI_API_KEY</code> + <code>FEATURE_SEMANTIC_SEARCH=true</code></li>
+    <li>Vercel rulează <code>pnpm build</code> automat la fiecare push pe branch-ul principal</li>
+    <li>Migrațiile SQL din <code>supabase/migrations/</code> se rulează manual în Supabase Dashboard → SQL Editor, <strong>nu</strong> automat la deploy</li>
+  </ol>
+
+  <div class="callout next">
+    <div class="callout-label">Un detaliu ușor de ratat</div>
+    Migrațiile SQL nu fac parte din pipeline-ul de build Vercel — sunt independente. Dacă adaugi o
+    migrație nouă local și dai push, aplicația se deployază, dar schema DB pe producție rămâne
+    neschimbată până rulezi manual fișierul SQL în Supabase. E o sursă comună de bug-uri „merge pe
+    localhost, nu merge pe producție".
+  </div>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Ce fac</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Activez căutarea semantică pe producție</td><td>Setez <code>FEATURE_SEMANTIC_SEARCH=true</code> + <code>OPENAI_API_KEY</code> în Vercel, rulez migrația 002, populez embeddings via <code>/api/admin/seed-embeddings</code></td></tr>
+      <tr><td>Adaug o variabilă de mediu nouă, privată</td><td>O adaug în <code>runtimeConfig</code> (nu <code>public</code>) + în <code>.env</code> local + în Vercel dashboard</td></tr>
+      <tr><td>Schimb limita zilnică de căutări</td><td>Variabila <code>SEARCH_DAILY_LIMIT</code>, citită în <code>runtimeConfig.searchDailyLimit</code></td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu final — Recapitulare</div>
+    <p>Fără să te uiți înapoi în curs, răspunde:</p>
+    <ol>
+      <li>Ce fișier ai deschide ca să adaugi un endpoint nou care cheamă TMDB?</li>
+      <li>Ce fișier ai deschide ca să protejezi o pagină nouă cu login?</li>
+      <li>Ce tabel Postgres ai verifica dacă un rating nu se salvează?</li>
+      <li>Ce composable ai folosi pentru un buton de bookmark vizibil în două locuri diferite simultan?</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: 1→fișier nou în <code>server/api/movies/</code> cu <code>tmdbFetch()</code>,
+      2→<code>definePageMeta({ middleware: 'auth' })</code> în pagina nouă,
+      3→tabela <code>watched</code> (verifici RLS policies și constraint-urile),
+      4→<code>useWatchlist()</code>, pentru state global sincronizat via <code>useState</code>.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://vercel.com/docs/frameworks/nuxt" target="_blank">
+        Vercel Docs — Nuxt
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Ghid oficial de deploy Nuxt pe Vercel, inclusiv detecția automată a preset-ului Nitro.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce featureSemanticSearch e citit din runtimeConfig.public și nu din runtimeConfig direct?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că valorile boolean nu pot fi private în Nuxt</button></li>
+        <li><button data-correct="true">Navbar-ul (cod client) trebuie să știe dacă arată link-ul "Smart Search"</button></li>
+        <li><button data-correct="false">E o eroare în cod, ar trebui mutat la runtimeConfig privat</button></li>
+        <li><button data-correct="false">Pentru compatibilitate cu versiuni vechi ale Nuxt</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Doar valorile din <code>public</code> ajung și în bundle-ul client. <code>tmdbApiKey</code> și <code>openaiApiKey</code> rămân private pentru că sunt secrete — flag-ul e doar o valoare boolean, sigură de expus.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce increment_search_usage e o funcție RPC Postgres, nu un simplu update din server Nitro?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">RPC e mai rapid decât un query obișnuit din Nitro</button></li>
+        <li><button data-correct="true">Incrementarea trebuie să fie atomică — Postgres garantează asta la nivel de bază de date</button></li>
+        <li><button data-correct="false">Nitro nu poate face UPDATE-uri, doar SELECT-uri</button></li>
+        <li><button data-correct="false">RPC e cerut de Supabase pentru orice interacțiune cu tabele care au RLS</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Dacă doi request-uri simultane ar citi contorul, l-ar incrementa în cod, și l-ar scrie înapoi, ai putea pierde un increment (race condition). Funcția SQL <code>INSERT ... ON CONFLICT DO UPDATE ... RETURNING</code> e atomică la nivel de bază de date.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Dai push la o migrație SQL nouă pe branch-ul principal. Ce se întâmplă automat pe Vercel?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Vercel rulează automat migrația în Supabase înainte de build</button></li>
+        <li><button data-correct="true">Nimic legat de schema DB — migrațiile SQL se rulează manual, separat de deploy</button></li>
+        <li><button data-correct="false">Build-ul eșuează dacă există migrații neaplicate</button></li>
+        <li><button data-correct="false">Supabase detectează automat fișierul nou din Git și îl aplică</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Vercel doar rulează <code>pnpm build</code> pentru codul aplicației. Migrațiile din <code>supabase/migrations/</code> trebuie rulate manual în Supabase Dashboard — un pas separat, ușor de uitat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce variabile de mediu minime ai avea nevoie ca aplicația să pornească fără căutare semantică?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Doar TMDB_API_KEY — Supabase e opțional</button></li>
+        <li><button data-correct="true">SUPABASE_URL, SUPABASE_KEY, TMDB_API_KEY</button></li>
+        <li><button data-correct="false">SUPABASE_URL, SUPABASE_KEY, TMDB_API_KEY, OPENAI_API_KEY (toate obligatorii)</button></li>
+        <li><button data-correct="false">Nu ai nevoie de nicio variabilă, toate au valori implicite</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>OPENAI_API_KEY</code> e necesară doar dacă <code>FEATURE_SEMANTIC_SEARCH=true</code> — fără flag activat, acel cod nu rulează niciodată, deci lipsa cheii nu blochează restul aplicației.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce curs din acest repo ar trebui să parcurgi pentru a înțelege conceptul de "embedding" în profunzime?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false"><code>nuxt/</code> — cursul general Nuxt</button></li>
+        <li><button data-correct="true"><code>embedings/</code> — cursul dedicat embeddings și vector databases</button></li>
+        <li><button data-correct="false"><code>data-structures/</code> — cursul de structuri de date</button></li>
+        <li><button data-correct="false">Niciunul — conceptul e explicat complet în această lecție</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Această lecție arată <em>unde</em> și <em>cum</em> UpNext folosește embeddings, dar cursul <code>embedings/</code> explică <em>ce sunt</em> și <em>de ce funcționează</em> — cunoștințe transferabile la orice proiect cu căutare semantică.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Ai terminat toate cele 11 lecții. Vrei să discutăm ce ai construi în continuare peste UpNext,
+      sau să revizităm o lecție anume mai în profunzime? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0010-extinderea-aplicatiei.html">← Lecția 10: Extinderea aplicației</a>
+    <span class="current">Ultima lecție →</span>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

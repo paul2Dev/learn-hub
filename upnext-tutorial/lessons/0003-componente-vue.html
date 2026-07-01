@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 3: Componente Vue — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 3 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Componente Vue în UpNext</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum arată o componentă reală cu <code>&lt;script setup&gt;</code>, auto-import fără linii de import,
+    și pattern-ul <code>v-model</code> pentru componente de tip input.
+  </p>
+
+
+  <h2>Componentele din <code>app/components/</code></h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Fișier</th><th>Rol</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>MediaCard.vue</code></td><td>Card universal — funcționează pentru film, serial, actor, colecție</td></tr>
+      <tr><td><code>MovieCard.vue</code></td><td>Card specializat doar pentru filme (versiune mai simplă, mai veche)</td></tr>
+      <tr><td><code>RatingButton.vue</code></td><td>Selector rating 👎 / 👍 / ❤️ cu <code>v-model</code></td></tr>
+      <tr><td><code>QuickSearch.vue</code></td><td>UI pentru căutarea semantică</td></tr>
+      <tr><td><code>AppLogo.vue</code></td><td>Logo-ul reutilizabil din navbar</td></tr>
+      <tr><td><code>IOSInstallBanner.vue</code></td><td>Banner de instalare PWA pe iOS</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Toate sunt disponibile în orice <code>&lt;template&gt;</code> din aplicație fără <code>import</code> —
+    Nuxt scanează <code>app/components/</code> la build time și le înregistrează global.
+  </p>
+
+
+  <h2>MediaCard.vue — walkthrough complet</h2>
+
+  <p>
+    Această componentă e folosită peste tot: pe homepage, în discover, în „filme similare". Poate afișa
+    un film, un serial, un actor sau o colecție, în funcție de <code>item.media_type</code>.
+  </p>
+
+  <div class="filepath">app/components/MediaCard.vue — &lt;script setup&gt;</div>
+  <pre><code>interface MediaItem {
+  id: number
+  media_type?: 'movie' | 'tv' | 'person' | 'collection'
+  title?: string
+  name?: string
+  release_date?: string
+  first_air_date?: string
+  poster_path?: string | null
+  profile_path?: string | null
+  vote_average?: number
+  overview?: string
+}
+
+const { item, showWatchlistButton = true } = defineProps&lt;{ item: MediaItem, showWatchlistButton?: boolean }&gt;()
+
+const { poster } = useTmdbImage()
+const user = useSupabaseUser()
+const { has, toggle } = useWatchlist()
+
+const mediaType = computed(() =&gt; item.media_type ?? 'movie')
+const displayTitle = computed(() =&gt; item.title ?? item.name ?? '—')
+const displayYear = computed(() =&gt; (item.release_date ?? item.first_air_date)?.slice(0, 4) ?? '—')
+const imagePath = computed(() =&gt; item.poster_path ?? item.profile_path ?? null)
+const imageUrl = computed(() =&gt; poster(imagePath.value))
+const link = computed(() =&gt; {
+  if (mediaType.value === 'tv') return `/tv/${item.id}`
+  if (mediaType.value === 'person') return `/person/${item.id}`
+  if (mediaType.value === 'collection') return `/collection/${item.id}`
+  return `/movie/${item.id}`
+})
+
+const isWatchable = computed(() =&gt; mediaType.value === 'movie' || mediaType.value === 'tv')
+const inWatchlist = computed(() =&gt; has(item.id, mediaType.value))
+const togglingWatchlist = ref(false)
+
+async function onToggleWatchlist(event: Event) {
+  event.preventDefault()
+  event.stopPropagation()
+  if (!user.value || togglingWatchlist.value) return
+  togglingWatchlist.value = true
+  try {
+    await toggle(item.id, mediaType.value as 'movie' | 'tv', item)
+  } finally {
+    togglingWatchlist.value = false
+  }
+}</code></pre>
+
+  <p>Câteva lucruri de observat, direct din codul de mai sus:</p>
+
+  <ul>
+    <li><code>defineProps&lt;{...}&gt;()</code> — props tipate cu generic TypeScript, fără runtime validator separat</li>
+    <li><code>title ?? name</code> — filmele au <code>title</code>, serialele au <code>name</code>; componenta acoperă ambele fără <code>v-if</code> separat</li>
+    <li><code>useTmdbImage()</code>, <code>useSupabaseUser()</code>, <code>useWatchlist()</code> — toate composables, apelate direct, fără import</li>
+    <li><code>link</code> e un <code>computed</code> care alege ruta corectă în funcție de tip — de asta un singur component servește 4 tipuri de entități</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-label">Auto-import</div>
+    Nici <code>MediaCard.vue</code>, nici pagina care îl folosește nu au vreun <code>import</code> pentru
+    <code>useTmdbImage</code>, <code>useSupabaseUser</code> sau <code>useWatchlist</code>. Nuxt scanează
+    <code>app/composables/</code> și expune orice funcție cu prefix <code>use</code> global, în orice
+    fișier din <code>app/</code>.
+  </div>
+
+
+  <h2>RatingButton.vue — pattern <code>v-model</code></h2>
+
+  <p>
+    Componentele care se comportă ca un input (aici: rating 1-5, redus la 3 opțiuni) folosesc
+    <code>defineProps</code> + <code>defineEmits</code> pentru <code>v-model</code>:
+  </p>
+
+  <div class="filepath">app/components/RatingButton.vue</div>
+  <pre><code>defineProps&lt;{ modelValue: number | null, loading?: boolean }&gt;()
+const emit = defineEmits&lt;{ 'update:modelValue': [value: number] }&gt;()
+
+// în template:
+// @click="emit('update:modelValue', option.value)"</code></pre>
+
+  <p>Folosit dintr-o pagină de detalii film:</p>
+
+  <pre><code>&lt;RatingButton
+  :model-value="userRating"
+  :loading="loadingWatched"
+  @update:model-value="setRating"
+/&gt;</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Față de React</div>
+    <code>v-model</code> e echivalentul Vue pentru un input controlat React (<code>value</code> +
+    <code>onChange</code>), dar cu o singură directivă în loc de două props separate. Vue leagă automat
+    <code>modelValue</code> (prop) cu <code>update:modelValue</code> (event) când scrii <code>v-model="x"</code>
+    pe componentă.
+  </div>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Fișier de modificat</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Schimb ce se afișează pe un card de film</td><td><code>app/components/MediaCard.vue</code></td></tr>
+      <tr><td>Adaug o a 4-a opțiune de rating</td><td><code>app/components/RatingButton.vue</code> — array-ul <code>RATINGS</code></td></tr>
+      <tr><td>Fac un card nou complet diferit (ex: pentru episoade)</td><td>Componentă nouă în <code>app/components/</code>, urmând pattern-ul MediaCard</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Citește codul</div>
+    <p>În <code>MediaCard.vue</code>, ce se întâmplă dacă <code>item.media_type</code> este <code>undefined</code>?</p>
+    <ol>
+      <li>Uită-te la linia <code>const mediaType = computed(() =&gt; item.media_type ?? 'movie')</code></li>
+      <li>Ce rută generează <code>link</code> pentru un item fără <code>media_type</code>?</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: <code>mediaType</code> devine <code>'movie'</code> implicit, deci <code>link</code> devine
+      <code>/movie/{id}</code>. E de ce <code>MovieCard.vue</code> (folosit doar pentru filme) poate omite
+      complet câmpul <code>media_type</code> din datele pe care le primește.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://vuejs.org/guide/components/v-model.html" target="_blank">
+        Vue Docs — Component v-model
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Cum funcționează <code>defineProps</code> + <code>defineEmits</code> pentru componente controlate.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce nu apare niciun <code>import MediaCard from ...</code> în paginile care îl folosesc?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că MediaCard e definit global în app.vue</button></li>
+        <li><button data-correct="true">Nuxt auto-importă orice componentă din app/components/</button></li>
+        <li><button data-correct="false">Pentru că folosește ssr:false, importurile nu mai sunt necesare</button></li>
+        <li><button data-correct="false">TypeScript rezolvă automat componentele fără import explicit</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Auto-importul de componente e o funcționalitate Nuxt standard — orice fișier <code>.vue</code> din <code>app/components/</code> devine disponibil global, indiferent de <code>ssr</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Cum decide MediaCard.vue spre ce rută să facă link — /movie, /tv, /person sau /collection?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Fiecare pagină trimite propriul URL ca prop separat</button></li>
+        <li><button data-correct="true">Un computed <code>link</code> verifică <code>item.media_type</code></button></li>
+        <li><button data-correct="false">Componenta face un request la server pentru a afla tipul entității</button></li>
+        <li><button data-correct="false">Se folosesc 4 componente MediaCard diferite, una per tip</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un singur <code>computed(() =&gt; {...})</code> cu if-uri pe <code>mediaType.value</code> generează ruta corectă — nu există 4 componente separate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce înseamnă <code>v-model="userRating"</code> pe <code>&lt;RatingButton&gt;</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Doar citește valoarea inițială — componenta n-o poate modifica</button></li>
+        <li><button data-correct="true">Leagă automat prop-ul modelValue cu event-ul update:modelValue</button></li>
+        <li><button data-correct="false">Creează o copie locală a lui userRating în interiorul componentei</button></li>
+        <li><button data-correct="false">Necesită un import special <code>vModel</code> din Vue</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>v-model</code> e sintaxă compactă pentru <code>:model-value="userRating" @update:model-value="userRating = $event"</code>. Componenta trebuie doar să declare props/emits cu numele potrivite.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">De ce MediaCard.vue folosește <code>item.title ?? item.name</code> în loc de un singur câmp <code>title</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">E o eroare rămasă din refactorizare, ar trebui curățat</button></li>
+        <li><button data-correct="true">TMDB numește câmpul diferit pentru filme (title) și seriale (name)</button></li>
+        <li><button data-correct="false"><code>name</code> e folosit doar pentru actori, niciodată pentru filme/seriale</button></li>
+        <li><button data-correct="false">Pentru compatibilitate cu versiuni vechi ale API-ului TMDB</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> TMDB folosește <code>title</code> pentru filme și <code>name</code> pentru seriale/persoane/colecții. <code>??</code> acoperă ambele cazuri într-o singură expresie.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce <code>onToggleWatchlist</code> apelează <code>event.preventDefault()</code> și <code>event.stopPropagation()</code>?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru performanță — reduce numărul de re-render-uri Vue</button></li>
+        <li><button data-correct="true">Butonul e în interiorul unui NuxtLink — previne navigarea la click pe buton</button></li>
+        <li><button data-correct="false">Pentru accesibilitate — cerut de standardul ARIA pentru butoane</button></li>
+        <li><button data-correct="false">Ca să blocheze dublu-click-urile accidentale ale utilizatorului</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Tot cardul (<code>&lt;NuxtLink :to="link"&gt;</code>) e clickabil pentru navigare. Fără <code>preventDefault</code>/<code>stopPropagation</code>, click pe butonul de watchlist ar naviga și la pagina filmului, nu doar ar bifa watchlist-ul.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să știi cum aș scrie o componentă nouă care urmează același stil? Sau de ce
+      <code>MovieCard.vue</code> și <code>MediaCard.vue</code> coexistă? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0002-routing-pagini.html">← Lecția 2: Pagini și routing</a>
+    <a href="0004-composables.html">Lecția 4: Composables →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 8: CRUD end-to-end — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 8 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Flux complet: click pe „Adaugă la watchlist"</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cursul de până acum a arătat piesele separat — pagini, componente, composables, server API,
+    schema DB. Această lecție le urmărește pe toate, într-un singur click real.
+  </p>
+
+
+  <h2>De ce contează acest exercițiu</h2>
+
+  <p>
+    Cea mai utilă abilitate când preiei un cod pe care nu l-ai scris tu nu e să memorezi fiecare
+    fișier — e să poți <strong>trasa</strong> un flux, de la interacțiunea utilizatorului până la
+    rândul din baza de date, și înapoi. Iată exact asta, pentru butonul de bookmark de pe orice
+    <code>MediaCard</code>.
+  </p>
+
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Click pe iconița bookmark dintr-un card de film</p>
+        <span class="layer-tag">app/components/MediaCard.vue — @click="onToggleWatchlist"</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><code>onToggleWatchlist</code> previne navigarea (era în interiorul unui NuxtLink) și cheamă <code>toggle()</code></p>
+        <span class="layer-tag">MediaCard.vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p><code>toggle()</code> din composable verifică dacă filmul e deja în <code>ids</code> (Set global) — nu e, deci trimite POST</p>
+        <span class="layer-tag">app/composables/useWatchlist.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><code>$fetch('/api/user/watchlist', { method: 'POST', body: {...} })</code> — request HTTP către propriul server</p>
+        <span class="layer-tag">Nitro rutează cererea</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p><code>server/middleware/security.ts</code> rulează primul, setează headere pe răspuns</p>
+        <span class="layer-tag">middleware de server (pe orice request)</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <p><code>watchlist.post.ts</code>: <code>serverSupabaseUser(event)</code> confirmă sesiunea → altfel 401</p>
+        <span class="layer-tag">server/api/user/watchlist.post.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        <p>Schema Zod validează body-ul (<code>movie_id</code>, <code>media_type</code>, <code>tmdb_data</code>) → altfel 400</p>
+        <span class="layer-tag">watchlist.post.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">8</div>
+      <div class="flow-body">
+        <p><code>client.from('watchlist').insert({...}).select().single()</code> — INSERT în Postgres</p>
+        <span class="layer-tag">serverSupabaseClient(event)</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">9</div>
+      <div class="flow-body">
+        <p>Postgres verifică policy-ul RLS <code>with check (auth.uid() = user_id)</code> — dacă totul e corect, rândul e scris</p>
+        <span class="layer-tag">Row Level Security (Lecția 7)</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">10</div>
+      <div class="flow-body">
+        <p>Răspunsul JSON urcă înapoi prin toate straturile; <code>toggle()</code> actualizează <code>ids.value</code> local</p>
+        <span class="layer-tag">useWatchlist.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">11</div>
+      <div class="flow-body">
+        <p>Orice card sau badge de navbar care citește <code>useWatchlist().has(...)</code> se actualizează instant, reactiv</p>
+        <span class="layer-tag">Vue reactivity, prin useState — Lecția 4</span>
+      </div>
+    </div>
+  </div>
+
+
+  <h2>Codul relevant, în ordinea fluxului</h2>
+
+  <div class="filepath">app/composables/useWatchlist.ts — funcția toggle()</div>
+  <pre><code>async function toggle(movieId: number, mediaType: 'movie' | 'tv', tmdbData: object) {
+  const key = watchlistKey(movieId, mediaType)
+  if (ids.value.has(key)) {
+    await $fetch('/api/user/watchlist', { method: 'DELETE', body: { movie_id: movieId, media_type: mediaType } })
+    const next = new Set(ids.value); next.delete(key); ids.value = next
+  } else {
+    await $fetch('/api/user/watchlist', { method: 'POST', body: { movie_id: movieId, media_type: mediaType, tmdb_data: tmdbData } })
+    const next = new Set(ids.value); next.add(key); ids.value = next
+  }
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Observație importantă</div>
+    Codul <strong>nu</strong> reface un GET după POST ca să confirme starea — actualizează
+    <code>ids.value</code> local, optimist, imediat ce request-ul reușește. Dacă request-ul aruncă
+    (network error, 401, etc), <code>await</code> propagă excepția, iar <code>ids.value</code>
+    <em>nu</em> se modifică — starea rămâne consistentă cu ce s-a întâmplat cu adevărat pe server.
+  </div>
+
+  <div class="filepath">server/api/user/watchlist.post.ts — validare + insert</div>
+  <pre><code>const user = await serverSupabaseUser(event)
+if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
+
+const parsed = schema.safeParse(await readBody(event))
+if (!parsed.success) throw createError({ statusCode: 400, message: parsed.error.issues[0]?.message })
+
+const client = await serverSupabaseClient(event)
+const { data, error } = await client
+  .from('watchlist')
+  .insert({ user_id: user.id, movie_id: parsed.data.movie_id, media_type: parsed.data.media_type, tmdb_data: parsed.data.tmdb_data })
+  .select()
+  .single()</code></pre>
+
+  <p>
+    Trei bariere înainte ca un rând să ajungă în baza de date: autentificare (401), validare Zod (400),
+    și — invizibil în acest cod, dar prezent — RLS-ul din Postgres, care ar respinge insert-ul chiar
+    dacă <code>user.id</code> ar fi greșit calculat undeva mai sus.
+  </p>
+
+
+  <h2>Ce se schimbă dacă butonul e apăsat din navbar în loc de MediaCard?</h2>
+
+  <p>
+    Nimic din pașii 4-11. Diferența e doar în pasul 1-3: <code>app/app.vue</code> apelează
+    <code>useWatchlist()</code> pentru badge-ul cu numărul total, exact ca <code>MediaCard.vue</code>.
+    Amândouă vorbesc cu <strong>același</strong> <code>useState('watchlist-ids', ...)</code> — de asta
+    badge-ul din navbar se actualizează instant când adaugi un film dintr-un card, fără niciun cod
+    suplimentar de sincronizare.
+  </p>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Trasează un flux diferit</div>
+    <p>
+      Repetă exercițiul pentru „utilizatorul dă un rating de 5 stele unui film" — care fișiere
+      sunt implicate, în ce ordine? (Indiciu: <code>RatingButton.vue</code> → <code>useMediaActions.ts</code>
+      → <code>server/api/user/ratings.post.ts</code> → tabela <code>watched</code>)
+    </p>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Structura e identică cu watchlist — doar tabela (<code>watched</code> în loc de
+      <code>watchlist</code>) și câmpul suplimentar <code>rating</code> diferă. Dacă ai înțeles fluxul
+      de mai sus, poți deriva singur acest al doilea flux fără să citești niciun cod nou.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/api/utils/dollarfetch" target="_blank">
+        Nuxt Docs — $fetch
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Cum funcționează <code>$fetch</code> ca client HTTP izomorf folosit de composables pentru a vorbi cu propriul server.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce se întâmplă cu ids.value dacă $fetch aruncă o eroare de rețea în timpul toggle()?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Se actualizează oricum, presupunând că request-ul a reușit</button></li>
+        <li><button data-correct="true">Rămâne neschimbat — actualizarea vine după await, care nu se mai execută</button></li>
+        <li><button data-correct="false">Se resetează complet la un Set gol</button></li>
+        <li><button data-correct="false">Se marchează ca „pending" până la un retry automat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Codul de după <code>await $fetch(...)</code> nu rulează dacă <code>$fetch</code> aruncă — deci <code>ids.value</code> rămâne cum era, evitând un state local dezincronizat de server.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Câte bariere de validare/autorizare trece un request POST înainte să scrie în Postgres?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Una — doar verificarea de autentificare</button></li>
+        <li><button data-correct="false">Două — autentificare și validare Zod</button></li>
+        <li><button data-correct="true">Trei — autentificare, validare Zod, și policy RLS din Postgres</button></li>
+        <li><button data-correct="false">Niciuna — Postgres validează totul automat pe baza tipurilor de coloane</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> 401 (fără user), 400 (body invalid), și — chiar dacă primele două trec — RLS-ul respinge orice insert care nu respectă <code>auth.uid() = user_id</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce se actualizează badge-ul din navbar automat când adaugi un film din MediaCard, fără cod de sincronizare explicit?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">app.vue ascultă un eveniment custom emis de MediaCard.vue</button></li>
+        <li><button data-correct="true">Amândouă citesc același useState('watchlist-ids', ...) global</button></li>
+        <li><button data-correct="false">Nuxt reîncarcă automat pagina la orice request POST reușit</button></li>
+        <li><button data-correct="false">Există un WebSocket intern care sincronizează componentele</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fără <code>useState</code> partajat, ar fi nevoie de props/evenimente între componente fără nicio relație părinte-copil directă — mult mai complicat decât un singur state global.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce fișier rulează primul dintre toate, la orice request către server?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">server/api/user/watchlist.post.ts</button></li>
+        <li><button data-correct="true">server/middleware/security.ts</button></li>
+        <li><button data-correct="false">app/middleware/auth.ts</button></li>
+        <li><button data-correct="false">supabase/migrations/001_initial_schema.sql</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Middleware-ul de server rulează pe orice request, înainte de orice handler <code>server/api/</code> specific — vezi Lecția 5.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Care e diferența structurală între fluxul de watchlist și fluxul de rating (5 stele)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Rating-ul nu trece deloc prin validare Zod</button></li>
+        <li><button data-correct="false">Rating-ul nu folosește RLS, doar watchlist-ul</button></li>
+        <li><button data-correct="true">Tabelul țintă diferă (watched vs watchlist) și există un câmp suplimentar (rating)</button></li>
+        <li><button data-correct="false">Rating-ul nu necesită autentificare, watchlist-ul da</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Structura fluxului e identică pas cu pas — diferă doar tabela Postgres țintă și un câmp suplimentar în payload. Odată înțeles un flux CRUD din acest cod, celelalte sunt variații previzibile.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să urmărim împreună un alt flux din aplicație, pas cu pas, ca exercițiu?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0007-supabase-db-rls.html">← Lecția 7: Schema DB și RLS</a>
+    <a href="0009-motor-recomandari.html">Lecția 9: Motorul de recomandări →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

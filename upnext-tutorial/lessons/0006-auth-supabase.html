@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 6: Auth cu Supabase — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 6 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Autentificare cu Supabase și Google OAuth</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Fluxul complet: click pe „Continue with Google" → callback → middleware de rută →
+    redirect la onboarding dacă e primul login.
+  </p>
+
+
+  <h2>Flux complet, pas cu pas</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Utilizatorul dă click pe „Continue with Google" pe <code>/login</code></p>
+        <span class="layer-tag">app/pages/login.vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p><code>supabase.auth.signInWithOAuth({ provider: 'google', redirectTo: '.../confirm' })</code> — redirect la Google, apoi înapoi</p>
+        <span class="layer-tag">useSupabaseClient()</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Google redirecționează la <code>/confirm</code> cu sesiunea în URL; Supabase o procesează automat</p>
+        <span class="layer-tag">app/pages/confirm.vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p><code>onMounted</code> verifică <code>getSession()</code> și redirecționează la <code>/</code> sau înapoi la <code>/login</code></p>
+        <span class="layer-tag">confirm.vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <p>Middleware global verifică <code>profiles.onboarding_done</code> — dacă e primul login, redirect la <code>/onboarding</code></p>
+        <span class="layer-tag">app/middleware/onboarding.global.ts</span>
+      </div>
+    </div>
+  </div>
+
+
+  <h2>Pasul 1-2: Login</h2>
+
+  <div class="filepath">app/pages/login.vue</div>
+  <pre><code>&lt;script setup lang="ts"&gt;
+definePageMeta({ layout: false })
+
+const supabase = useSupabaseClient()
+const loading = ref(false)
+
+async function signInWithGoogle() {
+  loading.value = true
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/confirm`
+    }
+  })
+  loading.value = false
+}
+&lt;/script&gt;</code></pre>
+
+  <p>
+    <code>useSupabaseClient()</code> e injectat automat de modulul <code>@nuxtjs/supabase</code> —
+    niciun setup manual de client SDK. <code>redirectTo</code> spune Google-ului unde să trimită
+    utilizatorul înapoi după ce confirmă contul.
+  </p>
+
+
+  <h2>Pasul 3-4: Callback</h2>
+
+  <div class="filepath">app/pages/confirm.vue</div>
+  <pre><code>&lt;script setup lang="ts"&gt;
+definePageMeta({ layout: false })
+
+const supabase = useSupabaseClient()
+const router = useRouter()
+
+onMounted(async () =&gt; {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) {
+    await router.replace('/')
+  } else {
+    await router.replace('/login')
+  }
+})
+&lt;/script&gt;</code></pre>
+
+  <p>
+    Pagina nu face altceva decât să afișeze „Signing in..." și să verifice dacă sesiunea a fost
+    procesată cu succes. Modulul Supabase se ocupă de parsarea token-ului din URL automat, în fundal —
+    codul de aici doar așteaptă și redirecționează.
+  </p>
+
+
+  <h2>Pasul 5: Protejarea rutelor cu middleware</h2>
+
+  <p>Există două tipuri de middleware de rută în această aplicație:</p>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Fișier</th><th>Tip</th><th>Când rulează</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>auth.ts</code></td><td>Per-pagină (opt-in)</td><td>Doar pe paginile care declară <code>middleware: 'auth'</code></td></tr>
+      <tr><td><code>onboarding.global.ts</code></td><td>Global</td><td>Pe orice navigare, în orice pagină</td></tr>
+    </tbody>
+  </table>
+
+  <div class="filepath">app/middleware/auth.ts</div>
+  <pre><code>export default defineNuxtRouteMiddleware(() =&gt; {
+  const user = useSupabaseUser()
+  if (!user.value) {
+    return navigateTo('/login')
+  }
+})</code></pre>
+
+  <p>
+    Simplu: dacă nu există user, redirect la login. Aplicat pe <code>watchlist.vue</code>,
+    <code>profile.vue</code> și <code>onboarding.vue</code> via <code>definePageMeta({ middleware: 'auth' })</code>.
+  </p>
+
+  <div class="filepath">app/middleware/onboarding.global.ts</div>
+  <pre><code>const SKIP_PATHS = ['/login', '/confirm', '/onboarding']
+
+export default defineNuxtRouteMiddleware(async (to) =&gt; {
+  if (SKIP_PATHS.includes(to.path)) return
+
+  const user = useSupabaseUser()
+  if (!user.value) return
+
+  const profileCache = useState&lt;{ onboarding_done: boolean, preferred_genres?: number[] } | null&gt;(
+    'profile-cache', () =&gt; null
+  )
+
+  if (!profileCache.value) {
+    try {
+      const supabase = useSupabaseClient()
+      const { data } = await supabase
+        .from('profiles')
+        .select('onboarding_done, preferred_genres')
+        .eq('id', user.value.id)
+        .single()
+      if (data) profileCache.value = data
+    } catch {
+      return
+    }
+  }
+
+  if (profileCache.value &amp;&amp; !profileCache.value.onboarding_done) {
+    return navigateTo('/onboarding')
+  }
+})</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Sufixul <code>.global.ts</code></div>
+    Un fișier din <code>app/middleware/</code> cu sufixul <code>.global.ts</code> rulează automat pe
+    <strong>fiecare</strong> navigare, fără să fie nevoie să-l declari în <code>definePageMeta</code>.
+    E diferit de <code>auth.ts</code> (fără <code>.global</code>), care rulează doar unde e cerut explicit.
+  </div>
+
+  <p>
+    Observă și <code>profileCache</code> — același pattern <code>useState</code> văzut în Lecția 4:
+    profilul e citit o singură dată din Supabase și cache-uit global, ca să nu repete query-ul la
+    fiecare navigare.
+  </p>
+
+
+  <h2>Configurarea din <code>nuxt.config.ts</code></h2>
+
+  <pre><code>supabase: {
+  redirectOptions: {
+    login: '/login',
+    callback: '/confirm',
+    exclude: ['/', '/login', '/confirm', '/discover', '/movie/*', '/tv/*', '/person/*', '/people', '/collection/*']
+  },
+  cookieOptions: {
+    maxAge: 60 * 60 * 24 * 10,   // 10 zile
+    sameSite: 'lax',
+    secure: true
+  }
+}</code></pre>
+
+  <p>
+    Modulul <code>@nuxtjs/supabase</code> are propriul middleware global implicit, care ar redirecționa
+    <em>orice</em> pagină neautentificată la login. <code>exclude</code> spune explicit ce rute rămân
+    publice — toate paginile de conținut (discover, detalii film/serial/actor) sunt vizibile fără cont,
+    doar acțiunile personale (watchlist, profil) cer autentificare.
+  </p>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Fișier de modificat</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Adaug o pagină nouă care cere login</td><td><code>definePageMeta({ middleware: 'auth' })</code> în pagina nouă</td></tr>
+      <tr><td>Fac o pagină publică accesibilă fără login</td><td>Adaug ruta în <code>supabase.redirectOptions.exclude</code> din nuxt.config.ts</td></tr>
+      <tr><td>Schimb ce se întâmplă la primul login</td><td><code>app/middleware/onboarding.global.ts</code></td></tr>
+      <tr><td>Adaug un provider OAuth nou (ex: GitHub)</td><td><code>login.vue</code> — <code>provider: 'github'</code> + configurare în dashboard Supabase</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Trasează fluxul</div>
+    <p>Un utilizator nou dă click pe „Continue with Google" pentru prima oară. Ordonează pașii:</p>
+    <ol>
+      <li>Trigger-ul <code>on_auth_user_created</code> creează automat o linie în <code>profiles</code> (vezi Lecția 7)</li>
+      <li><code>onboarding.global.ts</code> vede <code>onboarding_done: false</code> și redirecționează la <code>/onboarding</code></li>
+      <li><code>confirm.vue</code> confirmă sesiunea și redirecționează la <code>/</code></li>
+      <li>Google validează contul și redirecționează la <code>/confirm</code></li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Ordine corectă: 4 (Google validează) → 1 (trigger DB creează profilul) → 3 (confirm.vue redirect la /) →
+      2 (middleware global vede onboarding_done: false, redirect la /onboarding).
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://supabase.nuxtjs.org/authentication" target="_blank">
+        @nuxtjs/supabase — Authentication
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația modulului oficial — redirectOptions, cookieOptions, composables de auth.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce diferență e între app/middleware/auth.ts și app/middleware/onboarding.global.ts?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu există nicio diferență, doar denumirea fișierului</button></li>
+        <li><button data-correct="true">auth.ts rulează doar unde e declarat explicit; onboarding.global.ts pe orice navigare</button></li>
+        <li><button data-correct="false">onboarding.global.ts rulează doar pe server, auth.ts doar pe client</button></li>
+        <li><button data-correct="false">auth.ts e mai vechi și urmează să fie eliminat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Sufixul <code>.global.ts</code> face middleware-ul să ruleze automat pe fiecare navigare din aplicație, fără să fie nevoie de <code>definePageMeta</code> pe fiecare pagină.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce discover.vue și movie/[id].vue nu cer login, deși aplicația are autentificare?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că nu folosesc deloc date din Supabase</button></li>
+        <li><button data-correct="true">Sunt explicit listate în supabase.redirectOptions.exclude din nuxt.config.ts</button></li>
+        <li><button data-correct="false">Middleware-ul auth.ts le detectează automat ca fiind publice</button></li>
+        <li><button data-correct="false">Pentru că folosesc layout: false, ca login și confirm</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fără <code>exclude</code>, middleware-ul implicit al modulului Supabase ar redirecționa orice pagină neautentificată — <code>exclude</code> marchează explicit ce rute rămân publice.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">Ce face confirm.vue după ce Google redirecționează utilizatorul acolo?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Cere manual utilizatorului să introducă parola pentru confirmare</button></li>
+        <li><button data-correct="true">Verifică sesiunea cu getSession() și redirecționează la / sau /login</button></li>
+        <li><button data-correct="false">Trimite un email de confirmare către utilizator</button></li>
+        <li><button data-correct="false">Șterge cookie-urile vechi și forțează un nou login</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Modulul Supabase procesează automat token-ul OAuth din URL — <code>confirm.vue</code> doar așteaptă acest proces (via <code>onMounted</code>) și verifică rezultatul cu <code>getSession()</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Vrei să adaugi o nouă pagină /settings care cere login. Ce faci?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">O adaugi la lista exclude din nuxt.config.ts</button></li>
+        <li><button data-correct="true">Adaugi definePageMeta({ middleware: 'auth' }) în pagina nouă</button></li>
+        <li><button data-correct="false">Modifici onboarding.global.ts să verifice și /settings</button></li>
+        <li><button data-correct="false">Redenumești fișierul în settings.global.vue</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Exact pattern-ul din <code>watchlist.vue</code>/<code>profile.vue</code>/<code>onboarding.vue</code> — <code>middleware: 'auth'</code> declanșează <code>app/middleware/auth.ts</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">De ce onboarding.global.ts folosește useState pentru profileCache?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că Supabase cere obligatoriu useState pentru orice query</button></li>
+        <li><button data-correct="true">Ca să evite un query nou la Postgres la fiecare navigare între pagini</button></li>
+        <li><button data-correct="false">Pentru că altfel middleware-ul global nu ar rula deloc</button></li>
+        <li><button data-correct="false">useState e obligatoriu în middleware, ref() nu e permis acolo</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fără cache, fiecare navigare ar declanșa un nou <code>supabase.from('profiles').select(...)</code>. Cu <code>useState('profile-cache', ...)</code>, valoarea persistă între navigări și e citită o singură dată.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să vezi cum aș adăuga login cu email/parolă alături de Google? Sau de ce
+      <code>onboarding.global.ts</code> înghite erorile în <code>try/catch</code> fără să afișeze nimic?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0005-server-api-nitro.html">← Lecția 5: Server API cu Nitro</a>
+    <a href="0007-supabase-db-rls.html">Lecția 7: Schema DB și RLS →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

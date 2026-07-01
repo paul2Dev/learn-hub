@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 7: Schema DB și RLS — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 7 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Schema Postgres și Row Level Security</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cele trei tabele principale, trigger-ul care creează automat profilul la primul login,
+    și de ce RLS-ul contează chiar dacă serverul deja verifică autentificarea.
+  </p>
+
+
+  <h2>Migrațiile ca istoric versionat</h2>
+
+  <p>
+    <code>supabase/migrations/</code> conține schema completă, în ordine cronologică — fiecare fișier
+    e un pas incremental, niciodată modificat retroactiv:
+  </p>
+
+  <pre><code>supabase/migrations/
+├── 001_initial_schema.sql          ← profiles, watchlist, watched + RLS
+├── 002_semantic_search.sql         ← pgvector, media_embeddings, search_usage
+├── 003_fix_media_embeddings_rls.sql
+├── 004_watchlist_watched_media_type.sql
+├── 005_drop_legacy_search_movies_rpc.sql
+├── 006_document_profiles_insert_policy.sql
+└── 007_document_ensure_rls_event_trigger.sql</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Lecție reală din migrația 004</div>
+    Schema inițială (001) definea <code>unique (user_id, movie_id)</code> pe watchlist/watched — dar
+    coloana <code>media_type</code> a fost adăugată direct pe remote, fără migrație, mai târziu.
+    Rezultat: un film și un serial cu <em>același</em> TMDB ID nu puteau coexista în watchlist-ul
+    aceluiași user. Migrația 004 documentează coloana și repară constraint-ul la
+    <code>unique (user_id, movie_id, media_type)</code>. E un exemplu real de „schema drift" —
+    diferență între ce spune codul și ce există de fapt în DB — și cum se repară cu o migrație explicită.
+  </div>
+
+
+  <h2>Tabela <code>profiles</code> — extensie peste <code>auth.users</code></h2>
+
+  <div class="filepath">supabase/migrations/001_initial_schema.sql</div>
+  <pre><code>create table public.profiles (
+  id                uuid primary key references auth.users (id) on delete cascade,
+  preferred_genres  integer[] default '{}',   -- TMDB genre IDs
+  onboarding_done   boolean default false,
+  created_at        timestamptz default now(),
+  updated_at        timestamptz default now()
+);
+
+-- Creat automat la primul login
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id) values (new.id);
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();</code></pre>
+
+  <p>
+    Supabase gestionează <code>auth.users</code> automat (email, provider OAuth, etc). UpNext
+    <strong>nu</strong> duplică acele date — <code>profiles</code> ține doar ce e specific aplicației
+    (<code>preferred_genres</code>, <code>onboarding_done</code>), legat prin același <code>id</code>.
+    Trigger-ul <code>on_auth_user_created</code> garantează că fiecare user nou primește instant o
+    linie în <code>profiles</code>, fără ca serverul aplicației să trebuiască să o creeze manual.
+  </p>
+
+
+  <h2>Tabelele <code>watchlist</code> și <code>watched</code></h2>
+
+  <pre><code>create table public.watchlist (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  movie_id    integer not null,           -- TMDB movie/tv ID
+  media_type  text default 'movie',       -- 'movie' sau 'tv'
+  tmdb_data   jsonb not null,             -- răspunsul TMDB cache-uit
+  added_at    timestamptz default now(),
+  unique (user_id, movie_id, media_type)
+);
+
+create table public.watched (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  movie_id    integer not null,
+  media_type  text default 'movie',
+  tmdb_data   jsonb not null,
+  rating      smallint check (rating &gt;= 1 and rating &lt;= 5),
+  watched_at  timestamptz default now(),
+  unique (user_id, movie_id, media_type)
+);</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">De ce <code>tmdb_data jsonb</code>?</div>
+    Watchlist-ul salvează o <em>copie</em> a datelor TMDB (titlu, poster, dată) în loc să facă un nou
+    fetch la fiecare afișare. Compromis conștient: datele pot deveni ușor stale (ex: rating-ul TMDB
+    se schimbă), dar afișarea watchlist-ului nu depinde de disponibilitatea TMDB și e mult mai rapidă.
+  </div>
+
+
+  <h2>Row Level Security — a doua linie de apărare</h2>
+
+  <pre><code>alter table public.watchlist enable row level security;
+
+create policy "Users can view own watchlist"
+  on public.watchlist for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert to own watchlist"
+  on public.watchlist for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete from own watchlist"
+  on public.watchlist for delete
+  using (auth.uid() = user_id);</code></pre>
+
+  <p>
+    Ai văzut în Lecția 5 că <code>watchlist.post.ts</code> verifică deja <code>serverSupabaseUser(event)</code>
+    înainte de orice insert. De ce mai e nevoie și de RLS?
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-label">Apărare pe două niveluri</div>
+    Verificarea din server ("user există?") previne request-uri complet neautentificate. RLS-ul din
+    Postgres previne un scenariu diferit: un bug în cod care ar încerca să insereze/citească date
+    pentru <strong>alt</strong> <code>user_id</code> decât cel autentificat. Chiar dacă handler-ul ar
+    avea o eroare (ex: uită să filtreze după <code>user.id</code>), Postgres respinge oricum orice
+    query care ar încălca <code>auth.uid() = user_id</code>. E principiul „defense in depth" —
+    niciodată nu te bazezi pe un singur strat de securitate.
+  </div>
+
+
+  <h2>Extensie: pgvector pentru căutare semantică</h2>
+
+  <p>
+    Migrația 002 adaugă o tabelă complet diferită de structură, pentru feature-ul opțional de
+    căutare semantică (detalii complete în <a href="0011-config-search-deploy.html">Lecția 11</a>):
+  </p>
+
+  <pre><code>CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE public.media_embeddings (
+  movie_id   integer NOT NULL,
+  title      text    NOT NULL,
+  overview   text,
+  embedding  vector(1536) NOT NULL,        -- vector OpenAI text-embedding-3-small
+  media_type text    NOT NULL DEFAULT 'movie',
+  PRIMARY KEY (movie_id, media_type)
+);
+
+CREATE INDEX ON public.media_embeddings USING hnsw (embedding vector_cosine_ops);</code></pre>
+
+  <p>
+    <code>vector(1536)</code> vine din extensia <strong>pgvector</strong> — Postgres tratează un vector
+    numeric ca tip de date de prim rang, cu index specializat (HNSW) pentru căutare rapidă de similaritate.
+  </p>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Ce fac</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Adaug o coloană nouă la un tabel existent</td><td>Migrație nouă <code>00N_descriere.sql</code>, nu editezi 001</td></tr>
+      <tr><td>Adaug un tabel nou (ex: „liste custom")</td><td>Migrație nouă cu <code>create table</code> + <code>enable row level security</code> + policies</td></tr>
+      <tr><td>Verific dacă RLS blochează un query</td><td>Supabase Dashboard → SQL Editor → rulezi query-ul ca rol <code>authenticated</code></td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Scrie o policy</div>
+    <p>
+      Adaugi un tabel nou <code>custom_lists</code> (liste de filme create de utilizator), cu coloane
+      <code>id</code>, <code>user_id</code>, <code>name</code>. Ce policy RLS lipsește mai jos?
+    </p>
+    <pre><code>alter table public.custom_lists enable row level security;
+
+create policy "Users can view own lists"
+  on public.custom_lists for select
+  using (auth.uid() = user_id);
+
+-- ??? utilizatorii nu pot crea liste noi fără asta</code></pre>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: <code>create policy "Users can insert own lists" on public.custom_lists for insert with check (auth.uid() = user_id);</code>
+      — fără policy de <code>insert</code>, RLS blochează implicit orice inserare, chiar dacă
+      utilizatorul e autentificat.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://supabase.com/docs/guides/database/postgres/row-level-security" target="_blank">
+        Supabase Docs — Row Level Security
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Ghid complet despre policies, <code>auth.uid()</code> și cum RLS interacționează cu clientul anon vs autentificat.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce profiles nu duplică email-ul și numele din auth.users?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că RLS nu permite acces la coloane text din alt tabel</button></li>
+        <li><button data-correct="true">Supabase gestionează deja acele date în auth.users, legate prin id</button></li>
+        <li><button data-correct="false">Din motive de performanță — join-urile ar fi prea lente</button></li>
+        <li><button data-correct="false">Pentru că email-ul se schimbă prea des ca să fie cache-uit</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>profiles.id</code> referențiază <code>auth.users.id</code> — orice cod care are nevoie de email/nume poate lua acele date din sesiunea de auth, fără duplicare.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce s-ar întâmpla dacă ai uita policy-ul de insert pentru un tabel nou cu RLS activ?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Orice utilizator autentificat ar putea insera oricum, by default</button></li>
+        <li><button data-correct="true">Toate inserările ar fi respinse de Postgres, indiferent de cod</button></li>
+        <li><button data-correct="false">Doar service_role ar putea insera, dar userii normali nu ar fi afectați</button></li>
+        <li><button data-correct="false">RLS s-ar dezactiva automat pentru operația de insert</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> RLS respinge implicit orice operație pentru care nu există o policy explicită — „deny by default". Fără policy de insert, inserările eșuează pentru toți, indiferent ce spune codul serverului.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce mai există RLS dacă watchlist.post.ts deja verifică serverSupabaseUser(event)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">RLS e redundant aici, ar putea fi eliminat fără riscuri</button></li>
+        <li><button data-correct="true">RLS previne accesul greșit la date chiar dacă apare un bug în cod</button></li>
+        <li><button data-correct="false">serverSupabaseUser nu funcționează fără RLS activ pe tabel</button></li>
+        <li><button data-correct="false">RLS e cerut doar pentru conformitate GDPR, nu are efect real</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> RLS e a doua linie de apărare — chiar dacă serverul ar avea un bug (ex: ar omite un filtru pe <code>user_id</code>), Postgres respinge oricum orice query care încalcă policy-ul.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce problemă reală a rezolvat migrația 004_watchlist_watched_media_type.sql?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">A adăugat autentificare Google OAuth pentru prima oară</button></li>
+        <li><button data-correct="true">A reparat un unique constraint care nu ținea cont de media_type</button></li>
+        <li><button data-correct="false">A migrat schema de la MySQL la Postgres</button></li>
+        <li><button data-correct="false">A adăugat prima oară RLS pe tabelele watchlist/watched</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Constraint-ul original <code>unique(user_id, movie_id)</code> bloca un film și un serial cu același TMDB ID să coexiste în watchlist-ul aceluiași user — 004 îl repară la <code>unique(user_id, movie_id, media_type)</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce face coloana embedding vector(1536) din media_embeddings, la nivel conceptual?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Stochează un istoric al ultimelor 1536 căutări ale utilizatorului</button></li>
+        <li><button data-correct="true">Stochează reprezentarea numerică (embedding) a titlului+descrierii unui film</button></li>
+        <li><button data-correct="false">E un index bitmap pentru accelerarea filtrării pe genuri</button></li>
+        <li><button data-correct="false">Stochează un hash criptografic pentru verificarea integrității datelor</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fiecare film/serial are un vector numeric de 1536 dimensiuni, generat de OpenAI din titlu+overview — folosit pentru a găsi filme „similare ca sens", nu doar similare ca text exact. Detalii în Lecția 11.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să vezi cum aș scrie o migrație nouă pas cu pas, sau cum testez o policy RLS înainte
+      de a o pune în producție? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0006-auth-supabase.html">← Lecția 6: Auth cu Supabase</a>
+    <a href="0008-crud-flux-complet.html">Lecția 8: CRUD end-to-end →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

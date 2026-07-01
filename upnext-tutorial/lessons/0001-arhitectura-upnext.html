@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 1: Arhitectura UpNext — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 1 din 11</span>
+    <span class="tag">~20 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Arhitectura aplicației UpNext</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Ce este UpNext, ce tehnologii folosește și cum arată folderele reale din <code>D:\projects\movies</code>.
+    Punctul de plecare pentru tot restul cursului.
+  </p>
+
+
+  <h2>Ce este UpNext</h2>
+
+  <p>
+    UpNext este o aplicație personală de descoperire filme/seriale: recomandări, watchlist, rating-uri și
+    căutare semantică. E scrisă cu <strong>Nuxt 4</strong>, folosește <strong>Nuxt UI v4</strong> + Tailwind CSS v4
+    pentru interfață, <strong>Supabase</strong> pentru autentificare și bază de date, și <strong>TMDB</strong>
+    (The Movie Database) ca sursă de date pentru filme/seriale. E deployată pe Vercel.
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">UI</div>
+      <div class="arch-info">
+        <h4>Nuxt UI v4 + Tailwind v4</h4>
+        <p>Componente gata făcute (UButton, UCard, UHeader) + utility classes</p>
+      </div>
+      <span class="arch-tag">app/</span>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">DATA</div>
+      <div class="arch-info">
+        <h4>TMDB API</h4>
+        <p>Sursa de filme, seriale, actori, colecții — apelată doar din server</p>
+      </div>
+      <span class="arch-tag">server/api/</span>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">AUTH</div>
+      <div class="arch-info">
+        <h4>Supabase (@nuxtjs/supabase)</h4>
+        <p>Login Google OAuth + Postgres pentru profiles/watchlist/watched</p>
+      </div>
+      <span class="arch-tag">supabase/</span>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">AI</div>
+      <div class="arch-info">
+        <h4>OpenAI embeddings + pgvector</h4>
+        <p>Căutare semantică — feature flag opțional</p>
+      </div>
+      <span class="arch-tag">server/utils/embeddings.ts</span>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">HOST</div>
+      <div class="arch-info">
+        <h4>Vercel</h4>
+        <p>Build + deploy automat, Nitro rulează ca funcții serverless</p>
+      </div>
+      <span class="arch-tag">deploy</span>
+    </div>
+  </div>
+
+
+  <h2>Structura reală de foldere (Nuxt 4)</h2>
+
+  <p>
+    Nuxt 4 mută sursa aplicației din rădăcina proiectului într-un folder <code>app/</code> dedicat.
+    Dacă ai văzut Nuxt 3 în cursul <a href="../../nuxt/index.html">nuxt/</a>, aceasta e diferența majoră —
+    acolo <code>pages/</code> era în rădăcină, aici e <code>app/pages/</code>.
+  </p>
+
+  <div class="filepath">D:\projects\movies</div>
+  <pre><code>movies/
+├── app/                      ← sursa aplicației (Nuxt 4)
+│   ├── app.vue               ← shell-ul întregii aplicații (navbar, footer, NuxtPage)
+│   ├── app.config.ts         ← config runtime pentru Nuxt UI (teme, culori)
+│   ├── error.vue             ← pagina de eroare globală
+│   ├── pages/                ← rute (file-based routing)
+│   ├── components/           ← MovieCard, MediaCard, RatingButton...
+│   ├── composables/          ← useWatchlist, useMediaActions, useTmdbImage
+│   ├── middleware/           ← auth.ts, onboarding.global.ts
+│   └── assets/css/main.css   ← Tailwind CSS v4
+├── server/                   ← backend Nitro
+│   ├── api/                  ← movies/, tv/, user/, person/, collection/, admin/
+│   ├── middleware/           ← security.ts (headers HTTP)
+│   └── utils/                ← tmdb.ts, embeddings.ts, movies.ts
+├── supabase/
+│   └── migrations/           ← schema SQL versionat (001...007)
+├── docs/                     ← algorithm.md, semantic-search-plan.md
+├── nuxt.config.ts            ← configurare centrală
+└── package.json</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Notă</div>
+    Nu există folder <code>layouts/</code> în acest proiect. Aplicația are o singură „coajă" vizuală
+    (navbar + footer), definită direct în <code>app/app.vue</code> — nu are nevoie de layout-uri multiple.
+    Vom reveni pe asta în Lecția 2.
+  </div>
+
+
+  <h2>Un detaliu important: <code>ssr: false</code></h2>
+
+  <p>
+    Spre deosebire de comportamentul implicit Nuxt (server-side rendering), UpNext rulează în
+    <strong>SPA mode</strong> — vezi <code>ssr: false</code> în <code>nuxt.config.ts</code>. Asta înseamnă:
+  </p>
+
+  <ul>
+    <li>Browserul primește un HTML gol la prima încărcare, apoi Vue randează totul client-side</li>
+    <li>Nu există hydration — nu e nevoie să te gândești la diferențe server/client în componente</li>
+    <li><code>server/api/</code> tot rulează pe server (Nitro) — SPA mode afectează doar randarea paginilor, nu API-ul</li>
+    <li>Motivul tipic pentru SPA într-o aplicație ca asta: conținutul e personalizat per utilizator (watchlist, recomandări) — SEO pe pagini publice de filme contează mai puțin decât simplitatea SPA</li>
+  </ul>
+
+
+  <h2>Cum pornești aplicația local</h2>
+
+  <pre><code>cd D:\projects\movies
+pnpm install
+cp .env.example .env    # completează SUPABASE_URL, SUPABASE_KEY, TMDB_API_KEY
+pnpm dev                # http://localhost:3000</code></pre>
+
+  <p>
+    Comenzi utile: <code>pnpm build</code> (build producție), <code>pnpm lint</code>, <code>pnpm typecheck</code>.
+  </p>
+
+
+  <h2>Flux general: click → răspuns</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Utilizatorul deschide <code>/movie/27205</code></p>
+        <span class="layer-tag">app/pages/movie/[id].vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Pagina cheamă <code>useFetch('/api/movies/27205')</code></p>
+        <span class="layer-tag">componentă Vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>Nitro rulează handler-ul și cheamă TMDB cu cheia privată din server</p>
+        <span class="layer-tag">server/api/movies/[id].get.ts → server/utils/tmdb.ts</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Răspunsul JSON ajunge înapoi în componentă, reactiv, gata de afișat</p>
+        <span class="layer-tag">movie.value în &lt;template&gt;</span>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Orientare</div>
+    <p>Deschide <code>D:\projects\movies</code> în editor și găsește:</p>
+    <ol>
+      <li>Fișierul care conține cheia TMDB API (nu ar trebui să fie accesibil din browser)</li>
+      <li>Fișierul care definește navbar-ul aplicației</li>
+      <li>Folderul unde ai adăuga un endpoint nou pentru „filme din 2024"</li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: 1→<code>nuxt.config.ts</code> (<code>runtimeConfig.tmdbApiKey</code>, citit din <code>.env</code>),
+      2→<code>app/app.vue</code>, 3→<code>server/api/movies/</code>.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/guide/going-further/experimental-features#appdir" target="_blank">
+        Nuxt 4 — Directory Structure (app/)
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială despre schimbarea de structură din Nuxt 4 și motivele din spate.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">În Nuxt 4, unde se află <code>pages/</code>, <code>components/</code> și <code>composables/</code> în UpNext?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Direct în rădăcina proiectului, ca în Nuxt 3</button></li>
+        <li><button data-correct="true">Sub <code>app/</code> — <code>app/pages/</code>, <code>app/components/</code>, etc.</button></li>
+        <li><button data-correct="false">Sub <code>server/</code>, alături de API routes</button></li>
+        <li><button data-correct="false">Sub <code>src/</code>, ca într-un proiect Vite standard</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nuxt 4 introduce <code>app/</code> ca director sursă dedicat pentru tot ce ține de client — o schimbare structurală față de Nuxt 3, unde aceleași foldere stăteau în rădăcină.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce face concret <code>ssr: false</code> în <code>nuxt.config.ts</code> al UpNext?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Dezactivează complet <code>server/api/</code> — totul devine client-only</button></li>
+        <li><button data-correct="false">Oprește orice request către TMDB sau Supabase</button></li>
+        <li><button data-correct="true">Randează paginile ca SPA (client-side) — server/api/ tot rulează pe server</button></li>
+        <li><button data-correct="false">Forțează fiecare pagină să fie pre-generată static la build time</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>ssr: false</code> afectează doar randarea paginilor Vue (devin SPA, fără HTML server-rendered). Nitro și <code>server/api/</code> nu sunt afectate — endpoint-urile tot rulează pe server, exact ca înainte.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce nu există folder <code>layouts/</code> în UpNext?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că Nuxt 4 a eliminat sistemul de layouts complet</button></li>
+        <li><button data-correct="true">Pentru că aplicația are o singură coajă vizuală, definită direct în app.vue</button></li>
+        <li><button data-correct="false">Pentru că layouts nu funcționează în modul SPA (ssr: false)</button></li>
+        <li><button data-correct="false">Pentru că fiecare pagină își definește propriul navbar individual</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Sistemul de layouts există și funcționează normal în SPA mode — pur și simplu UpNext nu are nevoie de mai multe layout-uri, așa că navbar-ul și footer-ul sunt scrise direct în <code>app.vue</code>, care e mereu randat.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Unde e stocată cheia TMDB API și de ce e sigură acolo?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">În <code>runtimeConfig.public</code> — vizibilă și în browser, dar TMDB permite asta</button></li>
+        <li><button data-correct="true">În <code>runtimeConfig</code> (fără <code>public</code>) — accesibilă doar din codul de server</button></li>
+        <li><button data-correct="false">Hardcodată direct în <code>server/utils/tmdb.ts</code></button></li>
+        <li><button data-correct="false">Într-un fișier separat <code>tmdb.env</code>, exclus manual din build</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>runtimeConfig.tmdbApiKey</code> (fără <code>public</code>) e disponibil doar prin <code>useRuntimeConfig()</code> apelat în cod de server — niciodată trimis către browser în bundle-ul JS.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ce se întâmplă când deschizi <code>/movie/27205</code> — care e ordinea corectă?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pagina cheamă direct TMDB din browser, fără server intermediar</button></li>
+        <li><button data-correct="true">Pagina cheamă <code>/api/movies/27205</code>, Nitro proxy-ază către TMDB cu cheia privată</button></li>
+        <li><button data-correct="false">Supabase interceptează request-ul și decide dacă utilizatorul are acces la film</button></li>
+        <li><button data-correct="false">Vercel servește un fișier JSON static generat la build time pentru fiecare film</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Pagina apelează întotdeauna propriul server (<code>/api/movies/[id]</code>), niciodată TMDB direct. Handler-ul Nitro face request-ul real către TMDB, folosind cheia din <code>runtimeConfig</code>.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Confuz despre diferența dintre <code>app/</code> și <code>server/</code>? Vrei să știi de ce s-a ales SPA
+      în loc de SSR pentru acest proiect? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <span class="current">← Prima lecție</span>
+    <a href="0002-routing-pagini.html">Lecția 2: Pagini și routing →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

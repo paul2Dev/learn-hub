@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 9: Motorul de recomandări — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 9 din 11</span>
+    <span class="tag">~30 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Motorul de recomandări personalizate</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cel mai complex endpoint din aplicație — combină trei surse de semnal, face cereri paralele
+    către TMDB, și amestecă rezultatele. Bun exercițiu de citit cod async netrivial.
+  </p>
+
+
+  <h2>Ce vrea să facă tab-ul „Pentru tine"</h2>
+
+  <p>
+    Homepage-ul are un tab cu recomandări personalizate. Endpoint-ul din spate,
+    <code>server/api/user/recommendations.get.ts</code>, combină trei surse:
+  </p>
+
+  <div class="arch">
+    <div class="arch-row">
+      <div class="arch-badge">1</div>
+      <div class="arch-info">
+        <h4>Genuri preferate</h4>
+        <p>din <code>profiles.preferred_genres</code>, setate la onboarding</p>
+      </div>
+      <span class="arch-tag">~40 filme</span>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">2</div>
+      <div class="arch-info">
+        <h4>Similar cu filme apreciate</h4>
+        <p>filme din <code>watched</code> cu <code>rating &gt;= 3</code></p>
+      </div>
+      <span class="arch-tag">~60 filme</span>
+    </div>
+    <div class="arch-row">
+      <div class="arch-badge">3</div>
+      <div class="arch-info">
+        <h4>Similar cu watchlist</h4>
+        <p>filme deja salvate ca „vreau să văd"</p>
+      </div>
+      <span class="arch-tag">~60 filme</span>
+    </div>
+  </div>
+
+
+  <h2>Pasul 1: adună datele utilizatorului, în paralel</h2>
+
+  <pre><code>const [{ data: profile }, { data: watched }, { data: watchlist }] = await Promise.all([
+  client.from('profiles').select('preferred_genres').eq('id', user.id).single(),
+  client.from('watched').select('movie_id, media_type, rating').eq('user_id', user.id),
+  client.from('watchlist').select('movie_id, media_type').eq('user_id', user.id)
+])</code></pre>
+
+  <p>
+    Trei query-uri Postgres independente — niciunul nu depinde de rezultatul celuilalt, deci
+    <code>Promise.all</code> le rulează simultan în loc de secvențial.
+  </p>
+
+
+  <h2>Pasul 2: construiește listele candidate</h2>
+
+  <pre><code>const watchedIds = new Set(
+  (watched ?? []).filter(w =&gt; w.media_type === 'movie').map(w =&gt; w.movie_id)
+)
+
+const likedMovieIds = (watched ?? [])
+  .filter(w =&gt; w.media_type === 'movie' &amp;&amp; (w.rating ?? 0) &gt;= 3)
+  .map(w =&gt; w.movie_id)
+
+const watchlistMovieIds = (watchlist ?? [])
+  .filter(w =&gt; w.media_type === 'movie')
+  .map(w =&gt; w.movie_id)</code></pre>
+
+  <p>
+    <code>watchedIds</code> va servi la final ca listă de excludere — nu are sens să recomanzi un
+    film deja văzut. <code>likedMovieIds</code> și <code>watchlistMovieIds</code> devin punctul de
+    plecare pentru bucket-urile 2 și 3.
+  </p>
+
+
+  <h2>Pasul 3: randomizare controlată</h2>
+
+  <pre><code>function pickRandom&lt;T&gt;(arr: T[], n: number): T[] {
+  return [...arr].sort(() =&gt; Math.random() - 0.5).slice(0, n)
+}
+
+const sortOptions = [
+  { sort_by: 'popularity.desc' },
+  { 'sort_by': 'vote_average.desc', 'vote_count.gte': 300 },
+  { 'sort_by': 'primary_release_date.desc', 'vote_average.gte': 6.5 },
+  { sort_by: 'revenue.desc' }
+]
+
+const randomPages = pickRandom([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 4)
+const shuffledSorts = [...sortOptions].sort(() =&gt; Math.random() - 0.5)
+const likedSample = pickRandom(likedMovieIds, 3)
+const watchlistSample = pickRandom(watchlistMovieIds, 3)</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce randomizare?</div>
+    Fără ea, „Pentru tine" ar arăta identic la fiecare vizitare — mereu pagina 1, mereu aceleași
+    3 filme apreciate folosite ca sursă de similaritate. Alegerea de pagini/sortări/eșantioane
+    aleatorii la fiecare request face ca lista să se simtă „proaspătă" fără să existe vreun state
+    persistent de „ce am arătat deja".
+  </div>
+
+
+  <h2>Pasul 4: construiește cererile TMDB, cu fallback-uri</h2>
+
+  <pre><code>function addGenreBucket(sortIdx: number, pageIdx: number) {
+  if (preferredGenres.length) {
+    requests.push(tmdbFetch('/discover/movie', {
+      ...shuffledSorts[sortIdx % shuffledSorts.length],
+      with_genres: preferredGenres.join('|'),
+      include_adult: false,
+      page: randomPages[pageIdx]
+    }))
+  } else {
+    requests.push(tmdbFetch('/movie/popular', { page: randomPages[pageIdx] }))
+  }
+}
+
+addGenreBucket(0, 0)               // bucket 1: 2 pagini de genuri preferate
+addGenreBucket(1, 1)
+
+for (const id of likedSample)      // bucket 2: similar cu filme apreciate
+  requests.push(tmdbFetch(`/movie/${id}/recommendations`))
+
+for (const id of watchlistSample)  // bucket 3: similar cu watchlist
+  requests.push(tmdbFetch(`/movie/${id}/recommendations`))
+
+if (!hasLiked)      addGenreBucket(2, 2)   // fallback dacă nu are filme apreciate
+if (!hasWatchlist)  addGenreBucket(3, 3)   // fallback dacă nu are watchlist</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label">Design pentru utilizatori noi</div>
+    Un utilizator care tocmai a terminat onboarding-ul nu are încă filme în <code>watched</code> sau
+    <code>watchlist</code>. Fallback-urile <code>!hasLiked</code> / <code>!hasWatchlist</code> înlocuiesc
+    acele bucket-uri lipsă cu încă un bucket de genuri preferate — recomandările rămân relevante
+    din prima zi, nu doar după ce utilizatorul acumulează istoric.
+  </div>
+
+
+  <h2>Pasul 5: rulează tot în paralel, tolerant la eșecuri parțiale</h2>
+
+  <pre><code>const settled = await Promise.allSettled(requests)
+
+const allMovies = settled.flatMap(r =&gt;
+  r.status === 'fulfilled' ? (r.value.results ?? []) : []
+)</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label"><code>Promise.allSettled</code> vs <code>Promise.all</code></div>
+    <code>Promise.all</code> ar respinge <strong>tot</strong> dacă un singur request TMDB eșuează
+    (ex: un ID de film șters din TMDB). <code>Promise.allSettled</code> așteaptă toate cererile și
+    întoarce statusul fiecăreia individual — codul ignoră pur și simplu cererile eșuate
+    (<code>status === 'fulfilled'</code>) și folosește ce a reușit. Un endpoint cu 8-10 cereri paralele
+    nu ar trebui să eșueze complet din cauza uneia singure.
+  </div>
+
+
+  <h2>Pasul 6: deduplică, exclude filmele văzute, amestecă</h2>
+
+  <pre><code>const seen = new Set&lt;number&gt;()
+const unique = allMovies.filter((m) =&gt; {
+  if (seen.has(m.id) || watchedIds.has(m.id)) return false
+  seen.add(m.id)
+  return true
+})
+
+unique.sort(() =&gt; Math.random() - 0.5)
+return { results: unique.slice(0, 20) }</code></pre>
+
+  <p>
+    Cele ~160 de filme candidate (din toate bucket-urile) se reduc la maximum 20, unice, fără
+    filme deja marcate ca văzute, în ordine amestecată — nu grupate vizibil pe bucket-ul din care au venit.
+  </p>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Ce schimb</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Dau mai multă greutate genurilor preferate</td><td>Adaug un al treilea <code>addGenreBucket(...)</code> necondiționat</td></tr>
+      <tr><td>Includ și seriale (tv), nu doar filme</td><td>Extind filtrele <code>media_type === 'movie'</code> și adaug bucket-uri similare pentru tv</td></tr>
+      <tr><td>Măresc numărul de recomandări afișate</td><td>Schimb <code>.slice(0, 20)</code></td></tr>
+      <tr><td>Vreau recomandări stabile (nu se schimbă la fiecare refresh)</td><td>Înlocuiesc <code>Math.random()</code> cu o cheie determinstă (ex: seed pe data curentă)</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Citește documentația existentă</div>
+    <p>
+      Proiectul are deja <code>docs/algorithm.md</code>, care descrie acest algoritm în limbaj natural.
+      Deschide-l alături de <code>recommendations.get.ts</code> și verifică: descrierea din doc
+      corespunde exact cu ce face codul, sau găsești vreo discrepanță?
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://developer.themoviedb.org/reference/discover-movie" target="_blank">
+        TMDB API — Discover Movie
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Parametrii <code>sort_by</code>, <code>with_genres</code>, <code>vote_count.gte</code> folosiți în bucket-urile de genuri.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">Ce se întâmplă dacă un utilizator nou (fără watched, fără watchlist) cere recomandări?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Endpoint-ul întoarce un array gol, până acumulează istoric</button></li>
+        <li><button data-correct="true">Fallback-urile !hasLiked/!hasWatchlist adaugă bucket-uri suplimentare de genuri preferate</button></li>
+        <li><button data-correct="false">Se folosesc filmele cele mai populare din toate timpurile, ignorând genurile</button></li>
+        <li><button data-correct="false">Request-ul aruncă eroare 400, cerând completarea profilului mai întâi</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>if (!hasLiked) addGenreBucket(2, 2)</code> și echivalentul pentru watchlist compensează lipsa de istoric, păstrând recomandările relevante din prima zi.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">De ce endpoint-ul folosește Promise.allSettled în loc de Promise.all pentru cererile TMDB?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">allSettled e mai rapid din punct de vedere al performanței</button></li>
+        <li><button data-correct="true">Ca un singur request eșuat (ex: film șters din TMDB) să nu strice tot răspunsul</button></li>
+        <li><button data-correct="false">allSettled e obligatoriu când ai peste 5 cereri paralele</button></li>
+        <li><button data-correct="false">allSettled permite anularea cererilor rămase după primul eșec</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cu <code>Promise.all</code>, un singur eșec ar respinge toate cele ~10 cereri. <code>allSettled</code> lasă codul să folosească doar rezultatele reușite, ignorând erorile individuale.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce se aplică watchedIds ca filtru abia la pasul de deduplicare, nu mai devreme?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu contează ordinea — s-ar putea aplica oricând în cod</button></li>
+        <li><button data-correct="true">Filmele candidate vin din TMDB (bucket-uri), care nu știe ce a văzut userul — filtrarea se face local, după ce toate rezultatele s-au adunat</button></li>
+        <li><button data-correct="false">TMDB aplică deja acest filtru automat pe server-ul lor</button></li>
+        <li><button data-correct="false">watchedIds nu poate fi calculat decât după ce vin rezultatele TMDB</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> TMDB nu are conceptul de „filme văzute de acest user" — e o noțiune specifică aplicației, calculată din tabela <code>watched</code>, aplicată ca filtru local peste rezultatele brute agregate din toate bucket-urile.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce rol au randomPages și shuffledSorts în algoritm?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Optimizează viteza request-urilor către TMDB</button></li>
+        <li><button data-correct="true">Fac ca lista de recomandări să difere la fiecare vizită, nu doar la primele N filme</button></li>
+        <li><button data-correct="false">Sunt necesare pentru autentificarea request-urilor TMDB</button></li>
+        <li><button data-correct="false">Determină ce coloane sunt selectate din tabela profiles</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Fără randomizare la pagini și criterii de sortare, aceleași 40 de filme „genre discovery" ar apărea de fiecare dată — randomizarea dă senzația de conținut proaspăt fără a persista niciun state suplimentar.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Vrei ca recomandările să includă și seriale TV, nu doar filme. Ce trebuie schimbat la nivel înalt?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Doar valoarea din .slice(0, 20) trebuie mărită</button></li>
+        <li><button data-correct="true">Filtrele media_type === 'movie' și bucket-urile TMDB trebuie extinse să acopere și 'tv'</button></li>
+        <li><button data-correct="false">Nimic — endpoint-ul deja acoperă seriale, doar UI-ul le ascunde</button></li>
+        <li><button data-correct="false">Se schimbă doar migrația SQL, codul JS rămâne neschimbat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Momentan filtrele explicite (<code>w.media_type === 'movie'</code>) și endpoint-urile TMDB apelate (<code>/discover/movie</code>, <code>/movie/{id}/recommendations</code>) sunt specifice filmelor — extinderea la seriale ar cere bucket-uri paralele cu <code>/discover/tv</code> și <code>/tv/{id}/recommendations</code>.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să proiectăm împreună extinderea algoritmului la seriale, sau să discutăm un scoring
+      mai sofisticat decât randomizare uniformă? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0008-crud-flux-complet.html">← Lecția 8: CRUD end-to-end</a>
+    <a href="0010-extinderea-aplicatiei.html">Lecția 10: Extinderea aplicației →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

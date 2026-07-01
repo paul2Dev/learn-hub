@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 5: Server API cu Nitro — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 5 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Server API cu Nitro</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cum ajunge un click din browser să cheme TMDB fără ca cheia API să părăsească serverul,
+    și de ce toate endpoint-urile arată la fel de simplu.
+  </p>
+
+
+  <h2>Structura <code>server/api/</code></h2>
+
+  <div class="filepath">D:\projects\movies\server</div>
+  <pre><code>server/
+├── api/
+│   ├── movies/
+│   │   ├── trending.get.ts
+│   │   ├── discover.get.ts
+│   │   ├── search.get.ts
+│   │   ├── top-rated.get.ts
+│   │   ├── upcoming.get.ts
+│   │   ├── genres.get.ts
+│   │   ├── semantic-search.get.ts
+│   │   └── [id]/
+│   │       ├── ...get.ts          (implicit: detalii film)
+│   │       ├── similar.get.ts
+│   │       └── recommendations.get.ts
+│   ├── tv/                        ← aceeași structură, pentru seriale
+│   ├── person/, collection/, people/
+│   ├── user/
+│   │   ├── watchlist.get.ts / .post.ts / .delete.ts
+│   │   ├── ratings.get.ts / .post.ts / .delete.ts
+│   │   ├── recommendations.get.ts
+│   │   └── profile.get.ts
+│   └── admin/
+│       └── seed-embeddings.ts
+├── middleware/
+│   └── security.ts                ← headers HTTP, rulează pe fiecare request
+└── utils/
+    ├── tmdb.ts                    ← proxy TMDB reutilizat de toate endpoint-urile movies/tv
+    ├── embeddings.ts
+    └── movies.ts</code></pre>
+
+  <p>
+    Fiecare fișier <code>*.get.ts</code>, <code>*.post.ts</code>, <code>*.delete.ts</code> devine
+    automat o rută <code>/api/...</code> — Nitro scanează folderul la build time, exact ca
+    <code>pages/</code> pentru rute de UI. Sufixul din nume restricționează metoda HTTP acceptată.
+  </p>
+
+
+  <h2>Cel mai simplu endpoint: proxy TMDB</h2>
+
+  <div class="filepath">server/api/movies/trending.get.ts</div>
+  <pre><code>export default defineEventHandler(async (event) =&gt; {
+  const { page = 1 } = getQuery(event)
+
+  return tmdbFetch('/trending/movie/week', { page: Number(page) })
+})</code></pre>
+
+  <p>
+    Trei linii. Tot lucrul greu (construirea URL-ului, cheia API, parametrii) e mutat în
+    <code>server/utils/tmdb.ts</code> — un utilitar de server, auto-importat exact ca un composable,
+    dar disponibil doar în codul din <code>server/</code>:
+  </p>
+
+  <div class="filepath">server/utils/tmdb.ts</div>
+  <pre><code>export async function tmdbFetch&lt;T&gt;(
+  path: string,
+  params: Record&lt;string, string | number | boolean | undefined&gt; = {}
+): Promise&lt;T&gt; {
+  const config = useRuntimeConfig()
+
+  return $fetch&lt;T&gt;(`https://api.themoviedb.org/3${path}`, {
+    params: {
+      api_key: config.tmdbApiKey,
+      language: 'en-US',
+      ...params
+    }
+  }) as unknown as Promise&lt;T&gt;
+}</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-label">De ce e sigur</div>
+    <code>config.tmdbApiKey</code> vine din <code>useRuntimeConfig()</code> apelat aici, în cod care
+    rulează <strong>doar pe server</strong> (Nitro). Cheia nu ajunge niciodată în bundle-ul JS trimis
+    browserului. Orice pagină care are nevoie de date TMDB cheamă propriul <code>/api/movies/*</code> —
+    niciodată <code>api.themoviedb.org</code> direct din client.
+  </div>
+
+
+  <h2>Endpoint protejat: CRUD Supabase</h2>
+
+  <p>
+    Endpoint-urile din <code>server/api/user/</code> sunt diferite — nu proxy-ază TMDB, ci citesc/scriu
+    în Postgres via Supabase, și cer autentificare:
+  </p>
+
+  <div class="filepath">server/api/user/watchlist.post.ts</div>
+  <pre><code>import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import { z } from 'zod'
+
+const schema = z.object({
+  movie_id: z.number().int().positive().max(999_999_999),
+  media_type: z.enum(['movie', 'tv']),
+  tmdb_data: z.record(z.string(), z.unknown()).optional().default({})
+    .refine(v =&gt; JSON.stringify(v).length &lt;= 50_000, 'tmdb_data too large')
+})
+
+export default defineEventHandler(async (event) =&gt; {
+  const user = await serverSupabaseUser(event)
+  if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
+
+  const raw = await readBody(event)
+  const parsed = schema.safeParse(raw)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, message: parsed.error.issues[0]?.message ?? 'Invalid input' })
+  }
+  const body = parsed.data
+
+  const client = await serverSupabaseClient(event)
+  const { data, error } = await client
+    .from('watchlist')
+    .insert({ user_id: user.id, movie_id: body.movie_id, media_type: body.media_type, tmdb_data: body.tmdb_data })
+    .select()
+    .single()
+
+  if (error) throw createError({ statusCode: 500, message: 'Internal server error' })
+  return data
+})</code></pre>
+
+  <p>Patru pași fixați, în ordine, în aproape fiecare endpoint din <code>server/api/user/</code>:</p>
+
+  <ol>
+    <li><code>serverSupabaseUser(event)</code> — verifică sesiunea; <code>null</code> → 401</li>
+    <li><code>readBody(event)</code> + <code>schema.safeParse()</code> — validare Zod; eșec → 400</li>
+    <li><code>serverSupabaseClient(event)</code> — client Supabase cu sesiunea userului atașată</li>
+    <li>Query Postgres — RLS-ul din bază decide, în plus, ce poate atinge acel user (vezi <a href="0007-supabase-db-rls.html">Lecția 7</a>)</li>
+  </ol>
+
+
+  <h2>Middleware de server: headers de securitate</h2>
+
+  <p>
+    <code>server/middleware/</code> rulează pe <strong>fiecare</strong> request, înainte de orice handler
+    din <code>server/api/</code>. UpNext îl folosește ca să seteze headere HTTP de securitate global:
+  </p>
+
+  <div class="filepath">server/middleware/security.ts</div>
+  <pre><code>export default defineEventHandler((event) =&gt; {
+  setResponseHeaders(event, {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Content-Security-Policy': [
+      "default-src 'self'",
+      "img-src 'self' data: blob: https://image.tmdb.org https://*.googleusercontent.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.themoviedb.org",
+      "object-src 'none'"
+      // ...
+    ].join('; ')
+  })
+})</code></pre>
+
+  <div class="callout next">
+    <div class="callout-label"><code>server/api/</code> vs <code>server/middleware/</code></div>
+    <code>server/api/*.get.ts</code> — răspunde la o rută specifică, cu o metodă HTTP specifică.<br>
+    <code>server/middleware/*.ts</code> — rulează pe orice request către server, indiferent de rută;
+    nu returnează un răspuns direct, ci pregătește contextul (aici: headere) pentru handler-ul care urmează.
+  </div>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Fișier de modificat</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Adaug un endpoint nou care cheamă TMDB</td><td>Fișier nou în <code>server/api/movies/</code>, folosind <code>tmdbFetch()</code></td></tr>
+      <tr><td>Adaug validare pe un endpoint existent</td><td>Adaugi/extinzi schema Zod din capul fișierului endpoint-ului</td></tr>
+      <tr><td>Adaug un header de securitate nou pentru toate request-urile</td><td><code>server/middleware/security.ts</code></td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Scrie un endpoint nou</div>
+    <p>Vrei <code>GET /api/movies/now-playing</code> care întoarce filmele „acum în cinema" de la TMDB.</p>
+    <ol>
+      <li>Creezi <code>server/api/movies/now-playing.get.ts</code></li>
+      <li>Copiezi structura din <code>trending.get.ts</code></li>
+      <li>Înlocuiești path-ul TMDB cu <code>/movie/now_playing</code></li>
+    </ol>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Rezultat: <code>export default defineEventHandler((event) =&gt; tmdbFetch('/movie/now_playing', { page: Number(getQuery(event).page ?? 1) }))</code>
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nitro.unjs.io/guide/routing" target="_blank">
+        Nitro Docs — Routing
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Convenția de fișiere pentru rute și middleware de server.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce niciun endpoint din server/api/movies/ nu importă cheia TMDB direct?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Pentru că cheia e publică, nu contează unde stă</button></li>
+        <li><button data-correct="true">Toate folosesc tmdbFetch(), care citește cheia o singură dată din runtimeConfig</button></li>
+        <li><button data-correct="false">TMDB nu cere cheie API pentru request-uri server-side</button></li>
+        <li><button data-correct="false">Cheia e injectată automat de Nitro în fiecare handler</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Centralizarea în <code>tmdbFetch()</code> înseamnă că orice endpoint nou o poate refolosi fără să repete logica de citire a cheii — un singur loc de adevăr.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Ce se întâmplă dacă cineva trimite un request POST către /api/movies/trending?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nitro rulează handler-ul normal, ignorând metoda</button></li>
+        <li><button data-correct="true">Nitro răspunde automat cu 405 Method Not Allowed</button></li>
+        <li><button data-correct="false">Request-ul e redirecționat automat către varianta .post.ts</button></li>
+        <li><button data-correct="false">Serverul crapă cu o eroare 500 necontrolată</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Sufixul <code>.get.ts</code> restricționează strict metoda acceptată — Nitro respinge automat orice altă metodă cu 405, fără cod suplimentar din partea ta.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">În watchlist.post.ts, ce se întâmplă dacă body-ul trimis nu respectă schema Zod?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Zod completează automat câmpurile lipsă cu valori implicite și continuă</button></li>
+        <li><button data-correct="true">safeParse() eșuează, iar handler-ul aruncă o eroare 400 cu mesajul din Zod</button></li>
+        <li><button data-correct="false">Request-ul ajunge oricum la Supabase, care va respinge inserarea</button></li>
+        <li><button data-correct="false">Se aruncă o eroare 401, la fel ca pentru lipsa autentificării</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>parsed.success === false</code> declanșează <code>createError({ statusCode: 400, ... })</code> înainte ca vreun query Supabase să ruleze — datele proaste nu ajung niciodată la baza de date.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce diferență e între server/api/ și server/middleware/?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu există nicio diferență funcțională, doar de organizare</button></li>
+        <li><button data-correct="true">middleware/ rulează pe orice request; api/ răspunde la o rută și metodă specifică</button></li>
+        <li><button data-correct="false">api/ rulează doar în producție, middleware/ doar în development</button></li>
+        <li><button data-correct="false">middleware/ nu poate seta headere HTTP, doar api/ poate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>security.ts</code> din <code>server/middleware/</code> rulează pentru absolut orice request către server, indiferent de rută — spre deosebire de un handler din <code>server/api/</code>, care e legat de o rută anume.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Vrei un nou endpoint GET /api/movies/now-playing. Ce fișier creezi și ce funcție reutilizezi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">server/api/movies/nowPlaying.ts, folosind fetch() nativ</button></li>
+        <li><button data-correct="true">server/api/movies/now-playing.get.ts, folosind tmdbFetch()</button></li>
+        <li><button data-correct="false">server/middleware/now-playing.ts, folosind defineEventHandler direct</button></li>
+        <li><button data-correct="false">app/composables/useNowPlaying.ts, cu $fetch către TMDB</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Sufixul <code>.get.ts</code> pentru metoda HTTP, locația în <code>server/api/movies/</code> pentru convenție, și <code>tmdbFetch()</code> pentru a reutiliza logica existentă de proxy TMDB.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Nu ești sigur cum aș debugga un endpoint care întoarce 500? Sau vrei să vezi cum arată
+      <code>server/api/movies/[id]/similar.get.ts</code>? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0004-composables.html">← Lecția 4: Composables</a>
+    <a href="0006-auth-supabase.html">Lecția 6: Auth cu Supabase →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

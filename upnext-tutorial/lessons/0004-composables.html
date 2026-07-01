@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 4: Composables — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 4 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Composables în UpNext</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Cele trei composables reale ale aplicației — de la utilitarul cel mai simplu posibil,
+    la state global partajat cu <code>useState</code>.
+  </p>
+
+
+  <h2>Cele trei composables din <code>app/composables/</code></h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Fișier</th><th>Rol</th><th>Complexitate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>useTmdbImage.ts</code></td><td>Construiește URL-uri de imagine TMDB</td><td>Funcție pură, fără state</td></tr>
+      <tr><td><code>useWatchlist.ts</code></td><td>Cache global watchlist — folosit de navbar și de toate cardurile</td><td>State global cu useState</td></tr>
+      <tr><td><code>useMediaActions.ts</code></td><td>Watchlist + rating pentru un singur film/serial (pagina de detalii)</td><td>State local per-componentă</td></tr>
+    </tbody>
+  </table>
+
+
+  <h2>Cel mai simplu composable: <code>useTmdbImage</code></h2>
+
+  <div class="filepath">app/composables/useTmdbImage.ts</div>
+  <pre><code>const IMAGE_BASE = 'https://image.tmdb.org/t/p'
+
+export function useTmdbImage() {
+  const poster = (path: string | null, size: 'w185' | 'w342' | 'w500' | 'original' = 'w342') =&gt;
+    path ? `${IMAGE_BASE}/${size}${path}` : null
+
+  const backdrop = (path: string | null, size: 'w780' | 'w1280' | 'original' = 'w1280') =&gt;
+    path ? `${IMAGE_BASE}/${size}${path}` : null
+
+  return { poster, backdrop }
+}</code></pre>
+
+  <p>
+    Niciun <code>ref</code>, niciun <code>useState</code> — doar două funcții helper grupate sub un nume
+    <code>use*</code> ca să beneficieze de auto-import. Un composable nu trebuie neapărat să gestioneze
+    state reactiv; uneori e doar un namespace convenabil pentru logică reutilizabilă.
+  </p>
+
+
+  <h2>State global: <code>useWatchlist</code></h2>
+
+  <p>
+    Navbar-ul (badge cu numărul de filme din watchlist) și fiecare <code>MediaCard</code> de pe ecran
+    trebuie să știe instant dacă un film e în watchlist — fără să facă fiecare propriul request.
+    Soluția: un singur <code>Set</code> global, ținut cu <code>useState</code>.
+  </p>
+
+  <div class="filepath">app/composables/useWatchlist.ts</div>
+  <pre><code>export function watchlistKey(movieId: number, mediaType: string) {
+  return `${mediaType}:${movieId}`
+}
+
+export function useWatchlist() {
+  const user = useSupabaseUser()
+  const ids = useState&lt;Set&lt;string&gt;&gt;('watchlist-ids', () =&gt; new Set())
+
+  async function refresh() {
+    if (!user.value) {
+      ids.value = new Set()
+      return
+    }
+    const data = await $fetch&lt;WatchlistRow[]&gt;('/api/user/watchlist').catch(() =&gt; [])
+    ids.value = new Set(data.map(r =&gt; watchlistKey(r.movie_id, r.media_type)))
+  }
+
+  function has(movieId: number, mediaType: string) {
+    return ids.value.has(watchlistKey(movieId, mediaType))
+  }
+
+  async function toggle(movieId: number, mediaType: 'movie' | 'tv', tmdbData: object) {
+    const key = watchlistKey(movieId, mediaType)
+    if (ids.value.has(key)) {
+      await $fetch('/api/user/watchlist', { method: 'DELETE', body: { movie_id: movieId, media_type: mediaType } })
+      const next = new Set(ids.value); next.delete(key); ids.value = next
+    } else {
+      await $fetch('/api/user/watchlist', { method: 'POST', body: { movie_id: movieId, media_type: mediaType, tmdb_data: tmdbData } })
+      const next = new Set(ids.value); next.add(key); ids.value = next
+    }
+  }
+
+  return { ids, count: computed(() =&gt; ids.value.size), refresh, has, toggle }
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce useState și nu un simplu ref</div>
+    Dacă <code>useWatchlist()</code> ar face <code>const ids = ref(new Set())</code>, fiecare componentă
+    care apelează composable-ul ar primi propria copie izolată — navbar-ul n-ar ști niciodată că
+    ai adăugat un film din <code>MediaCard</code>. <code>useState('watchlist-ids', ...)</code> garantează
+    că <em>toate</em> apelurile la <code>useWatchlist()</code> din întreaga aplicație citesc și scriu
+    <strong>același</strong> ref, identificat prin cheia <code>'watchlist-ids'</code>.
+  </div>
+
+  <p>
+    De asta <code>app/app.vue</code> apelează <code>useWatchlist()</code> pentru badge-ul din navbar,
+    iar <code>MediaCard.vue</code> apelează același composable pentru butonul de bookmark — și cele
+    două rămân mereu sincronizate, fără props sau evenimente între ele.
+  </p>
+
+
+  <h2>State local: <code>useMediaActions</code></h2>
+
+  <p>
+    Pe pagina de detalii a unui film, ai nevoie de mai mult decât „e în watchlist da/nu" — vrei și
+    rating-ul curent, stări de loading separate, și toast-uri de eroare. Acest composable ia
+    <code>mediaId</code> ca parametru și ține state <strong>local</strong>, nu global:
+  </p>
+
+  <div class="filepath">app/composables/useMediaActions.ts (extras)</div>
+  <pre><code>export function useMediaActions(mediaId: number, mediaType: 'movie' | 'tv', tmdbData: TmdbData) {
+  const user = useSupabaseUser()
+  const toast = useToast()
+
+  const inWatchlist = ref(false)
+  const isWatched = ref(false)
+  const userRating = ref&lt;number | null&gt;(null)
+  const loadingWatchlist = ref(false)
+  const loadingWatched = ref(false)
+
+  async function fetchStatus() {
+    if (!user.value) return
+    const [watchlistRes, ratingsRes] = await Promise.all([
+      $fetch&lt;WatchlistRow[]&gt;('/api/user/watchlist').catch(() =&gt; []),
+      $fetch&lt;WatchedRow[]&gt;('/api/user/ratings').catch(() =&gt; [])
+    ])
+    inWatchlist.value = watchlistRes.some(r =&gt; r.movie_id === mediaId &amp;&amp; r.media_type === mediaType)
+    const watched = ratingsRes.find(r =&gt; r.movie_id === mediaId &amp;&amp; r.media_type === mediaType)
+    isWatched.value = !!watched
+    userRating.value = watched?.rating ?? null
+  }
+
+  onMounted(fetchStatus)
+
+  return { user, inWatchlist, isWatched, userRating, loadingWatchlist, loadingWatched, toggleWatchlist, setRating }
+}</code></pre>
+
+  <p>
+    Fiecare pagină <code>movie/[id].vue</code> care cheamă <code>useMediaActions(id, 'movie', data)</code>
+    primește propriul set de <code>ref</code>-uri — nu există partajare între pagini diferite, pentru că
+    fiecare pagină vorbește despre un film diferit. Contrast direct cu <code>useWatchlist</code>, unde
+    partajarea globală era exact scopul.
+  </p>
+
+
+  <h2>useState vs ref — cum alegi</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Situație</th><th>Alegere</th><th>Exemplu din UpNext</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Date care trebuie sincronizate în toată aplicația</td><td><code>useState('key', ...)</code></td><td>watchlist-ids, profile-cache</td></tr>
+      <tr><td>Date specifice unei singure instanțe/pagini</td><td><code>ref()</code> local în composable</td><td>inWatchlist per film în useMediaActions</td></tr>
+      <tr><td>Funcții pure, fără state deloc</td><td>Composable fără ref</td><td>useTmdbImage</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Prezici comportamentul</div>
+    <p>
+      Ai două componente <code>MediaCard</code> pe ecran, pentru același film. Dai click pe butonul de
+      watchlist din prima. Ce se întâmplă cu butonul din a doua, fără nicio reîncărcare de pagină?
+    </p>
+    <p style="margin-top:0.8rem;font-size:0.9rem;color:var(--muted);">
+      Răspuns: Se actualizează instant. Ambele carduri citesc <code>has()</code> din același
+      <code>useState('watchlist-ids', ...)</code> — modificarea lui <code>ids.value</code> dintr-un card
+      declanșează reactivitate în toate locurile care citesc acel state, indiferent de componentă.
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://nuxt.com/docs/api/composables/use-state" target="_blank">
+        Nuxt Docs — useState()
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Documentația oficială pentru state global SSR-safe în Nuxt.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce useWatchlist folosește useState în loc de un simplu ref()?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">ref() nu funcționează în modul SPA (ssr: false)</button></li>
+        <li><button data-correct="true">useState partajează aceeași valoare între toate componentele care îl apelează</button></li>
+        <li><button data-correct="false">useState e mai rapid la citire decât ref()</button></li>
+        <li><button data-correct="false">ref() nu poate stoca obiecte de tip Set</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Cheia <code>'watchlist-ids'</code> face ca toate apelurile <code>useState('watchlist-ids', ...)</code> din întreaga aplicație să acceseze exact același ref — asta permite sincronizarea automată între navbar și carduri.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">useMediaActions primește mediaId ca parametru al funcției. Ce implică asta pentru state-ul returnat?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">State-ul e tot global, doar filtrat după mediaId la citire</button></li>
+        <li><button data-correct="true">Fiecare apel cu un mediaId diferit primește propriile ref-uri, izolate</button></li>
+        <li><button data-correct="false">mediaId trebuie să fie identic în toată aplicația pentru a funcționa</button></li>
+        <li><button data-correct="false">Composable-ul aruncă eroare dacă e apelat de două ori cu ID-uri diferite</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Spre deosebire de <code>useWatchlist</code>, <code>useMediaActions</code> folosește <code>ref()</code> simplu — fiecare apel al funcției creează propriile variabile reactive, complet izolate.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">useTmdbImage nu conține niciun ref sau useState. Mai e considerat composable valid?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu — un composable trebuie să gestioneze mereu state reactiv</button></li>
+        <li><button data-correct="true">Da — convenția use* e despre auto-import și organizare, nu obligă la state</button></li>
+        <li><button data-correct="false">Nu — ar trebui redenumit în utilTmdbImage.ts</button></li>
+        <li><button data-correct="false">Da, dar doar dacă e apelat în interiorul altui composable</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un composable e orice funcție cu prefix <code>use</code> care beneficiază de auto-import din <code>app/composables/</code>. Gestionarea de state reactiv e comună, dar nu obligatorie.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce se întâmplă în useWatchlist dacă user.value devine null (utilizatorul se deloghează)?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">ids rămâne cu vechile date, până la refresh manual al paginii</button></li>
+        <li><button data-correct="true">refresh() setează ids.value la un Set gol, dacă e apelat</button></li>
+        <li><button data-correct="false">Aplicația aruncă automat o eroare 401</button></li>
+        <li><button data-correct="false">has() returnează mereu true pentru orice film</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>refresh()</code> verifică explicit <code>if (!user.value) { ids.value = new Set(); return }</code> — dar asta se întâmplă doar când <code>refresh()</code> e apelat (de obicei prin <code>watch(user, ...)</code> în app.vue), nu automat la fiecare schimbare de user.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Ai construi o funcționalitate „recent văzute" (ultimele 5 filme vizitate, vizibile din orice pagină). Ce ai folosi?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">ref() local în fiecare pagină de film</button></li>
+        <li><button data-correct="true">useState cu o cheie unică, la fel ca watchlist-ids</button></li>
+        <li><button data-correct="false">Un prop trecut manual de la fiecare pagină la navbar</button></li>
+        <li><button data-correct="false">localStorage citit direct în fiecare componentă, fără composable</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Exact pattern-ul <code>useWatchlist</code> — date care trebuie văzute din orice colț al aplicației (aici: navbar și orice pagină) cer <code>useState</code> cu o cheie stabilă.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să vezi cum aș scrie un composable nou pentru o funcționalitate specifică din UpNext?
+      <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0003-componente-vue.html">← Lecția 3: Componente Vue</a>
+    <a href="0005-server-api-nitro.html">Lecția 5: Server API cu Nitro →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

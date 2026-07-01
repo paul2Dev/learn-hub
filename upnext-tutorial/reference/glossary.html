@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glosar — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .glossary-entry { margin-bottom: 2rem; }
+    .glossary-term {
+      font-family: var(--mono); font-size: 1rem; font-weight: bold;
+      color: var(--accent); margin-bottom: 0.2rem;
+    }
+    .glossary-def { margin: 0 0 0.4rem; font-size: 0.93rem; }
+    .glossary-see {
+      font-size: 0.82rem; color: var(--muted); font-family: var(--mono);
+    }
+    .glossary-section { margin-top: 3rem; }
+    dl { display: grid; gap: 1.5rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">referință</span>
+    <span>UpNext — Glosar</span>
+  </div>
+
+  <h1>Glosar UpNext</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    Termenii esențiali din codul real al aplicației — definiții concise pentru referință rapidă.
+  </p>
+
+
+  <div class="glossary-section">
+    <h2>Structură și rute</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">app/ (Nuxt 4)</div>
+        <p class="glossary-def">Director sursă dedicat introdus în Nuxt 4 — <code>pages/</code>, <code>components/</code>, <code>composables/</code>, <code>middleware/</code> stau sub <code>app/</code> în loc de rădăcina proiectului, ca în Nuxt 3.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">ssr: false</div>
+        <p class="glossary-def">Opțiune din <code>nuxt.config.ts</code> care dezactivează server-side rendering pentru pagini — aplicația devine SPA (Single Page Application). Nu afectează <code>server/api/</code>, care rulează normal pe Nitro.</p>
+        <span class="glossary-see">→ Lecția 1</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">definePageMeta()</div>
+        <p class="glossary-def">Macro apelat în <code>&lt;script setup&gt;</code> al unei pagini pentru a configura <code>middleware</code> sau <code>layout</code>. În UpNext: <code>{ middleware: 'auth' }</code> pe paginile protejate, <code>{ layout: false }</code> pe login/confirm.</p>
+        <span class="glossary-see">→ Lecția 2, Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Dynamic Route ([id].vue)</div>
+        <p class="glossary-def">Fișier de pagină cu segment variabil în paranteze pătrate. UpNext are patru: <code>movie/[id].vue</code>, <code>tv/[id].vue</code>, <code>person/[id].vue</code>, <code>collection/[id].vue</code> — toate urmează același pattern de citire a parametrului cu <code>useRoute().params.id</code>.</p>
+        <span class="glossary-see">→ Lecția 2, Lecția 10</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">app.vue ca shell unic</div>
+        <p class="glossary-def">UpNext nu are folder <code>layouts/</code> — navbar-ul, footer-ul și <code>&lt;NuxtPage /&gt;</code> stau direct în <code>app/app.vue</code>, tratat ca singura „coajă" vizuală a aplicației.</p>
+        <span class="glossary-see">→ Lecția 1, Lecția 2</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Componente și composables</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Auto-import</div>
+        <p class="glossary-def">Componentele din <code>app/components/</code> și composables din <code>app/composables/</code> sunt disponibile în orice fișier fără <code>import</code> explicit — Nuxt le scanează la build time.</p>
+        <span class="glossary-see">→ Lecția 3, Lecția 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">MediaCard.vue</div>
+        <p class="glossary-def">Componentă universală pentru filme, seriale, actori și colecții — un singur <code>computed</code> decide ruta și afișarea corectă pe baza câmpului <code>media_type</code>.</p>
+        <span class="glossary-see">→ Lecția 3, Lecția 10</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">useState() vs ref()</div>
+        <p class="glossary-def"><code>useState('key', ...)</code> partajează aceeași valoare între toate componentele care o apelează cu aceeași cheie (ex: <code>useWatchlist</code>). <code>ref()</code> simplu creează o valoare izolată per apel (ex: <code>useMediaActions</code>).</p>
+        <span class="glossary-see">→ Lecția 4</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">useWatchlist()</div>
+        <p class="glossary-def">Composable cu state global (<code>useState('watchlist-ids', ...)</code>) — un <code>Set</code> de chei <code>"tip:id"</code>, sincronizat automat între navbar și orice <code>MediaCard</code> de pe ecran.</p>
+        <span class="glossary-see">→ Lecția 4, Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">useMediaActions()</div>
+        <p class="glossary-def">Composable cu state local (per apel) pentru pagina de detalii a unui film/serial — gestionează watchlist, rating, stări de loading și toast-uri de eroare pentru acea entitate specifică.</p>
+        <span class="glossary-see">→ Lecția 4</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Server API — Nitro</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">tmdbFetch()</div>
+        <p class="glossary-def">Utilitar de server (<code>server/utils/tmdb.ts</code>) care centralizează request-urile către TMDB — citește <code>config.tmdbApiKey</code> din <code>runtimeConfig</code> și adaugă parametrii comuni. Folosit de toate endpoint-urile <code>movies/</code> și <code>tv/</code>.</p>
+        <span class="glossary-see">→ Lecția 5</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">server/middleware/ vs server/api/</div>
+        <p class="glossary-def"><code>server/middleware/security.ts</code> rulează pe orice request către server, indiferent de rută. <code>server/api/*.get.ts</code> răspunde la o rută și metodă HTTP specifice.</p>
+        <span class="glossary-see">→ Lecția 5, Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">serverSupabaseUser(event)</div>
+        <p class="glossary-def">Utilitar <code>@nuxtjs/supabase</code> care verifică sesiunea din context Nitro — returnează <code>null</code> dacă utilizatorul nu e autentificat. Prima verificare din orice endpoint <code>server/api/user/</code>.</p>
+        <span class="glossary-see">→ Lecția 5, Lecția 6, Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Validare Zod în endpoint</div>
+        <p class="glossary-def">Fiecare endpoint <code>server/api/user/*.post.ts</code> definește o schemă Zod la începutul fișierului și apelează <code>schema.safeParse(await readBody(event))</code> — date invalide → eroare 400, înainte de orice query Postgres.</p>
+        <span class="glossary-see">→ Lecția 5, Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Promise.allSettled()</div>
+        <p class="glossary-def">Variantă de <code>Promise.all</code> care așteaptă toate promisiunile fără să eșueze la primul reject — folosită în motorul de recomandări pentru a tolera eșecul individual al unor cereri TMDB paralele.</p>
+        <span class="glossary-see">→ Lecția 9</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Supabase și date</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">RLS — Row Level Security</div>
+        <p class="glossary-def">Mecanism Postgres care restricționează accesul la rânduri pe baza unor policies (ex: <code>auth.uid() = user_id</code>). A doua linie de apărare, independentă de verificările din codul serverului.</p>
+        <span class="glossary-see">→ Lecția 7, Lecția 8</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Trigger on_auth_user_created</div>
+        <p class="glossary-def">Funcție Postgres care creează automat o linie în <code>profiles</code> imediat ce Supabase inserează un rând nou în <code>auth.users</code> — garantează că orice user autentificat are un profil, fără cod explicit în aplicație.</p>
+        <span class="glossary-see">→ Lecția 6, Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Migrație SQL versionată</div>
+        <p class="glossary-def">Fișier numerotat în <code>supabase/migrations/</code> care descrie o schimbare incrementală de schemă. Niciodată editat retroactiv — schimbările ulterioare (ex: 004 repară un constraint din 001) sunt fișiere noi.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">tmdb_data (jsonb)</div>
+        <p class="glossary-def">Coloană <code>jsonb</code> pe <code>watchlist</code>/<code>watched</code> care cache-uiește o copie a răspunsului TMDB la momentul salvării — evită un fetch nou la fiecare afișare a watchlist-ului, cu compromisul unor date potențial ușor stale.</p>
+        <span class="glossary-see">→ Lecția 7</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">pgvector / vector(1536)</div>
+        <p class="glossary-def">Extensie Postgres care adaugă tipul de date <code>vector</code> și operatori de distanță (<code>&lt;=&gt;</code> pentru cosine distance). <code>media_embeddings.embedding</code> stochează un vector de 1536 dimensiuni per film/serial, generat de OpenAI.</p>
+        <span class="glossary-see">→ Lecția 7, Lecția 11</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">RPC (Remote Procedure Call) Supabase</div>
+        <p class="glossary-def"><code>supabase.rpc('nume_funcție', params)</code> apelează o funcție Postgres definită cu <code>SECURITY DEFINER</code> — folosit când o operație trebuie să fie atomică (ex: <code>increment_search_usage</code>) sau necesită logică SQL complexă (ex: <code>search_media_by_embedding</code>).</p>
+        <span class="glossary-see">→ Lecția 11</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Auth</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">middleware.global.ts</div>
+        <p class="glossary-def">Fișier din <code>app/middleware/</code> cu sufixul <code>.global.ts</code> care rulează automat pe orice navigare, fără să fie declarat explicit în <code>definePageMeta</code>. UpNext folosește <code>onboarding.global.ts</code> pentru redirect la primul login.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">supabase.redirectOptions.exclude</div>
+        <p class="glossary-def">Listă de rute în <code>nuxt.config.ts</code> care rămân publice, exceptate de la middleware-ul implicit al modulului <code>@nuxtjs/supabase</code> care ar redirecționa altfel orice pagină neautentificată la login.</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">signInWithOAuth()</div>
+        <p class="glossary-def">Metodă a clientului Supabase care inițiază fluxul OAuth (aici: Google) — redirecționează browserul la providerul extern, apoi înapoi la <code>redirectTo</code> specificat (<code>/confirm</code> în UpNext).</p>
+        <span class="glossary-see">→ Lecția 6</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <div class="glossary-section">
+    <h2>Configurare</h2>
+    <dl>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">runtimeConfig vs runtimeConfig.public</div>
+        <p class="glossary-def">Valorile la rădăcina <code>runtimeConfig</code> sunt private (server-only) — ex: <code>tmdbApiKey</code>. Valorile sub <code>public</code> ajung și în bundle-ul client — ex: <code>featureSemanticSearch</code>.</p>
+        <span class="glossary-see">→ Lecția 1, Lecția 11</span>
+      </div>
+
+      <div class="glossary-entry">
+        <div class="glossary-term">Feature flag</div>
+        <p class="glossary-def">Variabilă de mediu boolean (<code>FEATURE_SEMANTIC_SEARCH</code>) care activează/dezactivează o funcționalitate întreagă fără a elimina codul — permite rularea aceleiași baze de cod cu sau fără infrastructura suplimentară necesară (aici: embeddings + cheie OpenAI).</p>
+        <span class="glossary-see">→ Lecția 11</span>
+      </div>
+
+    </dl>
+  </div>
+
+
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:3rem;text-align:center;">
+    UpNext — Glosar · <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+</body>
+</html>

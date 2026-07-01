@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecția 10: Extinderea aplicației — Curs UpNext</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <div style="margin-bottom:1rem;">
+    <a href="../../index.html" style="font-family:system-ui,sans-serif;font-size:0.82rem;color:var(--muted);text-decoration:none;letter-spacing:0.05em;">← Toate cursurile</a>
+  </div>
+
+  <div class="lesson-meta">
+    <span class="tag">lecția 10 din 11</span>
+    <span class="tag">~25 min</span>
+    <span>UpNext — Curs</span>
+  </div>
+
+  <h1>Pattern-ul de extindere: movie → tv → person → collection</h1>
+  <p style="color:var(--muted);font-size:0.95rem;margin-bottom:2.5rem;">
+    UpNext a crescut de la „doar filme" la filme + seriale + actori + colecții prin repetarea
+    aceluiași pattern de patru ori. Înțelegerea acestui pattern e cheia pentru a adăuga singur
+    o entitate nouă.
+  </p>
+
+
+  <h2>Patru entități, aceeași formă</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Entitate</th><th>Pagină</th><th>Endpoint server</th><th>Rută</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Film</td><td><code>app/pages/movie/[id].vue</code></td><td><code>server/api/movies/[id]/...</code></td><td><code>/movie/:id</code></td></tr>
+      <tr><td>Serial</td><td><code>app/pages/tv/[id].vue</code></td><td><code>server/api/tv/[id]/...</code></td><td><code>/tv/:id</code></td></tr>
+      <tr><td>Actor/regizor</td><td><code>app/pages/person/[id].vue</code></td><td><code>server/api/person/[id]/...</code></td><td><code>/person/:id</code></td></tr>
+      <tr><td>Colecție</td><td><code>app/pages/collection/[id].vue</code></td><td><code>server/api/collection/[id]/...</code></td><td><code>/collection/:id</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Fiecare rând urmează exact aceeași rețetă din Lecția 2: <code>useRoute().params.id</code> →
+    <code>useFetch('/api/{entitate}/{id}')</code> → afișare. Server-side, fiecare endpoint e un
+    <code>tmdbFetch()</code> către path-ul TMDB corespunzător (Lecția 5).
+  </p>
+
+
+  <h2>MediaCard.vue e componenta care leagă totul</h2>
+
+  <p>
+    Ai văzut în Lecția 3 că <code>MediaCard</code> nu are 4 variante — un singur computed
+    <code>link</code> decide ruta corectă pe baza <code>media_type</code>:
+  </p>
+
+  <pre><code>const link = computed(() =&gt; {
+  if (mediaType.value === 'tv') return `/tv/${item.id}`
+  if (mediaType.value === 'person') return `/person/${item.id}`
+  if (mediaType.value === 'collection') return `/collection/${item.id}`
+  return `/movie/${item.id}`
+})</code></pre>
+
+  <p>
+    Această decizie de design — un component universal cu ramificare pe tip, în loc de 4 componente
+    aproape identice — e motivul pentru care adăugarea unei a 5-a entități nu cere modificarea
+    fiecărui loc unde apare un card, ci doar extinderea acestui <code>computed</code>.
+  </p>
+
+
+  <h2>Exercițiu ghidat: cum ai adăuga o entitate „Studio"</h2>
+
+  <p>
+    Să zicem că vrei o pagină <code>/studio/:id</code> care arată toate filmele unui studio
+    (ex: A24, Studio Ghibli). TMDB are un endpoint <code>/company/{id}</code>. Urmărind pattern-ul
+    existent, pașii ar fi:
+  </p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <p>Server: creezi <code>server/api/studio/[id].get.ts</code>, cu <code>tmdbFetch(\`/company/${id}\`)</code></p>
+        <span class="layer-tag">urmează pattern-ul din Lecția 5</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <p>Pagină: creezi <code>app/pages/studio/[id].vue</code>, copiind structura din <code>collection/[id].vue</code> (cel mai apropiat ca formă — o entitate „grupatoare" de filme)</p>
+        <span class="layer-tag">urmează pattern-ul din Lecția 2</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <p>MediaCard: extinzi tipul <code>media_type</code> cu <code>'studio'</code> și adaugi o ramură în <code>link</code></p>
+        <span class="layer-tag">app/components/MediaCard.vue</span>
+      </div>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <p>Legare: adaugi un link „Studio" pe pagina de film, lângă <code>belongs_to_collection</code></p>
+        <span class="layer-tag">app/pages/movie/[id].vue</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-label">De ce acest exercițiu contează</div>
+    Nu există niciun „ghid oficial" pentru asta în cod — dar patru entități deja implementate
+    <em>sunt</em> ghidul. Când aplicația are un pattern repetat de 3-4 ori, a cincea instanță se
+    scrie prin analogie, nu prin re-gândire de la zero.
+  </div>
+
+
+  <h2>Ce NU se repetă — atenție la excepții</h2>
+
+  <p>
+    Nu tot ce ține de „movie" se extinde automat 1-la-1 la „tv"/"person"/"collection". Câteva
+    diferențe reale, ca să nu presupui simetrie perfectă:
+  </p>
+
+  <ul>
+    <li><code>watchlist</code>/<code>watched</code> au sens pentru <code>movie</code> și <code>tv</code>, dar nu pentru <code>person</code> sau <code>collection</code> — nu poți „vedea" un actor</li>
+    <li>Motorul de recomandări (Lecția 9) lucrează exclusiv cu filme — extinderea la seriale ar cere bucket-uri TMDB separate</li>
+    <li><code>person/[id].vue</code> combină filmografia din <code>combined_credits</code> — o formă de date diferită de <code>credits</code> de pe pagina de film</li>
+  </ul>
+
+
+  <h2>Unde modific X</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Vreau să...</th><th>Fișiere de atins</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Adaug o entitate complet nouă (ex: studio)</td><td>Endpoint server nou + pagină nouă + extindere MediaCard</td></tr>
+      <tr><td>Adaug un câmp nou pe pagina de film, existent deja pe pagina de serial</td><td>Copiez pattern-ul din <code>tv/[id].vue</code> în <code>movie/[id].vue</code> (sau invers)</td></tr>
+      <tr><td>Fac watchlist să funcționeze și pentru colecții</td><td>Extind <code>media_type</code> în schema Zod + migrație SQL pentru noua valoare enum</td></tr>
+    </tbody>
+  </table>
+
+
+  <div class="exercise">
+    <div class="exercise-label">Exercițiu — Găsește pattern-ul singur</div>
+    <p>
+      Deschide <code>app/pages/tv/[id].vue</code> și <code>app/pages/movie/[id].vue</code> alături.
+      Fără să citești tot codul, identifică: ce e identic structural, și ce e specific fiecărei
+      entități (ex: <code>runtime</code> la film vs <code>number_of_seasons</code> la serial)?
+    </p>
+  </div>
+
+
+  <div class="primary-source">
+    <div class="primary-source-label">Sursă primară</div>
+    <p>
+      <strong><a href="https://developer.themoviedb.org/reference/company-details" target="_blank">
+        TMDB API — Company Details
+      </a></strong><br>
+      <span style="font-size:0.88rem;color:var(--muted);">
+        Endpoint-ul real pe care l-ai folosi dacă ai continua exercițiul „Studio" de mai sus.
+      </span>
+    </p>
+  </div>
+
+
+  <h2>Verifică-ți înțelegerea</h2>
+  <p>Cinci întrebări. Dă clic pe un răspuns — feedback-ul este imediat.</p>
+
+  <div class="quiz">
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 1 din 5</span>
+        <span class="qtext">De ce MediaCard.vue nu are 4 componente separate pentru movie/tv/person/collection?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Vue nu permite mai multe componente cu structuri similare</button></li>
+        <li><button data-correct="true">Un singur computed decide ruta/afișarea pe baza media_type — evită duplicare</button></li>
+        <li><button data-correct="false">TMDB întoarce întotdeauna aceeași formă de date pentru toate tipurile</button></li>
+        <li><button data-correct="false">Performanța ar fi mai slabă cu 4 componente separate</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Un component universal cu ramificare pe <code>media_type</code> evită duplicarea codului de afișare (poster, badge rating, buton watchlist) pentru cazuri care sunt 90% identice.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 2 din 5</span>
+        <span class="qtext">Vrei să adaugi o entitate nouă „studio". De ce ai copia structura din collection/[id].vue mai degrabă decât din movie/[id].vue?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nu contează, orice fișier pages/ e identic ca structură</button></li>
+        <li><button data-correct="true">Un studio, ca o colecție, grupează mai multe filme — formă de date mai apropiată</button></li>
+        <li><button data-correct="false">collection/[id].vue e singura pagină cu definePageMeta configurat corect</button></li>
+        <li><button data-correct="false">movie/[id].vue nu poate fi folosit ca referință, fiind prea complex</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Alegerea celui mai apropiat pattern existent (o entitate „grupatoare" de filme, ca și collection) minimizează adaptările necesare — nu trebuie reinventat de la zero.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 3 din 5</span>
+        <span class="qtext">De ce watchlist nu are sens pentru entitatea person, deși are sens pentru movie și tv?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Din motive tehnice — schema DB nu permite acest tip de date</button></li>
+        <li><button data-correct="true">Conceptual — „vrei să vezi" se aplică unui film/serial, nu unui actor</button></li>
+        <li><button data-correct="false">TMDB nu oferă date suficiente despre actori pentru un watchlist</button></li>
+        <li><button data-correct="false">E doar o limitare temporară, urmează să fie implementat</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> Nu orice pattern se extinde automat la orice entitate — trebuie verificat dacă are sens conceptual, nu doar dacă e tehnic posibil.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 4 din 5</span>
+        <span class="qtext">Ce ar trebui extins în MediaCard.vue dacă adaugi entitatea „studio"?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Tot componentul ar trebui rescris de la zero</button></li>
+        <li><button data-correct="true">Tipul media_type și o ramură nouă în computed-ul link</button></li>
+        <li><button data-correct="false">Doar CSS-ul, structura logică rămâne neschimbată</button></li>
+        <li><button data-correct="false">Nimic — studio ar folosi automat ruta de la collection</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> <code>media_type?: 'movie' | 'tv' | 'person' | 'collection'</code> ar deveni <code>| 'studio'</code>, iar <code>link</code> ar primi o linie <code>if (mediaType.value === 'studio') return \`/studio/${item.id}\`</code>.
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <div class="quiz-q">
+        <span class="qnum">Întrebarea 5 din 5</span>
+        <span class="qtext">Motorul de recomandări din Lecția 9 lucrează doar cu filme. Ce presupunere greșită ai face dacă ai crede că funcționează identic și pentru seriale?</span>
+      </div>
+      <ul class="quiz-options">
+        <li><button data-correct="false">Nicio presupunere greșită — codul deja acoperă și seriale automat</button></li>
+        <li><button data-correct="true">Ai presupune că bucket-urile TMDB (/discover/movie, /movie/{id}/recommendations) acoperă și tv, dar sunt endpoint-uri separate</button></li>
+        <li><button data-correct="false">Ai presupune greșit că tabela watched nu are câmpul media_type</button></li>
+        <li><button data-correct="false">Ai presupune greșit că RLS blochează query-uri pentru seriale</button></li>
+      </ul>
+      <div class="quiz-feedback">
+        <strong>Corect.</strong> TMDB tratează filmele și serialele ca resurse separate (<code>/discover/movie</code> vs <code>/discover/tv</code>) — algoritmul de recomandări ar avea nevoie de bucket-uri paralele explicite pentru tv, nu doar de o schimbare a unui filtru.
+      </div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </div>
+
+
+  <div class="ask-me">
+    <div class="ask-me-label">Întreabă-ți profesorul</div>
+    <p>
+      Vrei să schițăm împreună implementarea completă pentru o entitate nouă, sau să discutăm ce
+      alte pattern-uri repetate mai există în cod? <strong>Întreabă-mă — sunt profesorul tău pentru acest curs.</strong>
+    </p>
+  </div>
+
+
+  <div class="lesson-nav">
+    <a href="0009-motor-recomandari.html">← Lecția 9: Motorul de recomandări</a>
+    <a href="0011-config-search-deploy.html">Lecția 11: Config, căutare semantică și deploy →</a>
+  </div>
+
+  <p style="font-size:0.8rem;color:var(--muted);margin-top:1.5rem;text-align:center;">
+    <a href="../reference/glossary.html">Glosar</a> ·
+    <a href="../index.html">Index curs</a>
+  </p>
+
+</div>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

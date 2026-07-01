@@ -16,6 +16,7 @@ Colecție de cursuri tehnice interactive. Fiecare curs este un folder în acest 
 | [AI Harness](ai-harness/) | Harness concept, hooks, skills, agents, scheduling, memory, permissions, MCP — 8 lecții |
 | [Workflow Agentic Complet](agentic-workflow/) | /verify, /code-review, Greptile, Greploop, CodeRabbit, GitHub Actions, gh CLI — 10 lecții |
 | [Embeddings](embedings/) | Vectori semantici, use cases, Python, JavaScript, Laravel, vector databases, RAG — 8 lecții |
+| [UpNext — Studiu de caz Nuxt](upnext-tutorial/) | Tur ghidat prin codul real al unei aplicații Nuxt 4 + Supabase + TMDB — routing, componente, Nitro, auth, RLS, recomandări — 11 lecții |
 
 ## Cum clonezi
 
@@ -57,7 +58,10 @@ learn-hub/                      ← repo-ul principal (acesta)
 ├── nuxt/                       ← curs Nuxt 3 cu Supabase și Vercel
 │   ├── index.html
 │   └── lessons/
-└── data-structures/            ← curs Data Structures — PHP & JavaScript
+├── data-structures/             ← curs Data Structures — PHP & JavaScript
+│   ├── index.html
+│   └── lessons/
+└── upnext-tutorial/             ← curs UpNext — Studiu de caz Nuxt
     ├── index.html
     └── lessons/
 ```
